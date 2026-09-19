@@ -56,8 +56,8 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T2.27 — Policy-authority framework (D13) · M · deps: T2.13, T2.14, T2.18 — 2026-09-19, PolicyDesk + policy.yaml; autopilot hash; clip/lag/arbitration
 - [x] T2.28 — Fiscal instruments · M · deps: T2.27, T2.16 — 2026-09-19, VAT/excise/tariff wedges; rescue; GOVT DEP covered
 - [x] T2.29 — Monetary and macroprudential instruments · M · deps: T2.27, T2.20 — 2026-09-19, rate at meetings; cap req moves gate; LOLR RES/LOAN; QE stub
-- [ ] T2.30 — One corporate borrowing rate (D14) · S · deps: T2.20
-- [ ] T2.31 — Policy validation · M · deps: T2.28, T2.29, T2.23
+- [x] T2.30 — One corporate borrowing rate (D14) · S · deps: T2.20 — 2026-09-19, uniform r+s_t; SS both modes; one-sector default
+- [x] T2.31 — Policy validation · M · deps: T2.28, T2.29, T2.23 — 2026-09-19, multiplier 0.66; VAT 2.00pp; extremes finite/SFC
 - [ ] T2.32 — Monetary policy framework: committee, calendar, reaction function (D15) · M · deps: T2.27, T2.29
 - [ ] T2.33 — The committee's information set (published vintages) · S · deps: T2.32, T4.07
 - [ ] T2.34 — Strategy options: makeup, risk management, financial conditions · M · deps: T2.32, T2.20
