@@ -34,7 +34,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T2.05 — Steady state, financial side and opening postings · M · deps: T2.04, T2.03 — 2026-09-19, passthrough opening + α2>0
 - [x] T2.06 — Production plans and capacity caps (R1, R4) · M · deps: T2.04 — 2026-09-19, plan=x0; ENERGY→UTILITIES critical
 - [x] T2.07 — Orders, rationing, deliveries, input stocks (R5–R6) · M · deps: T2.06 — 2026-09-19, three modes + conservation
-- [ ] T2.08 — Price formation (R7) · M · deps: T2.04
+- [x] T2.08 — Price formation (R7) · M · deps: T2.04 — 2026-09-19, step bound 0.15; G ranking
 - [ ] T2.09 — Labour and wages (R8) · S · deps: T2.06
 - [ ] T2.10 — Capex, capacity pipeline, supply line (R3, §2.6) · M · deps: T2.04, T0.12, T0.14
 - [ ] T2.11 — Residential investment block · S · deps: T2.10
