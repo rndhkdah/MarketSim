@@ -23,6 +23,7 @@ from marketsim.real.capex import (
 )
 from marketsim.real.cenbank import CentralBank
 from marketsim.real.credit import CreditBlock
+from marketsim.real.edges import TypedEdgeBlock
 from marketsim.real.government import debt_ratio, step_tax_rate, tax_rate_target
 from marketsim.real.households import consumption_nominal, household_basket, income_index, smooth_nominal
 from marketsim.real.labour import step_labour
@@ -123,6 +124,8 @@ class RealEconomy:
         self.sh = self.bus.states
         self.prices_provider = StubAssetPriceProvider.from_baseline(real, fin, cfg)
         self.credit = CreditBlock(cfg, real, fin, self.prices_provider)
+        self.typed = TypedEdgeBlock(cfg, real.codes)
+        self.last_fd_shift = np.ones(s)
         self._ll_bar = float((dyn.banks.ll0 * (self.nd / 2.5)).mean())
         self.month = 0
         self.last_flows: MonthFlows | None = None
@@ -156,15 +159,17 @@ class RealEconomy:
         # R1
         self.se = expected_sales(self.se, self.sales, dyn.expectations.tau_sales_m)
         pc = float((self.theta * self.p).sum())
+        fd_shift = self.typed.shifters(self.p, pc)
+        self.last_fd_shift = fd_shift
         g_d = float(np.exp(self.cb.pi_e / 12.0))
         y = income_index(self.yd_e, pc, fin.YD0)
         rate_gap = float(
             self.rate_gap_s.push((self.cb.r - self.cb.pi_e - self.cb.r_n) * 100.0 + float(sh["ds"]) * 100.0)
         )
         c_nom_tot = consumption_nominal(dyn.households.alpha1, self.yd_e, fin.alpha2, self.wealth, sh["dem"])
-        c = self.credit.scale_consumption(self.demand.allocate(c_nom_tot, self.p, y, rate_gap))
+        c = self.credit.scale_consumption(self.demand.allocate(c_nom_tot, self.p, y, rate_gap, shifters=fd_shift))
         gv = real.flat(real.G0) * np.exp(sh["fisc"])
-        ex = exports(real.flat(real.X0), self.p, self.prices.p_imp, dyn.row.export_price_elasticity, sh["row"])
+        ex = exports(real.flat(real.X0), self.p, self.prices.p_imp, dyn.row.export_price_elasticity, sh["row"]) * fd_shift
         recon = self.bus.consume_recon()
         # R3
         self.u_s = self.u_s + (self.x / self.k - self.u_s) / dyn.capex.tau_util_m
@@ -202,7 +207,7 @@ class RealEconomy:
         spend_real = self.spend.push(real.flat(real.v) * starts)
         res_real = self.credit.scale_residential(self.res.step(y, rate_gap, sh["dem"]))
         inv_goods = real.flat(real.route_bus) * float(spend_real.sum())
-        inv_goods = self.res.add_to_final(inv_goods, res_real)
+        inv_goods = self.res.add_to_final(inv_goods, res_real) * fd_shift
         self.k = step_capacity(self.k, starts, self.pipe, dyn.capex.delta_annual / 12.0)
         k_eff = self.k * np.exp(sh["sup"])
         # R4
@@ -546,6 +551,8 @@ class RealEconomy:
             "sh": {k: (v.copy() if isinstance(v, np.ndarray) else v) for k, v in self.sh.items()},
             "bus": self.bus.to_state(),
             "credit": self.credit.to_state(),
+            "typed": self.typed.to_state(),
+            "last_fd_shift": self.last_fd_shift.copy(),
             "_ll_bar": self._ll_bar,
             "ledger": self.ledger.to_state(),
             "pub": self.pub.to_state(),
@@ -608,6 +615,10 @@ class RealEconomy:
             self.sh = self.bus.states
         if "credit" in state:
             self.credit.from_state(state["credit"])
+        if "typed" in state:
+            self.typed.from_state(state["typed"])
+        if "last_fd_shift" in state:
+            self.last_fd_shift = np.asarray(state["last_fd_shift"], dtype=float)
         if "_ll_bar" in state:
             self._ll_bar = float(state["_ll_bar"])
         self.ledger = Ledger.from_state(state["ledger"])
