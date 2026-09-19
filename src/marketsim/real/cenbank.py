@@ -96,20 +96,42 @@ class CentralBank:
             / self.tau_infl_m
         )
 
-    def maybe_meet(self, gap: float, z_mon: float = 0.0) -> bool:
+    def maybe_meet(
+        self,
+        gap: float,
+        z_mon: float = 0.0,
+        *,
+        rate_override: float | None = None,
+        pi_star: float | None = None,
+        phi_pi: float | None = None,
+        phi_y: float | None = None,
+        smoothing: float | None = None,
+    ) -> bool:
         """If this month is a quarter-end, update ``r_rule`` and ``r``. Returns True on a meeting."""
         met = is_quarter_end_month(self.month)
         if met:
-            pi_pol = policy_inflation(
-                self.pi3(),
-                self.pi12(),
-                infl_n(self.core_hist, 3),
-                infl_n(self.core_hist, 12),
-                self.core_weight,
-            )
-            target = taylor_target(self.r_n, self.pi_star, self.phi_pi, self.phi_y, pi_pol, gap)
-            self.r_rule = self.rho * self.r_rule + (1.0 - self.rho) * target
-            self.r = max(self.elb, self.r_rule + z_mon)
+            if pi_star is not None:
+                self.pi_star = float(pi_star)
+            if phi_pi is not None:
+                self.phi_pi = float(phi_pi)
+            if phi_y is not None:
+                self.phi_y = float(phi_y)
+            if smoothing is not None:
+                self.rho = float(smoothing)
+            if rate_override is not None:
+                self.r_rule = float(rate_override)
+                self.r = max(self.elb, float(rate_override) + z_mon)
+            else:
+                pi_pol = policy_inflation(
+                    self.pi3(),
+                    self.pi12(),
+                    infl_n(self.core_hist, 3),
+                    infl_n(self.core_hist, 12),
+                    self.core_weight,
+                )
+                target = taylor_target(self.r_n, self.pi_star, self.phi_pi, self.phi_y, pi_pol, gap)
+                self.r_rule = self.rho * self.r_rule + (1.0 - self.rho) * target
+                self.r = max(self.elb, self.r_rule + z_mon)
         else:
             self.r = max(self.elb, self.r_rule + z_mon)
         self.month += 1

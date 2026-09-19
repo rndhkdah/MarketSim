@@ -85,6 +85,8 @@ class CreditBlock:
         self.lam_coll = 1.0
         self.gate = 1.0
         self.spread = self.s0
+        self.capital_requirement = cfg.dynamics.banks.capital_target
+        self.ltv_cap = 1.0
 
     def update(
         self,
@@ -104,12 +106,20 @@ class CreditBlock:
             for e, sm in zip(self.credit_edges, self.edge_s, strict=True):
                 self.lam_tilde[(e.channel, e.dst)] = float(sm.push(1.0))
             return 1.0
-        self.gate = capital_gate(capital, self.cfg)
+        g = self.cfg.edges.credit.bank_capital_gate
+        delta = self.capital_requirement - g.baseline_capital_ratio
+        self.gate = logistic_gate(
+            capital,
+            midpoint=g.midpoint + delta,
+            steepness=g.steepness,
+            baseline=g.baseline_capital_ratio + delta,
+            normalise_at_baseline=g.normalise_at_baseline,
+        )
         self.v_re = self.provider.v_re(r, pi_e, z_risk, self.codes)
         self.v_trend += (self.v_re - self.v_trend) / self.trend_tau
         rel = max(self.v_re, 1e-12) / max(self.v_trend, 1e-12)
         gap = 0.0 if abs(rel - 1.0) < LAM_SNAP else float(np.log(rel))
-        raw = collateral_index(gap)
+        raw = collateral_index(gap) * float(self.ltv_cap)
         self.lam_coll = _snap_one(float(self.lam_s.push(raw)))
         self.lam = _snap_one(self.gate * self.lam_coll)
         push = 1.0 if self.lam == 1.0 else self.lam
@@ -161,6 +171,8 @@ class CreditBlock:
             "lam_coll": self.lam_coll,
             "gate": self.gate,
             "spread": self.spread,
+            "capital_requirement": self.capital_requirement,
+            "ltv_cap": self.ltv_cap,
         }
 
     def from_state(self, state: dict[str, Any]) -> None:
@@ -178,6 +190,10 @@ class CreditBlock:
         self.lam_coll = float(state["lam_coll"])
         self.gate = float(state["gate"])
         self.spread = float(state["spread"])
+        if "capital_requirement" in state:
+            self.capital_requirement = float(state["capital_requirement"])
+        if "ltv_cap" in state:
+            self.ltv_cap = float(state["ltv_cap"])
 
 
 def write_off_bank_equity(

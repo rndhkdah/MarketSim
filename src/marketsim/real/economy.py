@@ -40,6 +40,16 @@ from marketsim.real.policy.fiscal import (
     tariff_revenue,
     vat_revenue,
 )
+from marketsim.real.policy.monetary import (
+    PolicyToolkit,
+    post_lolr,
+)
+from marketsim.real.policy.monetary import (
+    consume_oneoffs as consume_cb_oneoffs,
+)
+from marketsim.real.policy.monetary import (
+    levers_from_merged as cb_levers_from_merged,
+)
 from marketsim.real.prices import PriceState, sector_pass_through, step_prices, tightness, unit_cost
 from marketsim.real.production import (
     expected_sales,
@@ -140,6 +150,7 @@ class RealEconomy:
         self.last_fd_shift = np.ones(s)
         self._ll_bar = float((dyn.banks.ll0 * (self.nd / 2.5)).mean())
         self.policy = PolicyDesk.from_config(cfg)
+        self.toolkit = PolicyToolkit()
         self.month = 0
         self.last_flows: MonthFlows | None = None
         self.last_agg: Aggregates | None = None
@@ -159,6 +170,13 @@ class RealEconomy:
         s = real.S
         self.policy.tick_month(self.month)
         fisc = levers_from_merged(self.policy.govt.merged())
+        mon = cb_levers_from_merged(self.policy.cenbank.merged())
+        if mon.capital_requirement is not None:
+            self.credit.capital_requirement = float(mon.capital_requirement)
+        if mon.ltv_cap is not None:
+            self.credit.ltv_cap = float(mon.ltv_cap)
+        if mon.guidance_path is not None:
+            self.toolkit.guidance_path = list(mon.guidance_path)
         excise_vec = excise_array(fisc.excise, self.codes)
         self.demand.vat = fisc.vat
         self.demand.excise = excise_vec
@@ -355,6 +373,7 @@ class RealEconomy:
                 g=g_d,
                 fin=fin,
                 cfg=cfg,
+                payout_target=self.credit.capital_requirement,
             )
             icr = np.where(interest > 1e-12, ebitda / interest, 1e6)
             ll = expected_loss(
@@ -454,7 +473,15 @@ class RealEconomy:
             d_inv,
         )
         gap = gdp / fin.gdp0 - 1.0
-        self.cb.maybe_meet(gap, sh["mon"])
+        self.cb.maybe_meet(
+            gap,
+            sh["mon"],
+            rate_override=mon.rate,
+            pi_star=mon.pi_star,
+            phi_pi=mon.phi_pi,
+            phi_y=mon.phi_y,
+            smoothing=mon.smoothing,
+        )
         self.last_agg = Aggregates(
             gdp_prod_real=gdp,
             gdp_exp_real=gdp_exp,
@@ -519,9 +546,17 @@ class RealEconomy:
             settle_and_check(self.ledger, real, flows, tick=self.month + 1)
         else:
             settle_month(self.ledger, real, flows, tick=self.month + 1)
+        if mon.lolr:
+            post_lolr(self.ledger, mon.lolr, tick=self.month + 1)
+            self.toolkit.last_lolr = mon.lolr
+            if self.check_sfc:
+                from marketsim.ledger.sfc import assert_consistent
+
+                assert_consistent(self.ledger, self.month + 1)
         if full:
             self._refresh_bank_sheet()
         consume_oneoffs(self.policy.govt)
+        consume_cb_oneoffs(self.policy.cenbank)
         self.bus.decay()
         self.month += 1
         return {
@@ -613,6 +648,10 @@ class RealEconomy:
             "last_fd_shift": self.last_fd_shift.copy(),
             "_ll_bar": self._ll_bar,
             "policy": self.policy.to_state(),
+            "toolkit": {
+                "guidance_path": list(self.toolkit.guidance_path),
+                "last_lolr": self.toolkit.last_lolr,
+            },
             "ledger": self.ledger.to_state(),
             "pub": self.pub.to_state(),
             "pi_star": self.fin.pi_star,
@@ -682,6 +721,9 @@ class RealEconomy:
             self._ll_bar = float(state["_ll_bar"])
         if "policy" in state:
             self.policy.from_state(state["policy"])
+        if "toolkit" in state:
+            self.toolkit.guidance_path = list(state["toolkit"].get("guidance_path") or [])
+            self.toolkit.last_lolr = float(state["toolkit"].get("last_lolr") or 0.0)
         self.ledger = Ledger.from_state(state["ledger"])
         self.pub = Published.from_state(state["pub"])
 

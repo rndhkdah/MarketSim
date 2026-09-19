@@ -226,6 +226,7 @@ def bank_month_flows(
     fin: FinancialBaseline,
     cfg: Config,
     gate: object | None = None,
+    payout_target: float | None = None,
 ) -> tuple[np.ndarray, float, float, float, float]:
     """Write-offs, deposit interest, bank dividends, profit, capital ratio."""
     del gate, grow
@@ -240,7 +241,8 @@ def bank_month_flows(
     profit = float(interest.sum() + r * reserves / 12.0 + r * gb / 12.0 - dep_int - float(wo.sum()))
     loans = float(debt.sum())
     c = equity / max(loans, 1e-12)
-    frac = bank_payout_frac(c, target=dyn.banks.capital_target)
+    target = dyn.banks.capital_target if payout_target is None else float(payout_target)
+    frac = bank_payout_frac(c, target=target)
     # Retain ``(G−1)·E`` so equity grows with prices the same way loans do after G·d_debt.
     div = max(0.0, frac * profit - (g - 1.0) * equity)
     _ = logistic_gate(c)  # used by T2.20; keep the ratio live
