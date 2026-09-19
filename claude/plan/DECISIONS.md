@@ -20,7 +20,9 @@ Accepted 2026-09-19 (v1.1):
 - ADR-P9 Bond market: three fungible decaying-coupon government buckets + one pooled corporate bond; par pricing until Phase 6.
 - ADR-P10 `GOVT` and `CENBANK` are policy authorities with levers; control = autopilot | scripted | agent.
 - ADR-P11 One corporate borrowing rate (`credit.pricing: uniform`); `edges.yaml: credit.spread_scaling` unused in this mode;
-  ratings drive limits, not price.
+  ratings drive limits, not price. Implemented T2.30: `CreditBlock.spread` is the single `s_t`; uniform loan rates
+  are `r + s_t` with no sector/region/firm index. `risk_based` keeps `s0·max(nd,floor)/2.5` plus a common `(nd/2.5)·Δs`
+  bump so a default still moves every name the same direction.
 
 Accepted 2026-09-19 (v1.2):
 

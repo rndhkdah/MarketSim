@@ -123,7 +123,7 @@ banks:
   reserves_to_deposits: 0.08
 
 credit:
-  pricing: uniform
+  pricing: uniform          # uniform (D14): one r+s_t for every borrower; risk_based is the ablation
   s0: 0.015
   corp_funding_mix: 0.5
   gate_enabled: false

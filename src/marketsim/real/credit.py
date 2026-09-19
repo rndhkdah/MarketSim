@@ -128,6 +128,19 @@ class CreditBlock:
         self.spread = corporate_spread(self.s0, self.s_gate, self.s_loss, self.gate, ll_bar, self.ll_bar0)
         return self.lam
 
+    def sector_spreads(self, nd: np.ndarray, floor: float, pricing: str) -> np.ndarray:
+        """Loan spreads. Uniform: one ``s_t``. risk_based: ``s0·max(nd,floor)/2.5 + (nd/2.5)·(s_t−s0)``."""
+        nd = np.asarray(nd, dtype=float)
+        if pricing == "uniform":
+            return np.full(nd.shape, float(self.spread))
+        bump = float(self.spread) - self.s0
+        base = self.s0 * np.maximum(nd, floor) / 2.5
+        return base + (nd / 2.5) * bump
+
+    def borrower_rates(self, r: float, nd: np.ndarray, floor: float, pricing: str) -> np.ndarray:
+        """Annual contractual loan rate ``r + spread`` for every borrower."""
+        return float(r) + self.sector_spreads(nd, floor, pricing)
+
     def _edge_lam(self, channel: str, dst: str) -> float:
         return self.lam_tilde.get((channel, dst), self.lam)
 

@@ -189,9 +189,13 @@ class RealEconomy:
             z_risk=float(sh["risk"]),
             ll_bar=self._ll_bar,
         )
-        if self.credit.enabled and self.credit.lam != 1.0:
-            self.spread[:] = self.credit.spread
-            sh["ds"] = self.credit.spread - self.credit.s0
+        if self.credit.enabled:
+            ds = float(self.credit.spread) - self.credit.s0
+            if self.credit.lam != 1.0 or abs(ds) > 1e-15:
+                self.spread[:] = self.credit.sector_spreads(
+                    self.nd, dyn.firms.spread_leverage_floor, dyn.credit.pricing
+                )
+                sh["ds"] = ds
         # R1
         self.se = expected_sales(self.se, self.sales, dyn.expectations.tau_sales_m)
         pc = float((self.theta * self.p).sum())
