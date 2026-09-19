@@ -58,7 +58,7 @@ transaction price. Quality / brand: Phase 8.
 | labour | vacancies, wage offer, layoffs | hires ≤ 10 % of regional unemployed/month; firing cost `firing_cost_months` (2) × wage; 1-month notice |
 | procurement | input cover targets (0–6 months), order multipliers, shortage bid premium (0–0.5) | supply contracts: Phase 8 |
 | capex | expand plant, new plant in another cell (+10 % set-up cost), R&D spend | cost `v_s·p_I` per unit capacity, time-to-build `build_lag_q`, payments Erlang(3); ≤ +50 % capacity/year |
-| financing | borrow / repay, dividends; issue equity, buybacks (Phase 6) | next tick; leverage cap ND/EBITDA ≤ 4 (hard cap 6) |
+| financing | borrow / repay (floating bank loan or fixed corporate-pool funding — same spread), dividends; issue equity, buybacks (Phase 6) | next tick; leverage cap ND/EBITDA ≤ 4 (hard cap 6) |
 | treasury | switch allowing the firm to trade financial instruments | default off |
 | exit | liquidate, sell | plants to NPC mass at 30 % discount; creditors first |
 
@@ -75,9 +75,12 @@ month; quits flow to better payers ∝ `(w̄_r/w_f − 1)⁺`; incumbent wages f
 `rel_b` = 12-month EMA of the buyer's purchase share (supplier relationship), water-filled and capped at the order;
 otherwise pro-rata. Holding inventory (or, later, contracts) before a shock is a core strategy.
 **Financing.** Retained earnings; bank credit line — limit = min(leverage cap × EBITDA_12m, 50 % of plant replacement
-value) × lagged lending capacity `Λ̃` (the credit gate applies to agents too); rate = policy + rating spread + gate
-term; corporate tax on positive EBT with 5-year loss carry-forward. **Rating:** score from ND/EBITDA, 1/ICR, size,
-earnings volatility → AAA…CCC → spread table (indicative bp: 60, 80, 110, 160, 300, 500, 900).
+value) × lagged lending capacity `Λ̃` (the credit gate applies to agents too); **rate = the common corporate rate (D14)** — policy + the
+single global spread `s_t` on a floating bank loan, or the matching government yield + `s_t` through the corporate bond pool
+(`06-…` §6.11) — identical for every firm, sector, region and rating; corporate tax on positive EBT with 5-year loss carry-forward. **Rating:** score from ND/EBITDA, 1/ICR, size,
+earnings volatility → AAA…CCC → **credit-limit multipliers and covenants** (indicative × 1.2, 1.1, 1.0, 0.9, 0.7, 0.5,
+0.25) and public disclosure — never the price of credit. Because leverage is not priced, the leverage cap and the collateral
+limit are hard constraints; default losses are mutualised and raise `s_t` for everyone.
 **Hard budget constraint:** no cash below zero beyond the undrawn line. Payments that would breach are scaled back by
 seniority — wages, taxes, suppliers, interest, principal, capex, dividends — and unpaid obligations mark distress.
 
@@ -156,7 +159,8 @@ allocations ≤ orders and sum to supply; premium paid is posted; cornering atte
 
 ### T5.10 — Financing, rating, tax, hard budget constraint
 **Depends:** T5.02, T2.20 · **Size:** M · **Files:** `src/marketsim/firms/financing.py`, `src/marketsim/firms/rating.py`, `tests/unit/firms/test_financing.py`
-**Read first:** §5.5. **Tests:** credit limit shrinks when the gate closes; spread follows rating; seniority scaling when
+**Read first:** §5.5. **Tests:** credit limit shrinks when the gate closes and with a worse rating; the borrowing rate is identical across firms whatever
+their rating or leverage (D14); seniority scaling when
 cash is short; loss carry-forward; no negative cash beyond the line in a fuzz run.
 
 ### T5.11 — Plants, capex and R&D

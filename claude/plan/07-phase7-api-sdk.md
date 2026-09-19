@@ -14,6 +14,8 @@ Gymnasium / PettingZoo wrappers with factored action spaces; deterministic repla
    8 scripted agents; REST/WS overhead measured and documented.
 4. Schemas versioned (`v1`), OpenAPI published, SDK covers every endpoint, examples run in CI.
 5. Information rules hold through the API: no hidden state, professional-mode lags and blackouts enforced.
+6. A `policymaker` client can run fiscal and monetary policy and the debt office end-to-end through the API; with none
+   registered the authorities stay on autopilot. Agents can bid in bond auctions and trade every bond bucket.
 
 ## 7.2 Surface
 
@@ -28,6 +30,8 @@ REST, all under `/v1/worlds/{wid}` unless noted:
 | firms | `POST …/firms` found · `POST …/firms/{fid}/decisions` (batched, any lever subset) · `GET …/firms/{fid}/state` (operator only) · `GET …/firms/{fid}/financials` · `POST …/firms/{fid}/plants` · `POST …/firms/{fid}/financing` · `GET …/firms/{fid}/reports` |
 | equity | `POST …/firms/{fid}/listing` · `…/issue` · `…/buyback` · `…/dividends` · `GET …/firms/{fid}/captable` |
 | goods / labour | `GET …/goods` (reference prices, demand indicators, competitor prices) · `GET …/labour/{region}` · `GET …/regions` |
+| bonds | `GET …/bonds` (curve, bucket prices, outstanding, published holdings) · `GET …/bonds/auctions` (calendar, sizes, results) · `POST …/bonds/auctions/{aid}/bids` |
+| policy (role `policymaker`) | `GET …/government/state` (budget, debt, issuance plan) · `POST …/government/decisions` · `GET …/cenbank/state` · `POST …/cenbank/decisions` |
 | replay | `GET …/replay` · `POST …/export` · `POST …/save` · `POST /v1/worlds/load` |
 
 WebSocket `…/stream`: ticks, fills, news, reports, data releases; per-agent filtering; sequence numbers; resume by
@@ -45,6 +49,8 @@ Reward: operators — Δ(equity value) + dividends (not short-run profit); trade
 worth (cash + market value of holdings + own-firm equity). Episode = horizon or bankruptcy. Curriculum by levers
 (price → production → hiring → capex → financing) and by event severity. Domain randomisation per episode; fixed
 evaluation scenarios; collusion detection (T5.19); parallel worlds.
+Policy agents (`policymaker` role): observation = published macro data, budget and debt, curve; actions = any subset of the
+`02-…` §2.13 levers; reward = −[(π − π\*)² + λ_y·gap² + λ_b·(b − b\*)²] or a custom scorer.
 Action space (factored `Dict`): `orders` — K slots × (instrument, side, type, size as a fraction of buying power or
 position, limit offset in spreads); `firm` — one normalised `Box` per lever with a mask for levers left on autopilot.
 
@@ -122,3 +128,15 @@ N workers ≥ 0.75·N× single throughput.
 ### T7.15 — API documentation and quickstart
 **Depends:** T7.07 · **Size:** S · **Files:** `docs/api.md`, `examples/quickstart_trader.py`, `examples/quickstart_operator.py`
 **Tests:** examples run in CI against an in-process server.
+
+### T7.16 — Policy-maker role and endpoints (D13)
+**Depends:** T7.04, T2.31 · **Size:** M · **Files:** `src/marketsim/api/rest.py`, `src/marketsim/api/sessions.py`, `src/marketsim/sdk/policy_env.py`, `tests/integration/api/test_policy_api.py`
+**Build:** `policymaker` role bound to one authority (`GOVT` or `CENBANK`), the four endpoints, decision validation echoing
+clipped levers, `PolicyEnv` (Gymnasium) with the §7.3 reward. **Tests:** gate 6; a non-policymaker gets 403; a policymaker
+cannot open a trading account in professional mode; registering one switches that authority from autopilot to `agent` and
+deregistering switches it back.
+
+### T7.17 — Bond-market endpoints
+**Depends:** T7.04, T6.26 · **Size:** S · **Files:** `src/marketsim/api/rest.py`, `src/marketsim/api/schemas.py`, `tests/integration/api/test_bonds_api.py`
+**Tests:** an agent sees the calendar, bids, wins or loses at the stop-out yield, and receives coupons and redemptions; schema
+snapshot bumped to include bond objects.

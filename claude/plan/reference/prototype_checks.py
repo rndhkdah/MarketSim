@@ -6,11 +6,11 @@ from prototype_irf import run_shock
 def lvl_of(e):
     cpi = np.array([o['cpi'] for o in e.log]); t = np.arange(1, len(cpi)+1)
     return np.log(cpi) - e.P['pi_star']*t/12
-for mode in ("nominal_drift", "real"):
+for mode, cp in (("nominal_drift", "uniform"), ("nominal_drift", "risk_based"), ("real", "uniform")):
     for pis in (0.0, 0.02):
-        P = dict(pi_star=pis, smooth_mode=mode)
+        P = dict(pi_star=pis, smooth_mode=mode, credit_pricing=cp)
         e, out = run(360, P=P); dev = max(np.abs(o["x"]/e.x0-1).max() for o in out); o = out[-1]
-        line = f"[{mode:<13} pi*={pis}] steady dev {dev:.1e} infl {o['infl']:.5f} W/(B+D) {o['W']/(o['B']+o['debt']):.8f}"
+        line = f"[{mode:<13} {cp:<10} pi*={pis}] steady dev {dev:.1e} infl {o['infl']:.5f} W/(B+D) {o['W']/(o['B']+o['debt']):.8f}"
         res = {}
         for kind, mag in [("demand",0.02),("monetary",0.01),("cost_push",0.30),("supply",-0.03),("fiscal",0.05),("row",-0.10)]:
             e = run_shock(kind, mag, T=240, P=P); g = np.array([o['gap'] for o in e.log]); res[kind] = (g, lvl_of(e), e)

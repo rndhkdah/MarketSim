@@ -20,7 +20,7 @@ make check
 
 ```
 AGENTS.md          agent rules (this package, not the Vic3 root)
-claude/plan/       145-card plan + reference prototype (not production code)
+claude/plan/       v1.2 plan (D12–D15) + reference prototype (not production code)
 config/            YAML/JSON — every parameter lives here
 src/marketsim/     library
 scripts/           CLIs (build_io, derive_betas, fetch_bea_io, vic3_compare)
@@ -38,4 +38,5 @@ There is no legacy `claude/marketsim` tree; goldens are the published invariants
 
 ## Next
 
-`claude/plan/PROGRESS.md` — lowest unchecked card whose dependencies are done (T2.01 after P0).
+`claude/plan/PROGRESS.md` — lowest unchecked card whose dependencies are done (T2.01 after GATE P0).
+Plan version 1.2 (bond market, policy authorities, one borrowing rate, monetary framework).

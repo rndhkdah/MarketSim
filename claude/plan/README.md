@@ -16,6 +16,12 @@
 5. Parallel work: Track B (market microstructure, T6.07–T6.13) can run alongside Phases 3–5 once T2.03 is done;
    Phase 4 can run alongside Phase 3 after T2.18 (cards that need region masks or want shifters say so).
 
+v1.2 adds the monetary policy framework (`02-…` §2.14): committee, calendar, dual mandate, published-data information
+set, makeup / risk-management / financial-conditions options — decision D15.
+
+v1.1 adds the bond market (`06-…` §6.11), government and central bank as policy authorities (`02-…` §2.13) and one common
+borrowing rate for all firms (`02-…` §2.7) — decisions D12–D14 in the master plan.
+
 `reference/` holds the numerical prototype behind Phase 2. Run it from the repo root with
 `python claude/plan/reference/prototype_checks.py` (needs numpy, scipy, pyyaml and the legacy `claude/marketsim`
 tree, or set `MARKETSIM_ROOT`). It is a reference for equations and expected numbers — **not** production code: no

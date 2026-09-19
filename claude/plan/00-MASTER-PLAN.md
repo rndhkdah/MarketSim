@@ -1,6 +1,6 @@
 # marketsim — Master Implementation Plan
 
-Version 1.0 · 2026-09-19 · Owner: Harry · Audience: coding agents (Cursor) and the human reviewing them.
+Version 1.2 · 2026-09-19 (v1.1 bond market, policy authorities, one borrowing rate; v1.2 adds D15: the monetary policy framework) · Owner: Harry · Audience: coding agents (Cursor) and the human reviewing them.
 
 This plan consolidates every project doc — `claude/engine-design.md`, `claude/simulation-engine-design-brief.md`
 (v0.3), `claude/vic3-demand-model.md`, `claude/market-simulation-landscape.md`, `claude/marketsim/` — into a build
@@ -18,7 +18,7 @@ sequence of small task cards. Where a doc and this plan disagree, this plan wins
 | `06-phase6-pricing-markets.md` | valuation, mispricing, impact kernel, market maker, CLOB, cap tables, control, margin |
 | `07-phase7-api-sdk.md` | REST/WS API, lockstep/real-time, SDK, Gymnasium/PettingZoo, replay |
 | `08-phase8-9-realism-game-scale.md` | calibration, realism, game layer, scale-out (coarse; refine after gates) |
-| `PROGRESS.md` | checklist of every task ID (the work queue) — 145 cards |
+| `PROGRESS.md` | checklist of every task ID (the work queue) — 166 cards |
 | `README.md`, `DECISIONS.md`, `QUESTIONS.md` | how to start in Cursor · ADRs · questions raised by agents |
 | `reference/` | the numerical prototype used to verify Phase 2 — **reference only, not production code** |
 
@@ -39,6 +39,10 @@ sequence of small task cards. Where a doc and this plan disagree, this plan wins
 | D9 | Agents can **own and operate firms** (price, produce, hire, invest, finance). |
 | D10 | **Any agent may buy shares of any listed firm**, including other agents' firms, funds permitting. Working assumption: control follows >50 % of voting shares. |
 | D11 | Storage backend deferred; all state serialisable. |
+| D12 | **Bond market.** Government debt in three maturity buckets (bill ≈ 3m, note ≈ 3y, bond ≈ 10y) sold in uniform-price **auctions** and traded on a secondary market; the central bank operates in it (QE/QT); corporate bonds are issued through one **pooled** vehicle. Agents can bid and trade. |
+| D13 | **The government and the central bank conduct macroeconomic policy as actors.** Each is a *policy authority* with levers (purchases and their sector/regional mix, tax rates, VAT, excise/subsidies, tariffs, transfers, rescues, fiscal-rule parameters, debt management; policy rate or rule parameters, forward guidance, macroprudential settings, QE/QT). Every lever has an autopilot (the Phase-2 rules); control is `autopilot`, `scripted` or `agent` (API role `policymaker`). |
+| D15 | **The central bank sets the rate like a real one.** A committee on an 8-meeting calendar, a **dual mandate** (inflation *and* the unemployment gap), core-vs-headline blending, a neutral rate that tracks trend growth, gradualism, 25bp announcements with a deadband, and decisions taken on **published, lagged, revised** data. Shipped but off by default: makeup strategies (leaky and clipped only), risk-management asymmetry, a financial-conditions term, committee dispersion. At the ELB: guidance → QE → LOLR. See `02-…` §2.14. |
+| D14 | **All companies borrow at the same interest rate, everywhere**: policy rate (or the matching government yield) + **one** global corporate spread — no firm, sector, region or rating premium. Leverage is limited by quantity, not price. `credit.pricing: risk_based` remains as an option. |
 
 Assumptions carried as defaults (see §12): commercial use in scope → permissive licences only; tick = 1 day;
 generic (BEA/FRED-flavoured) calibration.
@@ -52,6 +56,9 @@ generic (BEA/FRED-flavoured) calibration.
 | Phase-2 equations (production modes, rationing, prices, capex, households, fiscal, Taylor) | **prototyped and verified numerically** — `reference/dynamic_core_prototype.py`; results in §13 |
 | Ledger/SFC, banks, credit + collateral edges, typed substitution edges, catastrophe & risk-appetite shocks | **design only** — specified here, must pass the Phase-2 stability suite when switched on |
 | Phases 3–9 | **design only** |
+| One borrowing rate for all firms (D14) | **verified in the prototype** (§13) |
+| Monetary framework (D15) | **reaction function verified in the prototype** (§13); committee, communication and ELB toolkit design-only |
+| Policy authorities (D13), bond market (D12) | **design only** — autopilot / par-pricing modes must reproduce the verified behaviour bitwise |
 
 Bugs/gaps found in the existing repo (fixed in Phase 0):
 
@@ -178,7 +185,8 @@ overrides.
 
 **Entities and instruments.** `HH:<r>`, `NPC:<r>:<SECTOR>`, `BANKSYS`, `GOVT`, `CB`, `ROW`, `MM` (NPC investors —
 the engine market maker's book, a sub-account of households), later `FIRM:<id>`, `AGENT:<id>`. Instruments: `DEP`,
-`LOAN`, `GBOND`, `RES`, `EQ:<issuer>`, real assets `CAPITAL`, `INVENTORY`, `HOUSING`. Positions are signed
+`LOAN`, government bonds `GB_BILL` / `GB_NOTE` / `GB_BOND`, pooled corporate bonds `CORP_POOL` (issued by the
+vehicle `CORPPOOL`, which on-lends to firms through `CLOAN`), `RES`, `EQ:<issuer>`, real assets `CAPITAL`, `INVENTORY`, `HOUSING`. Positions are signed
 (+ asset, − liability); every financial instrument sums to zero across entities.
 
 ## 7. Tick pipeline (brief §3)
@@ -215,6 +223,8 @@ financial layer immediately through news → expectations / risk appetite.
 | `firms.yaml` | T5.01 | founding, lever limits, stickiness, matching, rating table, bankruptcy, controls |
 | `markets.yaml` | T6.01 | instruments, MM, impact kernel, background flow, CLOB, fees, margin, surveillance |
 | `world.yaml` | T0.12 | scale, seed, mode (game/professional), run mode, enabled modules, randomisation ranges |
+| `policy.yaml` | T2.27, T2.32 | per-authority control mode, lever ranges and change limits, legislative / implementation lags, policy-agent reward weights; the `monetary:` block — calendar, reaction function, information set, strategy options, ELB toolkit, committee (§2.14.6) |
+| `bonds.yaml` | T6.24 | maturity buckets (decay, coupon), pricing mode (par/market), auction calendar and NPC demand, term-premium parameters, central-bank operations, corporate pool |
 
 ## 9. Phase map, dependencies, gates
 
@@ -228,11 +238,11 @@ P0 foundation ──► P2 dynamic layer + ledger ──► P3 regions + demand 
 |---|---|---|
 | 0 | packaging, loaders, bug fixes B1–B5, core utilities, World skeleton | golden parity with legacy Layer 1; determinism test; CI green |
 | 1 ✔ | sector graph + IO + derived betas | kept alive by golden/validation tests |
-| 2 | ledger + dynamic real economy + policy + banks + credit/collateral edges | exact stationarity at π\*∈{0, 2 %}; 7 sign-restriction IRFs; hump + timing (housing before capital goods); 100-year stability; SFC every month |
+| 2 | ledger + dynamic real economy + policy + banks + credit/collateral edges | exact stationarity at π\*∈{0, 2 %}; 7 sign-restriction IRFs; hump + timing (housing before capital goods); 100-year stability; SFC every month; policy levers bitwise-neutral on autopilot, lever tests and extreme-policy boundedness (§2.13); one borrowing rate for all firms; monetary-framework parity and validation (§2.14.7) |
 | 3 | regions + trade; tiers × wants; NPC entry/exit | R=1 parity; regional shocks propagate, prices converge within band; basket reproduced exactly, η rank-corr ≥ 0.8; aggregate baseline recorded |
 | 4 | events, cascades, news, releases, templates, scenarios | cascades bounded (sub-critical branching); templates reproduce historic response directions |
 | 5 | firms + heterogeneous-seller markets + financing + bankruptcy | hybrid ≈ aggregate; adversarial + monopoly tests; one agent on 2–3 levers in-process |
-| 6 | L3 valuation, ξ, impact, MM, CLOB, cap tables, control, margin | Tier-2 metrics in CI (√-law slope 0.4–0.7, partial reversion); stock–bond correlation flips sign by regime; takeover + liquidation-cascade tests |
+| 6 | L3 valuation, ξ, impact, MM, CLOB, cap tables, control, margin | Tier-2 metrics in CI (√-law slope 0.4–0.7, partial reversion); stock–bond correlation flips sign by regime; takeover + liquidation-cascade tests; bond market gates (§6.11): par-mode parity, curve and auction behaviour, QE effect, insurer/bank mark-to-market emerges |
 | 7 | REST/WS, lockstep/real-time, SDK, gym/PettingZoo, replay | multi-agent training run end-to-end; ≥ 1,000 ticks/s small world in-process; deterministic replay |
 | 8 | realism + game | playable campaign; calibration report |
 | 9 | scale-out | — |
@@ -266,12 +276,17 @@ them into cards of this granularity after the Phase-7 gate.
 | 2 | Levers live for agents in v1 | price, production target, capex (everything else on autopilot, all levers implemented) |
 | 3 | Information policy default | `professional` for training worlds, `game` selectable per world |
 | 4 | Tick / cadence | 1 day; real monthly; policy quarterly |
-| 5 | v1 asset universe | 18 sector-equity instruments, agent-firm shares, 1 government bond (10y benchmark) + cash, 3 commodities (OIL←ENERGY, METALS←MATERIALS, GRAINS←AGRIFOOD) |
+| 5 | v1 asset universe | 18 sector-equity instruments, agent-firm shares, 3 government bond buckets (`GB_BILL`, `GB_NOTE`, `GB_BOND`), the corporate bond pool (`CORP_POOL`), cash, 3 commodities (OIL←ENERGY, METALS←MATERIALS, GRAINS←AGRIFOOD) |
 | 6 | Stack | Python + NumPy, FastAPI; Rust later if profiling demands |
 | 7 | RL reward | operators: Δ(equity value) + dividends; traders: risk-adjusted P&L; both report net worth |
 | 8 | Calibration flavour | generic developed economy (BEA IO, FRED/BLS moments); Korea-flavoured set optional later |
 | 9 | Goods layer beneath consumer-facing sectors | decide after Phase 3 (T3.16) |
 | 10 | Commercial use | in scope → licence rule in AGENTS.md |
+| 11 | Who runs `GOVT` and `CENBANK` | autopilot; `scripted` for scenarios; `agent` only when a client registers the `policymaker` role. A policymaker cannot also hold a trading account in professional mode |
+| 12 | Scope of the common borrowing rate | all firms (NPC cells and agent firms), bank loans and the corporate pool, all regions; households and the government are **not** covered. In a future multi-country world (T9.01) it becomes one rate per currency unless decided otherwise |
+| 13 | Sovereign default | none in v1 (own-currency issuer); fiscal stress shows up as a term premium rising with debt/GDP and issuance |
+| 14 | Monetary strategy | flexible inflation targeting with a dual mandate; makeup strategies shipped but **off** (see §2.14.3) |
+| 15 | Lean vs clean | credit and house prices act on macroprudential levers, not the policy rate (`phi_credit: 0`) |
 
 ## 13. What the prototype established (numbers the Phase-2 gate is built on)
 
@@ -301,6 +316,18 @@ All with the unchanged Layer-1 config, single region, monthly step, no ledger/ba
 - **Leak sweep**: with the proportional stock-gap controller the loop is bounded for leak ×0, ×1, ×3. The V3
   experiment diverged because of an integrating controller. Leaks stay (decision), but stability does not rest on them.
 - A prototype bug (clipping firm debt at zero) silently leaked money — the practical case for ledger-first.
+- **One borrowing rate (D14) re-verified** (`credit_pricing="uniform"` in the reference prototype): exact steady state at
+  π\* ∈ {0, 2 %}; all sign tests pass; monetary +100bp → trough −0.29 % at month 16, rebound 0.41, AUTOS m10 < CONSTRUCT m17 <
+  CAPGOODS m19; 100-year runs bounded (gap −2.2…+3.0 %, U 3.0–6.4 %). Aggregate dynamics barely change; what is lost is the
+  *price* penalty on leverage, so quantity limits carry the discipline. Bond arithmetic checked: the 10-year bucket (decay
+  0.10/yr) has duration 7.07 years — equal to `bond_index.duration` — and loses 2.4 % on a +35bp yield move.
+- **Monetary framework (D15) tested in the prototype.** Dual mandate (φ_u 1.0), 8 meetings, 25bp grid with a 10bp deadband,
+  1-month data lag and r\* on trend growth: steady state still exact, all sign tests pass, monetary trough −0.28 % at month
+  15, 100-year runs bounded at ≈ 4.1 rate moves a year averaging 28bp. φ_u 2.0 is too aggressive (sd(π) 1.10 → 1.24).
+  Acting on published data instead of the truth costs little and monotonically: sd(π) 1.08 → 1.21 as the lag goes 0 → 3
+  months. Reacting to core rather than headline inflation cut the cost-push GDP trough from −2.86 % to −2.56 %.
+  **An unbounded makeup term destabilised the economy** (−93 % output gap, 73 % unemployment); leaky (0.98/month) and
+  clipped (±2 pp) it is bounded — the same lesson as the undamped inventory stock.
 
 ## 14. Deliberate differences from the source docs
 
@@ -314,6 +341,11 @@ All with the unchanged Layer-1 config, single region, monthly step, no ledger/ba
 | brief §7 | sector equities include listed agent firms | tradable instrument = NPC sector equity; *published index* is cap-weighted incl. listed agent firms | finite float, SFC-clean |
 | landscape | separate matching-engine process | in-process `Venue` interface | D7, daily ticks |
 | brief §4.6 | VAT | implemented, default rate 0 (baseline verified without it) | keep verified steady state |
+| `edges.yaml` | `credit.spread_scaling: nd_ebitda / 2.5` | unused under `credit.pricing: uniform` (default); active only in `risk_based` | D14 |
+| brief §7, §5.5 | corporate debt = rate + spread by rating/leverage | one global spread; ratings drive credit **limits** and disclosure, not price | D14 |
+| brief §4.6, `edges.yaml: policy` | government and central bank follow fixed rules | the rules are the *autopilot* of policy authorities with levers | D13 |
+| `edges.yaml: policy.taylor` | quarterly rule on inflation and the output gap | 8-meeting committee, dual mandate, core blend, time-varying r\*, 25bp grid, published vintages; `phi_inflation` and `smoothing` still come from this block | D15 |
+| brief §7 | government bonds priced from the expected path + term premium | same fair value, plus a real market: maturity buckets, auctions, secondary trading, central-bank operations, supply effects | D12 |
 
 ## 15. Risk register
 
@@ -327,6 +359,10 @@ All with the unchanged Layer-1 config, single region, monthly step, no ledger/ba
 | Python throughput (≥1,000 ticks/s) | real step monthly (amortised), vectorised market tick, debug journal off in training, profile before Rust |
 | RL agents exploiting the simulator | hidden state, noise, domain randomisation, position limits, adversarial tests, surveillance |
 | Agent-firm abuse (zero prices, cornering, max leverage, self-pumping, collusion) | hard budget constraint, leverage cap, size limits, NPC entry, share stickiness, bankruptcy in bounded time, fixed-NPC evaluation |
+| Moral hazard from one borrowing rate (max leverage is not priced; default losses are mutualised) | leverage caps, collateral limits, gate rationing, bounded bankruptcy; losses raise the common spread for everyone (visible externality); optional regulator levy (T8.08); adversarial max-leverage test stays |
+| A policy agent (or player) drives the economy to extremes | lever ranges and per-period change limits, legislative lags, everything financed on the ledger, bounded price steps; adversarial policy test (T2.31) |
+| Integrator terms in policy rules (makeup strategies, any cumulative gap) | leak and clip mandatory, rejected at config load otherwise; stability suite per strategy (T2.34) |
+| Bond ledger complexity (many issues and coupons) | three fungible decaying-coupon buckets instead of individual issues; par pricing until Phase 6 so Phases 2–5 are unaffected |
 | Scope creep | Mizuta's principle; no subsystem without a card; human gates |
 
 ## 16. Glossary

@@ -11,6 +11,8 @@ testing/training environment for trading and firm-operating agents and (2) the b
 the same API. One country with several regions, 18 sectors on an input-output backbone, five institutional nodes
 (HOUSEHOLD, GOVT, CENBANK, ROW, LABOUR), random real-world-style events that sometimes cascade, agents that trade
 assets **and** own/operate firms whose shares other agents can buy. The engine prices assets; strategies live outside.
+Government and central bank are policy authorities with levers (autopilot, scripted or agent-controlled); government
+and pooled corporate bonds trade in a bond market; every firm borrows at one common rate.
 
 ## How to work
 
@@ -58,6 +60,15 @@ assets **and** own/operate firms whose shares other agents can buy. The engine p
 13. **Licence posture:** own implementation, permissive dependencies only (MIT/BSD/Apache-2.0/PSF). Never copy
     code from unlicensed repos (e.g. AlphaTrade/JAX-LOB) or EPL projects (PAMS). Papers and ideas are fine.
 14. **Scope discipline (Mizuta):** model only the mechanism the question needs. No new subsystem without a card.
+15. **No unbounded integrators in feedback loops.** Any rule that accumulates a gap (price-level makeup terms, inventory
+    stocks, cumulative deficits feeding a reaction function) must leak and be clipped. Verified twice: undamped inventory
+    stocks diverge at every gain, and an unbounded makeup term produced a −93 % output gap.
+16. **Policy is a lever set with an autopilot.** `GOVT` and `CENBANK` act only through the policy-authority framework
+    (`autopilot | scripted | agent`). Never hard-code a policy reaction anywhere else. Every policy action is financed
+    and posted on the ledger — nothing by fiat.
+17. **One corporate borrowing rate.** With `credit.pricing: uniform` (default) no loan or bond price may depend on firm,
+    sector, region or rating: it is `policy rate (or the matching government yield) + one global spread`. Leverage is
+    disciplined by quantity limits (caps, collateral, rationing), never by price.
 
 ## Coding standards
 

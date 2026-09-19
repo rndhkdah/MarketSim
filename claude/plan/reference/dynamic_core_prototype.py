@@ -6,8 +6,8 @@ Single region, NPC mass only, monthly step, no ledger, no banks, no typed edges.
 equations in the plan are stable, give hump-shaped impulse responses and an exact steady state at pi* = 0 and 2 %
 with the unchanged Layer-1 config, and to pin the unit contract of edges.yaml:capex.coefficients.
 
-Known differences from the plan: (1) the whole cost-of-capital gap is scaled by max(nd,0.5)/2.5 (plan: only the
-spread term); (2) households hold firm debt directly (plan: through BANKSYS); (3) debt is a plain array, not ledger
+Known differences from the plan: (1) credit_pricing="risk_based" scales the whole cost-of-capital gap by
+max(nd,0.5)/2.5 (plan: only the spread term); the default "uniform" mode matches the plan (D14); (2) households hold firm debt directly (plan: through BANKSYS); (3) debt is a plain array, not ledger
 postings. `smooth_mode="real"` is kept only to reproduce the finding that deflating by realised CPI removes a damper.
 
 Run:  python claude/plan/reference/prototype_checks.py        (add --slow for the 100-year stochastic runs)
@@ -83,6 +83,22 @@ def default_params():
         tau_u=1.0,             # months, smoothing of the utilisation signal used by capex
         kap_B=0.04,            # per year: tax-rate response to debt-ratio gap (fiscal reaction function)
         kap_D=0.03,            # per year: share of excess firm debt repaid out of dividends
+        # --- monetary policy framework (see plan 02-... §2.14). Defaults reproduce the
+        # simple quarterly Taylor rule bitwise; every extension is off by default.
+        meetings_per_year=4,   # 8 = Fed-like calendar
+        rate_step=0.0,         # 0.0025 = announce in 25bp increments
+        deadband=0.0,          # do not move unless the smoothed target is this far from the current rate
+        phi_u=0.0,             # unemployment-gap coefficient (dual mandate); 0 = output gap only
+        phi_y_mult=1.0,        # scale on the config output-gap coefficient
+        data_lag_m=0,          # months of publication lag on the inflation / unemployment the rule sees
+        rstar_kappa=0.0,       # r* moves with trend growth
+        rstar_tau_m=60.0,
+        makeup=0.0,            # weight on the price-level gap (average-inflation targeting)
+        makeup_decay=1.0,      # 1.0 = pure integrator (UNSTABLE, verified); <1 = leaky memory
+        makeup_clip=0.05,      # bound on the price-level gap the rule reacts to
+        sahm_cut=0.0,          # extra easing (annual decimal) when the Sahm rule triggers
+        credit_pricing="uniform",      # "uniform": every firm borrows at policy + ONE global spread (decision D14)
+                                       # "risk_based": spread and cost-of-capital sensitivity scale with nd_ebitda/2.5
         smooth_mode="nominal_drift",   # "nominal_drift": smooth nominal values, drift-compensated by expected inflation
                                        # "real": smooth CPI-deflated values (kills nominal income illusion)
     )
@@ -221,14 +237,17 @@ class Economy:
         self.sales_ma = self.s0.copy()
         # policy
         self.pi_e = P["pi_star"]; self.r = self.r_n + P["pi_star"]; self.infl12 = P["pi_star"]
-        self.r_rule = self.r
+        self.r_rule = self.r; self.r_ann = self.r
+        self.hist_pi = [P["pi_star"]] * 26; self.hist_gap = [0.0] * 26; self.hist_U = [P["U_star"]] * 26
+        self.g_trend = 0.0; self.gdp_prev = None; self.plevel_gap = 0.0; self.n_moves = 0; self.move_size = 0.0
         self.cpi_hist = [G ** (k - 12) for k in range(13)]
         self.rate_gap_s = Smooth(2, P["dem_rate_lag_m"], 0.0)
         # firm debt from nd_ebitda
         eb0 = self.s0 - (self.mu + self.ell + self.m) * x0      # revenue on SALES, cost on OUTPUT
         self.eb0 = eb0
         self.debt = self.nd * 12 * eb0
-        self.spread = 0.015 * np.maximum(self.nd, 0.2) / 2.5
+        self.uniform = P["credit_pricing"] == "uniform"
+        self.spread = np.full(S, 0.015) if self.uniform else 0.015 * np.maximum(self.nd, 0.2) / 2.5
         # baseline income accounting -> solve tax rate and household wealth
         r0 = self.r
         wages0 = self.n.sum() * self.w
@@ -258,6 +277,7 @@ class Economy:
         self.YD_e = YD0; self.YD0 = YD0; self.tau_y_eff = self.tau_y
         self.G_real = self.fG0.copy()
         self.gdp0 = (self.s0 - (self.mu + self.m) * x0).sum()     # spoilage is a loss of output
+        self.gdp_prev = self.gdp0
         self.theta = self.fC0 / self.fC0.sum()
         self.markup = 1.0 / (self.A.sum(0) + self.ell + self.m)   # p*=1 at baseline
         self.sh = dict(dem=0.0, cost=np.zeros(S), mon=0.0, sup=np.zeros(S), fisc=0.0, row=0.0)
@@ -292,7 +312,7 @@ class Economy:
         g_exp = (1 - P["anchor_g"]) * self.g_e
         rate = P["delta_a"] + P["capex_unit"] * (
             self.phi * g_exp * 100.0 + self.psi * ((u - self.ustar) - sl) * 100.0
-            - self.chi * cc_gap * np.maximum(self.nd, 0.5) / 2.5)
+            - self.chi * cc_gap * (1.0 if self.uniform else np.maximum(self.nd, 0.5) / 2.5))
         rate = np.clip(rate, 0.0, P["rate_cap"] * P["delta_a"])
         starts = self.K * rate / 12
         spend_real = self.spend.push(self.v * starts)
@@ -428,12 +448,33 @@ class Economy:
         self.pi_e += ((P["anchor"] * P["pi_star"] + (1 - P["anchor"]) * self.infl12) - self.pi_e) / 6.0
         gdp = (x - self.leak * inv_prev - (self.mu + self.m) * x).sum()
         gap = gdp / self.gdp0 - 1
-        if self.t % 3 == 2:
-            t_ = self.tay
-            target = self.r_n + P["pi_star"] + t_["phi_inflation"] * (pol_infl - P["pi_star"]) \
-                + t_["phi_output_gap"] * gap
-            self.r_rule = t_["smoothing"] * self.r_rule + (1 - t_["smoothing"]) * target
-        self.r = max(0.0, self.r_rule + sh["mon"])
+        # ---- monetary policy framework -------------------------------------------------
+        t_ = self.tay
+        self.hist_pi.append(pol_infl); self.hist_gap.append(gap); self.hist_U.append(U)
+        self.g_trend += (12 * np.log(max(gdp, 1e-9) / max(self.gdp_prev, 1e-9)) - self.g_trend) / P["rstar_tau_m"]
+        self.gdp_prev = gdp
+        self.plevel_gap = P["makeup_decay"] * self.plevel_gap + (pol_infl - P["pi_star"]) / 12
+        mpy = P["meetings_per_year"]
+        meeting = (self.t + 1) * mpy // 12 > self.t * mpy // 12
+        if meeting:
+            L = int(P["data_lag_m"])
+            pi_s = self.hist_pi[-1 - L]; gap_s = self.hist_gap[-1 - L]; U_s = self.hist_U[-1 - L]
+            rstar = self.r_n + P["rstar_kappa"] * self.g_trend
+            target = rstar + P["pi_star"] + t_["phi_inflation"] * (pi_s - P["pi_star"]) \
+                + P["phi_y_mult"] * t_["phi_output_gap"] * gap_s + P["phi_u"] * (P["U_star"] - U_s) \
+                + P["makeup"] * float(np.clip(self.plevel_gap, -P["makeup_clip"], P["makeup_clip"]))
+            if P["sahm_cut"] > 0 and len(self.hist_U) >= 15:
+                u3 = np.mean(self.hist_U[-3 - L:len(self.hist_U) - L]); u_min = min(self.hist_U[-15 - L:-3 - L])
+                if u3 - u_min >= 0.005:
+                    target -= P["sahm_cut"]
+            rho = t_["smoothing"] ** (4.0 / mpy)
+            self.r_rule = rho * self.r_rule + (1 - rho) * target
+            cand = self.r_rule if P["rate_step"] <= 0 else round(self.r_rule / P["rate_step"]) * P["rate_step"]
+            if abs(cand - self.r_ann) > P["deadband"] - 1e-15:
+                if cand != self.r_ann:
+                    self.n_moves += 1; self.move_size += abs(cand - self.r_ann)
+                self.r_ann = cand
+        self.r = max(0.0, self.r_ann + sh["mon"])
         self.t += 1
         rec = dict(t=self.t, gdp=gdp, gap=gap, cpi=cpi, infl=self.infl12, r=self.r, U=U, x=x.copy(),
                    p=self.p.copy(), K=self.K.copy(), inv=self.inv.copy(), I=spend_real.sum() + res_real, Ires=res_real,

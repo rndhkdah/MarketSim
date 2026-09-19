@@ -20,8 +20,8 @@ market; pacing (pause, speed), narrative event text, save / load, scoring (net w
 
 ### T8.01 — Financing depth
 **Depends:** T7.14 · **Size:** L · **Files:** `src/marketsim/firms/financing.py`, `src/marketsim/pricing/bonds.py`
-**Build:** corporate bonds (fixed coupon, maturities, refinancing risk), term loans, covenants; corporate debt priced at
-rate + rating spread. **Tests:** refinancing wall under a closed credit gate produces distress; SFC green.
+**Build:** term loans with maturities and refinancing risk, covenants, committed vs uncommitted lines, extra pool maturities —
+all at the common corporate rate (D14; pooled corporate bonds already exist from T6.29). **Tests:** refinancing wall under a closed credit gate produces distress; SFC green.
 
 ### T8.02 — Supply contracts
 **Depends:** T7.14 · **Size:** M · **Files:** `src/marketsim/firms/contracts.py`

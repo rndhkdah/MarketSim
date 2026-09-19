@@ -3,6 +3,7 @@
 Rule: take the **lowest-numbered unchecked task whose dependencies are all checked** (or the one the human names).
 Tick it as `- [x] T2.07 — … — 2026-10-02, short note`. One task per session. Gates are ticked by the human.
 Sizes: S ≤ ~150 LOC · M ≤ ~400 · L ≤ ~800 (incl. tests). Cards live in the phase files; `deps` repeats the card.
+v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.32–T2.35 (monetary framework) and T6.32.
 
 ## Phase 0 — Foundation (15 tasks) — `01-phase0-foundation.md`
 
@@ -24,7 +25,7 @@ Sizes: S ≤ ~150 LOC · M ≤ ~400 · L ≤ ~800 (incl. tests). Cards live in t
 
 - [ ] **GATE P0** — human review against the gate in the phase file
 
-## Phase 2 — Ledger + dynamic real economy (26 tasks) — `02-phase2-dynamic-layer.md`
+## Phase 2 — Ledger + dynamic real economy + policy authorities + monetary framework (35 tasks) — `02-phase2-dynamic-layer.md`
 
 - [ ] T2.01 — `dynamics.yaml` and its schema · S · deps: T0.14
 - [ ] T2.02 — Ledger core · M · deps: T0.11
@@ -52,6 +53,15 @@ Sizes: S ≤ ~150 LOC · M ≤ ~400 · L ≤ ~800 (incl. tests). Cards live in t
 - [ ] T2.24 — Stability runs, sweeps, moments report · M · deps: T2.23
 - [ ] T2.25 — Performance baseline · S · deps: T2.17
 - [ ] T2.26 — CES substitution on intermediates (optional, off by default) · M · deps: T2.23 · **HUMAN GATE**
+- [ ] T2.27 — Policy-authority framework (D13) · M · deps: T2.13, T2.14, T2.18
+- [ ] T2.28 — Fiscal instruments · M · deps: T2.27, T2.16
+- [ ] T2.29 — Monetary and macroprudential instruments · M · deps: T2.27, T2.20
+- [ ] T2.30 — One corporate borrowing rate (D14) · S · deps: T2.20
+- [ ] T2.31 — Policy validation · M · deps: T2.28, T2.29, T2.23
+- [ ] T2.32 — Monetary policy framework: committee, calendar, reaction function (D15) · M · deps: T2.27, T2.29
+- [ ] T2.33 — The committee's information set (published vintages) · S · deps: T2.32, T4.07
+- [ ] T2.34 — Strategy options: makeup, risk management, financial conditions · M · deps: T2.32, T2.20
+- [ ] T2.35 — Monetary validation and the policy-rule report · M · deps: T2.33, T2.34, T2.31
 
 - [ ] **GATE P2** — human review against the gate in the phase file
 
@@ -76,7 +86,7 @@ Sizes: S ≤ ~150 LOC · M ≤ ~400 · L ≤ ~800 (incl. tests). Cards live in t
 
 - [ ] **GATE P3** — human review against the gate in the phase file
 
-## Phase 4 — Events (13 tasks) — `04-phase4-events.md`
+## Phase 4 — Events (14 tasks) — `04-phase4-events.md`
 
 - [ ] T4.01 — Event schema and loader · M · deps: T2.18
 - [ ] T4.02 — Shock-composition engine · M · deps: T4.01
@@ -91,6 +101,7 @@ Sizes: S ≤ ~150 LOC · M ≤ ~400 · L ≤ ~800 (incl. tests). Cards live in t
 - [ ] T4.11 — Template direction tests · M · deps: T4.08, T4.09
 - [ ] T4.12 — Firm-level event hooks · S · deps: T4.03
 - [ ] T4.13 — Magnitude calibration · M · deps: T4.11 · **HUMAN GATE**
+- [ ] T4.14 — Policy events under scripted or agent-controlled authorities (D13) · S · deps: T4.05, T2.27
 
 - [ ] **GATE P4** — human review against the gate in the phase file
 
@@ -118,7 +129,7 @@ Sizes: S ≤ ~150 LOC · M ≤ ~400 · L ≤ ~800 (incl. tests). Cards live in t
 
 - [ ] **GATE P5** — human review against the gate in the phase file
 
-## Phase 6 — Asset pricing and markets (23 tasks) — `06-phase6-pricing-markets.md`
+## Phase 6 — Asset pricing, markets and the bond market (32 tasks) — `06-phase6-pricing-markets.md`
 
 - [ ] T6.01 — `markets.yaml` and the instrument registry · S · deps: T2.03
 - [ ] T6.02 — Earnings expectations from public information · S · deps: T4.07, T2.21
@@ -143,10 +154,19 @@ Sizes: S ≤ ~150 LOC · M ≤ ~400 · L ≤ ~800 (incl. tests). Cards live in t
 - [ ] T6.21 — Tier-1 / Tier-2 statistics and the regime flip · M · deps: T6.09, T6.06, T6.07
 - [ ] T6.22 — Domain randomisation and hidden state · S · deps: T6.06
 - [ ] T6.23 — Market performance · S · deps: T6.21
+- [ ] T6.24 — Bond buckets: instruments, arithmetic, par ↔ market switch (D12) · M · deps: T6.01, T2.16
+- [ ] T6.25 — Bucket fair yields and term premium · M · deps: T6.03, T6.24
+- [ ] T6.26 — Debt-management office and auctions · M · deps: T6.25, T2.28
+- [ ] T6.27 — Secondary bond market and NPC holders · M · deps: T6.24, T6.08, T6.09
+- [ ] T6.28 — Central-bank operations: QE, QT, open-market operations · M · deps: T6.27, T2.29
+- [ ] T6.29 — Corporate bond pool · M · deps: T6.24, T2.30, T5.10
+- [ ] T6.30 — Financial-sector bond holdings and mark-to-market · S · deps: T6.27
+- [ ] T6.31 — Bond-market validation report · S · deps: T6.26, T6.28, T6.29, T6.30
+- [ ] T6.32 — Policy surprises and announcement effects · S · deps: T6.25, T2.32
 
 - [ ] **GATE P6** — human review against the gate in the phase file
 
-## Phase 7 — API and SDK (15 tasks) — `07-phase7-api-sdk.md`
+## Phase 7 — API and SDK (17 tasks) — `07-phase7-api-sdk.md`
 
 - [ ] T7.01 — Versioned API schemas · M · deps: T6.12, T5.06
 - [ ] T7.02 — Sessions, worlds, accounts · M · deps: T7.01
@@ -163,6 +183,8 @@ Sizes: S ≤ ~150 LOC · M ≤ ~400 · L ≤ ~800 (incl. tests). Cards live in t
 - [ ] T7.13 — Throughput and profiling · S · deps: T7.12
 - [ ] T7.14 — End-to-end multi-agent training smoke run · M · deps: T7.09, T7.11
 - [ ] T7.15 — API documentation and quickstart · S · deps: T7.07
+- [ ] T7.16 — Policy-maker role and endpoints (D13) · M · deps: T7.04, T2.31
+- [ ] T7.17 — Bond-market endpoints · S · deps: T7.04, T6.26
 
 - [ ] **GATE P7** — human review against the gate in the phase file
 

@@ -15,6 +15,8 @@ per hop, max depth, category cooldowns and a global concurrency cap.
    finite, SFC holds, |gap| < 25 %, concurrency and depth caps are never exceeded.
 3. Each historic template reproduces the historic **directions** in §4.5.
 4. Same seed → same event history; event RNG is isolated (adding an agent does not change which events fire).
+5. **Policy events respect who is in charge (D13):** they act by setting policy levers; when `GOVT` or `CENBANK` is
+   `scripted` or `agent`-controlled, scripted policy follow-ups are not executed — they arrive as "policy pressure" news.
 
 ## 4.2 Schema (`config/events/*.yaml`)
 
@@ -168,3 +170,11 @@ concurrency never > cap; a graph with Σp > 0.9 or a cycle is rejected at load; 
 **Build:** for every `verify: true` figure, find a primary source (FRED, BLS, EIA, BEA, central-bank publications),
 replace the seed with a distribution, fill `historic_reference.source`. **Tests:** no `verify: true` left; §4.5 still green.
 **Out of scope:** tuning the economy to match magnitudes (that is T8.04).
+
+### T4.14 — Policy events under scripted or agent-controlled authorities (D13)
+**Depends:** T4.05, T2.27 · **Size:** S · **Files:** `src/marketsim/events/chains.py`, `src/marketsim/events/effects.py`, `tests/unit/events/test_policy_followups.py`
+**Read first:** `02-…` §2.13. **Build:** events of `category: policy` (`fiscal_stimulus`, `monetary_tightening`, `energy_subsidy`,
+`vat_change`, `trade_tariff`, `policy_surprise`) act by **setting policy levers** through the authority framework (the `fiscal`
+and `monetary` primitives stay available to tests and scripted scenarios). If the authority is not on autopilot the follow-up
+is suppressed and published as a "policy pressure" `NewsItem` — the script or the agent decides. **Tests:** gate 5 in all
+three control modes; the COVID chain with an agent-run government fires no automatic stimulus; event RNG isolation unchanged.

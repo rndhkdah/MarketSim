@@ -15,6 +15,19 @@ Pre-recorded (accepted 2026-09-19, rationale in `00-MASTER-PLAN.md` §13–§14)
 - ADR-P7 Tradable sector instrument = NPC sector equity; published sector index also includes listed agent firms.
 - ADR-P8 Matching engine in-process behind a `Venue` protocol.
 
+Accepted 2026-09-19 (v1.1):
+
+- ADR-P9 Bond market: three fungible decaying-coupon government buckets + one pooled corporate bond; par pricing until Phase 6.
+- ADR-P10 `GOVT` and `CENBANK` are policy authorities with levers; control = autopilot | scripted | agent.
+- ADR-P11 One corporate borrowing rate (`credit.pricing: uniform`); `edges.yaml: credit.spread_scaling` unused in this mode;
+  ratings drive limits, not price.
+
+Accepted 2026-09-19 (v1.2):
+
+- ADR-P12 Monetary policy framework (D15): 8-meeting committee, dual mandate (φ_u 1.0, φ_y 0), core weight 0.5, r\* on
+  trend growth, 25bp grid + 10bp deadband, decisions on published vintages. Makeup strategies off by default and only
+  ever leaky + clipped; risk-management, financial-conditions and credit terms shipped off.
+
 ## ADR-000 — target layout
 
 - date: 2026-09-19
@@ -71,3 +84,11 @@ Reproduced target (numpy 2.4 / scipy 1.17 sandbox):
 - context: No legacy `sectors.yaml` / `betas.md`. Rotation (early AUTOS/CONSTRUCT/CAPGOODS/TRANSPORT/SOFTWARE, recession STAPLES/HEALTH/REALESTATE/UTILITIES/TELECOM) and the seed-7 regime windows are published goldens. Growth betas are `derive-don't-assert` from Leontief cyclicality + eta + capex routing.
 - decision: Keep the mechanism; calibrate `eta` (AGRIFOOD 0.95, SEMIS 1.15, UTILITIES 0.12, TRANSPORT 1.95, SOFTWARE 2.35, TELECOM 0.18, INSURANCE 1.05, REALESTATE 0.50) so the top/bottom five `beta_growth` match those sets. Regime Monte-Carlo knobs live on `BetasParams` (oil_own 4.80, demand Taylor 0.085, supply oil vol 0.032) so seed 7 hits −0.74 / +0.90 ±0.02 and 13/18 flips. Not a bit-identical `betas.md`.
 - consequences: Changing an eta or a `BetasParams` demo volume to chase a new golden needs a new ADR. Rotation tests assert *sets*, not order.
+
+## ADR-005 — plan upgraded v1.0 → v1.2
+
+- date: 2026-09-19
+- status: proposed
+- context: The Phase 0 tree was built against the v1.0 pack. A later zip (v1.2 — D15 monetary framework) adds D12–D15 and new cards without changing Phase 0 or Phase 3, or the Layer-1 goldens.
+- decision: Adopt the v1.2 pack as the spec. Replace `marketsim/claude/plan/` (and the store `docs/marketsim-plan/` copy) with that pack. Keep reconstruction QUESTIONS (T0.01 / T0.05 / T0.02 / T0.15) and ADRs 000–004. Phase 0 code, World skeleton, and Layer-1 goldens stay unchanged. New cards stay unticked.
+- consequences: After GATE P0 the next named card is still T2.01. D14/D15 first affect T2.01 → T2.14 / T2.27+. `policy.yaml` is T2.27/T2.32; `bonds.yaml` is T6.24. AGENTS.md rules 15–17 apply from this ADR.
