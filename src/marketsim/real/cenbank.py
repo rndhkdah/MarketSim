@@ -8,7 +8,7 @@ import numpy as np
 
 from marketsim.core.clock import EventQueue
 from marketsim.core.config import Config
-from marketsim.real.policy.monetary_rule import MonetaryRule
+from marketsim.real.policy.monetary_rule import MonetaryRule, elb_toolkit
 
 
 def seed_price_history(g: float, n: int = 13) -> list[float]:
@@ -90,6 +90,16 @@ class CentralBank:
     def pi3(self) -> float:
         return infl_n(self.cpi_hist, 3)
 
+    def pi_pol(self) -> float:
+        w = self.framework.core_weight if self.framework is not None else self.core_weight
+        return policy_inflation(
+            self.pi3(),
+            self.pi12(),
+            infl_n(self.core_hist, 3),
+            infl_n(self.core_hist, 12),
+            w,
+        )
+
     def observe_prices(self, cpi: float, core: float) -> None:
         self.cpi_hist.append(float(cpi))
         self.cpi_hist.pop(0)
@@ -112,13 +122,27 @@ class CentralBank:
         smoothing: float | None = None,
         u: float | None = None,
         g_obs: float = 0.0,
-        makeup: float = 0.0,
-        fci: float = 0.0,
-        risk_off: float = 0.0,
+        makeup: float | None = None,
+        fci: float | None = None,
+        risk_off: float | None = None,
+        spread: float = 0.0,
+        s0: float = 0.0,
+        gate: float = 1.0,
+        guidance: float | None = None,
+        credit_gap: float = 0.0,
     ) -> bool:
         """If this month is a meeting, update ``r_rule`` and ``r``. Returns True on a meeting."""
+        u_now = self.u_star if u is None else float(u)
         if self.framework is not None:
             self.framework.update_rstar(g_obs)
+            self.framework.update_strategy(
+                pi_pol=self.pi_pol(),
+                pi_star=self.pi_star,
+                u=u_now,
+                spread=spread,
+                s0=s0,
+                gate=gate,
+            )
             met = self.framework.is_meeting(self.month)
         else:
             met = is_quarter_end_month(self.month)
@@ -143,59 +167,81 @@ class CentralBank:
                 if self.framework is not None:
                     self.framework.r_ann = float(rate_override)
             elif self.framework is not None:
-                self._framework_meet(gap, z_mon, u=u, g_obs=g_obs, makeup=makeup, fci=fci, risk_off=risk_off)
-            else:
-                pi_pol = policy_inflation(
-                    self.pi3(),
-                    self.pi12(),
-                    infl_n(self.core_hist, 3),
-                    infl_n(self.core_hist, 12),
-                    self.core_weight,
+                self._framework_meet(
+                    gap,
+                    z_mon,
+                    u=u_now,
+                    makeup=makeup,
+                    fci=fci,
+                    risk_off=risk_off,
+                    guidance=guidance,
+                    credit_gap=credit_gap,
                 )
-                target = taylor_target(self.r_n, self.pi_star, self.phi_pi, self.phi_y, pi_pol, gap)
+            else:
+                target = taylor_target(self.r_n, self.pi_star, self.phi_pi, self.phi_y, self.pi_pol(), gap)
                 self.r_rule = self.rho * self.r_rule + (1.0 - self.rho) * target
                 self.r = max(self.elb, self.r_rule + z_mon)
         else:
             announced = self.framework.r_ann if self.framework is not None else self.r_rule
-            self.r = max(self.elb, announced + z_mon)
+            if self.framework is not None:
+                self._apply_elb(announced, z_mon, gap, guidance)
+            else:
+                self.r = max(self.elb, announced + z_mon)
         self.month += 1
         return met
+
+    def _apply_elb(self, shadow: float, z_mon: float, gap: float, guidance: float | None) -> None:
+        """Record the shadow rate; at the ELB engage guidance then QE (LOLR is a lever)."""
+        fw = self.framework
+        if fw is None:
+            self.r = max(self.elb, shadow + z_mon)
+            return
+        engaged, r_elb, qe = elb_toolkit(
+            shadow=shadow,
+            elb=self.elb,
+            gap=gap,
+            guidance=guidance,
+            credibility=fw.guidance_cred,
+            qe_per_gap=fw.qe_per_gap,
+        )
+        fw.shadow_rate = float(shadow)
+        fw.qe_intent = qe
+        fw.last_elb_tools = engaged
+        self.r = max(self.elb, r_elb + z_mon)
 
     def _framework_meet(
         self,
         gap: float,
         z_mon: float,
         *,
-        u: float | None,
-        g_obs: float,
-        makeup: float,
-        fci: float,
-        risk_off: float,
+        u: float,
+        makeup: float | None,
+        fci: float | None,
+        risk_off: float | None,
+        guidance: float | None,
+        credit_gap: float,
     ) -> None:
-        del g_obs
         assert self.framework is not None
         fw = self.framework
-        pi_pol = policy_inflation(
-            self.pi3(),
-            self.pi12(),
-            infl_n(self.core_hist, 3),
-            infl_n(self.core_hist, 12),
-            fw.core_weight,
-        )
         r_rule, r_ann, payload = fw.decide(
             r_n=self.r_n,
             pi_star=self.pi_star,
-            pi_pol=pi_pol,
-            u=self.u_star if u is None else float(u),
+            pi_pol=self.pi_pol(),
+            u=u,
             u_star=self.u_star,
             gap=gap,
             r_rule=self.r_rule,
-            makeup=makeup,
-            fci_tighten=fci,
-            risk_off=risk_off,
+            makeup=fw.last_makeup if makeup is None else makeup,
+            fci_tighten=fw.last_fci if fci is None else fci,
+            risk_off=fw.last_risk_off if risk_off is None else risk_off,
+            credit_gap=credit_gap,
         )
         self.r_rule = r_rule
-        self.r = max(self.elb, r_ann + z_mon)
+        self._apply_elb(r_ann, z_mon, gap, guidance)
+        payload = dict(payload)
+        payload["shadow"] = fw.shadow_rate
+        payload["elb_tools"] = list(fw.last_elb_tools)
+        payload["qe"] = fw.qe_intent
         self.last_payload = payload
 
     def schedule_meetings(self, queue: EventQueue, horizon_months: int, days_per_month: int = 21) -> None:

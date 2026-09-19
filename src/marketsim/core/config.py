@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from marketsim.core.errors import ConfigError
 
@@ -522,6 +522,16 @@ class MonetaryStrategyCfg(FrozenModel):
     makeup: float = 0.0
     makeup_decay: float = 0.98
     makeup_clip: float = 0.02
+
+    @model_validator(mode="after")
+    def _makeup_must_leak(self) -> MonetaryStrategyCfg:
+        if self.makeup > 0 and (self.makeup_decay >= 1.0 or self.makeup_clip <= 0):
+            raise ValueError(
+                "makeup>0 requires makeup_decay<1 and makeup_clip>0 "
+                "(prototype: makeup 0.2 with no leak/clip gave a −93 % output gap "
+                "and 73 % unemployment over 100 years)"
+            )
+        return self
 
 
 class RiskManagementCfg(FrozenModel):

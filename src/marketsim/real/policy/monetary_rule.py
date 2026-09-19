@@ -60,6 +60,8 @@ def reaction_target(
     makeup: float = 0.0,
     fci_tighten: float = 0.0,
     risk_off: float = 0.0,
+    phi_credit: float = 0.0,
+    credit_gap: float = 0.0,
 ) -> float:
     """§2.14.2 target (annual decimal). Strategy terms default off."""
     r_star = r_n + kappa_rstar * g_trend
@@ -72,6 +74,7 @@ def reaction_target(
         + makeup
         - fci_tighten
         - risk_off
+        + phi_credit * credit_gap
     )
 
 
@@ -84,6 +87,78 @@ def statement_tone(pi_pol: float, pi_star: float, u: float, u_star: float) -> in
     if infl < -0.002 or slack > 0.002:
         return -1
     return 0
+
+
+def step_plevel_gap(plevel: float, pi_pol: float, pi_star: float, decay: float, clip: float) -> float:
+    """Leaky cumulative price-level gap, clipped to ``±clip``. Units: log-points."""
+    nxt = float(decay) * float(plevel) + (float(pi_pol) - float(pi_star)) / 12.0
+    lim = abs(float(clip))
+    return max(-lim, min(lim, nxt))
+
+
+def sahm_risk_off(
+    u_hist: list[float],
+    *,
+    threshold: float,
+    cut: float,
+    decay_m: int,
+    residual: float,
+) -> tuple[float, float]:
+    """Return ``(risk_off, new_residual)``. Trigger: 3m U − 12m min ≥ threshold."""
+    if residual > 0:
+        nxt = max(0.0, residual - cut / max(decay_m, 1))
+        return residual, nxt
+    if len(u_hist) < 15:
+        return 0.0, 0.0
+    u3 = sum(u_hist[-3:]) / 3.0
+    u_min = min(u_hist[-15:-3])
+    if u3 - u_min >= threshold:
+        return float(cut), float(cut) * (1.0 - 1.0 / max(decay_m, 1))
+    return 0.0, 0.0
+
+
+def fci_tighten(
+    *,
+    spread: float,
+    s0: float,
+    gate: float,
+    phi_fci: float,
+    w_spread: float,
+    w_gate: float,
+    equity_drawdown: float = 0.0,
+    term_premium: float = 0.0,
+    w_eq: float = 0.0,
+    w_tp: float = 0.0,
+) -> float:
+    """Weighted FCI. Equity term is 0 until Phase 6."""
+    del equity_drawdown, term_premium
+    cs = (float(spread) - float(s0)) / 0.01
+    return float(phi_fci) * (w_spread * cs + w_gate * (1.0 - float(gate)) + w_eq * 0.0 + w_tp * 0.0)
+
+
+def elb_toolkit(
+    *,
+    shadow: float,
+    elb: float,
+    gap: float,
+    guidance: float | None,
+    credibility: float,
+    qe_per_gap: float,
+) -> tuple[tuple[str, ...], float, float]:
+    """Order at the ELB: guidance → QE → (LOLR is a separate lever). Returns engaged, r, qe/GDP."""
+    engaged: list[str] = []
+    r = float(shadow)
+    qe = 0.0
+    if r >= elb:
+        return (), r, 0.0
+    if guidance is not None:
+        r = float(credibility) * float(guidance) + (1.0 - float(credibility)) * r
+        engaged.append("guidance")
+    r = max(elb, r)
+    if r <= elb + 1e-15 and gap < 0:
+        qe = float(qe_per_gap) * (-float(gap))
+        engaged.append("qe")
+    return tuple(engaged), r, qe
 
 
 def committee_draw(seed: int, meeting_n: int, dispersion_bp: float) -> float:
@@ -142,6 +217,28 @@ class MonetaryRule:
     meeting_n: int = 0
     last_decision: dict[str, Any] = field(default_factory=dict)
     pending_minutes: dict[str, Any] | None = None
+    makeup: float = 0.0
+    makeup_decay: float = 0.98
+    makeup_clip: float = 0.02
+    plevel: float = 0.0
+    sahm_on: bool = False
+    sahm_threshold: float = 0.005
+    sahm_cut: float = 0.005
+    sahm_decay_m: int = 12
+    sahm_residual: float = 0.0
+    u_hist: list[float] = field(default_factory=list)
+    phi_fci: float = 0.0
+    w_spread: float = 0.4
+    w_gate: float = 0.3
+    phi_credit: float = 0.0
+    guidance_cred: float = 0.7
+    qe_per_gap: float = 0.02
+    last_makeup: float = 0.0
+    last_fci: float = 0.0
+    last_risk_off: float = 0.0
+    shadow_rate: float = 0.0
+    qe_intent: float = 0.0
+    last_elb_tools: tuple[str, ...] = ()
 
     @classmethod
     def from_config(cls, cfg: Config, *, r0: float, seed: int = 0) -> MonetaryRule:
@@ -166,6 +263,19 @@ class MonetaryRule:
             projection_noise_bp=mon.committee.projection_noise_bp,
             seed=int(seed),
             r_ann=float(r0),
+            makeup=mon.strategy.makeup,
+            makeup_decay=mon.strategy.makeup_decay,
+            makeup_clip=mon.strategy.makeup_clip,
+            sahm_on=mon.risk_management.enabled,
+            sahm_threshold=mon.risk_management.sahm_threshold,
+            sahm_cut=mon.risk_management.sahm_cut,
+            sahm_decay_m=mon.risk_management.decay_m,
+            phi_fci=mon.financial_conditions.phi_fci,
+            w_spread=mon.financial_conditions.weights.get("corp_spread", 0.4),
+            w_gate=mon.financial_conditions.weights.get("capital_gate", 0.3),
+            phi_credit=mon.credit.phi_credit,
+            guidance_cred=mon.elb.guidance_credibility,
+            qe_per_gap=mon.elb.qe_per_gap_point,
         )
 
     @property
@@ -184,6 +294,47 @@ class MonetaryRule:
         self.g_trend += (float(g_obs) - self.g_trend) / max(self.rstar_tau_m, 1)
         return self.g_trend
 
+    def update_strategy(
+        self,
+        *,
+        pi_pol: float,
+        pi_star: float,
+        u: float,
+        spread: float,
+        s0: float,
+        gate: float,
+    ) -> tuple[float, float, float]:
+        """Monthly leak of the makeup gap, Sahm residual and FCI. Returns the three terms."""
+        if self.makeup > 0:
+            self.plevel = step_plevel_gap(
+                self.plevel, pi_pol, pi_star, self.makeup_decay, self.makeup_clip
+            )
+            self.last_makeup = self.makeup * self.plevel
+        else:
+            self.last_makeup = 0.0
+        self.u_hist.append(float(u))
+        if len(self.u_hist) > 24:
+            self.u_hist = self.u_hist[-24:]
+        if self.sahm_on:
+            self.last_risk_off, self.sahm_residual = sahm_risk_off(
+                self.u_hist,
+                threshold=self.sahm_threshold,
+                cut=self.sahm_cut,
+                decay_m=self.sahm_decay_m,
+                residual=self.sahm_residual,
+            )
+        else:
+            self.last_risk_off = 0.0
+        self.last_fci = fci_tighten(
+            spread=spread,
+            s0=s0,
+            gate=gate,
+            phi_fci=self.phi_fci,
+            w_spread=self.w_spread,
+            w_gate=self.w_gate,
+        )
+        return self.last_makeup, self.last_fci, self.last_risk_off
+
     def decide(
         self,
         *,
@@ -197,6 +348,7 @@ class MonetaryRule:
         makeup: float = 0.0,
         fci_tighten: float = 0.0,
         risk_off: float = 0.0,
+        credit_gap: float = 0.0,
     ) -> tuple[float, float, dict[str, Any]]:
         """One meeting. Returns ``(r_rule, r_ann, payload)``."""
         target = reaction_target(
@@ -214,6 +366,8 @@ class MonetaryRule:
             makeup=makeup,
             fci_tighten=fci_tighten,
             risk_off=risk_off,
+            phi_credit=self.phi_credit,
+            credit_gap=credit_gap,
         )
         rho = self.rho_meet
         r_rule = rho * r_rule + (1.0 - rho) * target
@@ -250,6 +404,15 @@ class MonetaryRule:
             "meeting_n": self.meeting_n,
             "last_decision": dict(self.last_decision),
             "pending_minutes": dict(self.pending_minutes) if self.pending_minutes else None,
+            "plevel": self.plevel,
+            "sahm_residual": self.sahm_residual,
+            "u_hist": list(self.u_hist),
+            "last_makeup": self.last_makeup,
+            "last_fci": self.last_fci,
+            "last_risk_off": self.last_risk_off,
+            "shadow_rate": self.shadow_rate,
+            "qe_intent": self.qe_intent,
+            "last_elb_tools": list(self.last_elb_tools),
         }
 
     def from_state(self, state: dict[str, Any]) -> None:
@@ -259,3 +422,12 @@ class MonetaryRule:
         self.last_decision = dict(state.get("last_decision") or {})
         pend = state.get("pending_minutes")
         self.pending_minutes = dict(pend) if pend else None
+        self.plevel = float(state.get("plevel", 0.0))
+        self.sahm_residual = float(state.get("sahm_residual", 0.0))
+        self.u_hist = [float(x) for x in (state.get("u_hist") or [])]
+        self.last_makeup = float(state.get("last_makeup", 0.0))
+        self.last_fci = float(state.get("last_fci", 0.0))
+        self.last_risk_off = float(state.get("last_risk_off", 0.0))
+        self.shadow_rate = float(state.get("shadow_rate", 0.0))
+        self.qe_intent = float(state.get("qe_intent", 0.0))
+        self.last_elb_tools = tuple(state.get("last_elb_tools") or ())

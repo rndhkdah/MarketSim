@@ -60,7 +60,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T2.31 — Policy validation · M · deps: T2.28, T2.29, T2.23 — 2026-09-19, multiplier 0.66; VAT 2.00pp; extremes finite/SFC
 - [x] T2.32 — Monetary policy framework: committee, calendar, reaction function (D15) · M · deps: T2.27, T2.29 — 2026-09-19, 8-meeting dual mandate; SS exact; 100y 3–6 moves; see QUESTIONS
 - [ ] T2.33 — The committee's information set (published vintages) · S · deps: T2.32, T4.07
-- [ ] T2.34 — Strategy options: makeup, risk management, financial conditions · M · deps: T2.32, T2.20
+- [x] T2.34 — Strategy options: makeup, risk management, financial conditions · M · deps: T2.32, T2.20 — 2026-09-19, leak+clip reject; Sahm/FCI/ELB; 100y marked slow
 - [ ] T2.35 — Monetary validation and the policy-rule report · M · deps: T2.33, T2.34, T2.31
 
 - [ ] **GATE P2** — human review against the gate in the phase file

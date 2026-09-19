@@ -481,6 +481,7 @@ class RealEconomy:
             d_inv,
         )
         gap = gdp / fin.gdp0 - 1.0
+        path = self.toolkit.guidance_path
         met = self.cb.maybe_meet(
             gap,
             sh["mon"],
@@ -491,6 +492,10 @@ class RealEconomy:
             smoothing=mon.smoothing,
             u=u,
             g_obs=float(self.g_e.mean()),
+            spread=float(self.credit.spread),
+            s0=float(self.credit.s0),
+            gate=float(self.credit.gate),
+            guidance=float(path[0]) if path else None,
         )
         if met and self.cb.last_payload:
             from dataclasses import asdict
