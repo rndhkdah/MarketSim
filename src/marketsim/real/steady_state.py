@@ -55,6 +55,7 @@ class RealBaseline:
     va_post_import: float
     stor_in: np.ndarray
     crit: np.ndarray
+    mu: np.ndarray
 
     def flat(self, arr: np.ndarray) -> np.ndarray:
         """R=1 helper: drop the region axis."""
@@ -205,4 +206,111 @@ def compute_real_baseline(
         va_post_import=va_post_tot,
         stor_in=stor_in,
         crit=crit,
+        mu=r1(mu),
+    )
+
+
+@dataclass
+class FinancialBaseline:
+    """Passthrough-mode financial seed (§2.3 rest, §2.2 opening)."""
+
+    pi_star: float
+    G: float
+    grow: float
+    r0: float
+    debt: np.ndarray
+    spread: np.ndarray
+    ebitda0: np.ndarray
+    int0: np.ndarray
+    dep0: np.ndarray
+    tax0: np.ndarray
+    payout: np.ndarray
+    B: float
+    W: float
+    YD0: float
+    alpha2: float
+    tau_y: float
+    pretax0: float
+    gdp0: float
+    vat: float
+    transfers0: float
+    wages0: float
+    div0: float
+
+
+def compute_financial_baseline(
+    real: RealBaseline,
+    cfg: Config,
+    io: IOTable,
+    *,
+    pi_star: float = 0.0,
+    vat: float | None = None,
+) -> FinancialBaseline:
+    """Solve debt, payout, α2 and τ_y so π* is an exact real steady state."""
+    assert cfg.dynamics is not None
+    if io.n != real.S:
+        raise ValueError("IO table and RealBaseline sector counts differ")
+    dyn = cfg.dynamics
+    x0 = real.flat(real.x0)
+    s0 = real.flat(real.s0)
+    m = real.flat(real.m)
+    ell = real.flat(real.ell)
+    k0 = real.flat(real.K0)
+    v = real.flat(real.v)
+    mu = real.flat(real.mu)
+    n0 = real.flat(real.n0)
+    g = float(np.exp(pi_star / 12.0))
+    grow = (g - 1.0) / g
+    r0 = cfg.edges.policy.taylor.r_neutral + pi_star
+    nd = np.array([cfg.sectors.params(c).nd_ebitda for c in real.codes], dtype=float)
+    ebitda0 = s0 - (mu + ell + m) * x0
+    debt = nd * 12.0 * ebitda0
+    s0_spread = dyn.firms.base_spread
+    if dyn.credit.pricing == "uniform":
+        spread = np.full(real.S, s0_spread)
+    else:
+        spread = s0_spread * np.maximum(nd, dyn.firms.spread_leverage_floor) / 2.5
+    int0 = (r0 + spread) * debt / 12.0 / g
+    delta_m = dyn.capex.delta_annual / 12.0
+    dep0 = delta_m * v * k0
+    tax0 = dyn.fiscal.corp_tax * np.maximum(ebitda0 - int0 - dep0, 0.0)
+    prof = ebitda0 - int0 - tax0
+    capex0 = dep0
+    payout = (prof - capex0 + grow * debt) / prof
+    gdp0 = float((s0 - (mu + m) * x0).sum())
+    b = dyn.fiscal.debt_to_gdp * 12.0 * gdp0
+    w_hh = b + float(debt.sum())
+    vat_ = dyn.fiscal.vat if vat is None else float(vat)
+    c0 = float(real.flat(real.C0).sum())
+    yd0 = c0 * (1.0 + vat_) + real.res0 + grow * w_hh
+    alpha2 = (c0 * (1.0 + vat_) - dyn.households.alpha1 * yd0) / w_hh
+    wages0 = float(n0.sum())
+    transfers0 = dyn.fiscal.benefit_replacement * (real.LF - float(n0.sum()))
+    div0 = float((prof - capex0 + grow * debt).sum())
+    interest_hh = float(int0.sum()) + r0 * b / 12.0 / g
+    pretax0 = wages0 + div0 + interest_hh + transfers0
+    tau_y = 1.0 - yd0 / pretax0
+    return FinancialBaseline(
+        pi_star=float(pi_star),
+        G=g,
+        grow=grow,
+        r0=r0,
+        debt=debt,
+        spread=spread,
+        ebitda0=ebitda0,
+        int0=int0,
+        dep0=dep0,
+        tax0=tax0,
+        payout=payout,
+        B=float(b),
+        W=float(w_hh),
+        YD0=float(yd0),
+        alpha2=float(alpha2),
+        tau_y=float(tau_y),
+        pretax0=float(pretax0),
+        gdp0=float(gdp0),
+        vat=vat_,
+        transfers0=float(transfers0),
+        wages0=wages0,
+        div0=div0,
     )

@@ -14,6 +14,7 @@ instruments:
   government_mix: {GB_BILL: 0.20, GB_NOTE: 0.40, GB_BOND: 0.40}
 
 flow_tags:
+  - opening
   - consumption
   - vat
   - govt_purchases
