@@ -1,0 +1,51 @@
+# T2.02 — entity / instrument registry and opening-sheet ratios (§2.2).
+
+debug_journal: false
+
+entities:
+  institutions: [BANKSYS, GOVT, CB, ROW, MM, CORPPOOL]
+  household_pattern: "HH:{region}"
+  npc_pattern: "NPC:{region}:{sector}"
+
+instruments:
+  financial: [DEP, LOAN, GB_BILL, GB_NOTE, GB_BOND, CORP_POOL, CLOAN, RES]
+  real: [CAPITAL, INVENTORY, HOUSING]
+  equity_prefix: "EQ:"
+  government_mix: {GB_BILL: 0.20, GB_NOTE: 0.40, GB_BOND: 0.40}
+
+flow_tags:
+  - consumption
+  - vat
+  - govt_purchases
+  - investment
+  - residential
+  - exports
+  - imports
+  - intermediate
+  - wages
+  - transfers
+  - income_tax
+  - corp_tax
+  - interest_loans
+  - interest_deposits
+  - interest_bonds
+  - interest_reserves
+  - cb_remittance
+  - dividends
+  - loan_new
+  - loan_repay
+  - loan_writeoff
+  - bond_issue
+  - bond_redeem
+  - equity_issue
+  - equity_trade
+  - fees
+  - transaction_tax
+  - insurance_claims
+  - capital_transfer
+
+opening:
+  government_debt_to_gdp: 0.60
+  bank_equity_over_loans: 0.125
+  reserves_to_deposits: 0.08
+  corp_funding_mix: 0.5
