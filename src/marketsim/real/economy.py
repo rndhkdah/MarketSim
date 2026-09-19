@@ -28,6 +28,7 @@ from marketsim.real.government import debt_ratio, step_tax_rate, tax_rate_target
 from marketsim.real.households import consumption_nominal, household_basket, income_index, smooth_nominal
 from marketsim.real.labour import step_labour
 from marketsim.real.orders import order_matrix, supply_and_ration
+from marketsim.real.policy.authority import PolicyDesk
 from marketsim.real.prices import PriceState, sector_pass_through, step_prices, tightness, unit_cost
 from marketsim.real.production import (
     expected_sales,
@@ -127,6 +128,7 @@ class RealEconomy:
         self.typed = TypedEdgeBlock(cfg, real.codes)
         self.last_fd_shift = np.ones(s)
         self._ll_bar = float((dyn.banks.ll0 * (self.nd / 2.5)).mean())
+        self.policy = PolicyDesk.from_config(cfg)
         self.month = 0
         self.last_flows: MonthFlows | None = None
         self.last_agg: Aggregates | None = None
@@ -144,6 +146,7 @@ class RealEconomy:
         a = self.A
         sh = self.sh
         s = real.S
+        self.policy.tick_month(self.month)
         loans = float(self.debt.sum())
         cap_ratio = self.bank_equity / max(loans, 1e-12) if dyn.banks.mode == "full" and loans > 0 else 0.125
         self.credit.update(
@@ -554,6 +557,7 @@ class RealEconomy:
             "typed": self.typed.to_state(),
             "last_fd_shift": self.last_fd_shift.copy(),
             "_ll_bar": self._ll_bar,
+            "policy": self.policy.to_state(),
             "ledger": self.ledger.to_state(),
             "pub": self.pub.to_state(),
             "pi_star": self.fin.pi_star,
@@ -621,6 +625,8 @@ class RealEconomy:
             self.last_fd_shift = np.asarray(state["last_fd_shift"], dtype=float)
         if "_ll_bar" in state:
             self._ll_bar = float(state["_ll_bar"])
+        if "policy" in state:
+            self.policy.from_state(state["policy"])
         self.ledger = Ledger.from_state(state["ledger"])
         self.pub = Published.from_state(state["pub"])
 

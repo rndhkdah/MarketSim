@@ -470,12 +470,121 @@ class DynamicsConfig(FrozenModel):
         return prod
 
 
+class TaxLimits(FrozenModel):
+    tax_rate: tuple[float, float] = (0.0, 0.6)
+    tariff: float = 0.5
+    vat: tuple[float, float] = (0.0, 0.6)
+    delta_g_of_gdp_per_quarter: float = 0.02
+
+
+class GovtAuthorityCfg(FrozenModel):
+    control: Literal["autopilot", "scripted", "agent"] = "autopilot"
+    legislative_lag_m: int = 1
+    discretionary_lag_q: float = 2.0
+    limits: TaxLimits = Field(default_factory=TaxLimits)
+
+
+class CenbankLimits(FrozenModel):
+    rate_move: float = 0.02
+
+
+class CenbankAuthorityCfg(FrozenModel):
+    control: Literal["autopilot", "scripted", "agent"] = "autopilot"
+    limits: CenbankLimits = Field(default_factory=CenbankLimits)
+
+
+class MonetaryCalendarCfg(FrozenModel):
+    meetings_per_year: int = 8
+    rate_step: float = 0.0025
+    deadband: float = 0.0010
+    blackout_days: int = 10
+    minutes_lag_days: int = 21
+
+
+class MonetaryRuleCfg(FrozenModel):
+    phi_inflation: float = 1.50
+    phi_u: float = 1.0
+    phi_y_mult: float = 0.0
+    core_weight: float = 0.5
+    smoothing: float = 0.80
+    kappa_rstar: float = 1.0
+    rstar_tau_m: int = 60
+
+
+class MonetaryDataCfg(FrozenModel):
+    cpi_lag_m: int = 1
+    unemployment_lag_m: int = 1
+    gdp_lag_q: int = 1
+    use_published_vintages: bool = True
+
+
+class MonetaryStrategyCfg(FrozenModel):
+    makeup: float = 0.0
+    makeup_decay: float = 0.98
+    makeup_clip: float = 0.02
+
+
+class RiskManagementCfg(FrozenModel):
+    enabled: bool = False
+    sahm_threshold: float = 0.005
+    sahm_cut: float = 0.005
+    decay_m: int = 12
+
+
+class FciCfg(FrozenModel):
+    phi_fci: float = 0.0
+    weights: dict[str, float] = Field(
+        default_factory=lambda: {
+            "corp_spread": 0.4,
+            "capital_gate": 0.3,
+            "equity_drawdown": 0.2,
+            "term_premium": 0.1,
+        }
+    )
+
+
+class MonetaryCreditCfg(FrozenModel):
+    phi_credit: float = 0.0
+
+
+class ElbToolkitCfg(FrozenModel):
+    rate: float = 0.0
+    allow_negative: bool = False
+    guidance_credibility: float = 0.7
+    qe_per_gap_point: float = 0.02
+
+
+class CommitteeCfg(FrozenModel):
+    dispersion_bp: float = 0.0
+    projection_noise_bp: float = 25.0
+
+
+class MonetaryFrameworkCfg(FrozenModel):
+    control: Literal["autopilot", "scripted", "agent"] = "autopilot"
+    calendar: MonetaryCalendarCfg = Field(default_factory=MonetaryCalendarCfg)
+    rule: MonetaryRuleCfg = Field(default_factory=MonetaryRuleCfg)
+    data: MonetaryDataCfg = Field(default_factory=MonetaryDataCfg)
+    strategy: MonetaryStrategyCfg = Field(default_factory=MonetaryStrategyCfg)
+    risk_management: RiskManagementCfg = Field(default_factory=RiskManagementCfg)
+    financial_conditions: FciCfg = Field(default_factory=FciCfg)
+    credit: MonetaryCreditCfg = Field(default_factory=MonetaryCreditCfg)
+    elb: ElbToolkitCfg = Field(default_factory=ElbToolkitCfg)
+    committee: CommitteeCfg = Field(default_factory=CommitteeCfg)
+
+
+class PolicyFile(FrozenModel):
+    govt: GovtAuthorityCfg = Field(default_factory=GovtAuthorityCfg)
+    cenbank: CenbankAuthorityCfg = Field(default_factory=CenbankAuthorityCfg)
+    monetary: MonetaryFrameworkCfg = Field(default_factory=MonetaryFrameworkCfg)
+
+
 class Config(FrozenModel):
     config_dir: Path
     sectors: SectorsConfig
     edges: EdgesConfig
     world: WorldSettings
     dynamics: DynamicsConfig | None = None
+    policy: PolicyFile | None = None
 
     @property
     def codes(self) -> tuple[str, ...]:
@@ -563,11 +672,15 @@ def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None)
     dyn_path = root / "dynamics.yaml"
     dynamics_raw = _read_yaml(dyn_path) if dyn_path.exists() else None
 
+    pol_path = root / "policy.yaml"
+    policy_raw = _read_yaml(pol_path) if pol_path.exists() else None
+
     bundle = {
         "sectors": sectors_raw,
         "edges": edges_raw,
         "world": world_raw,
         "dynamics": dynamics_raw,
+        "policy": policy_raw,
     }
     # overrides use dotted paths from the bundle root, e.g. world.seed or dynamics.prices.kappa_util
     if overrides:
@@ -581,10 +694,11 @@ def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None)
         dynamics = (
             DynamicsConfig.model_validate(bundle["dynamics"]) if bundle["dynamics"] is not None else None
         )
+        policy = PolicyFile.model_validate(bundle["policy"]) if bundle["policy"] is not None else None
     except Exception as exc:  # pydantic ValidationError
         raise ConfigError(str(exc)) from exc
 
-    cfg = Config(config_dir=root, sectors=sectors, edges=edges, world=world, dynamics=dynamics)
+    cfg = Config(config_dir=root, sectors=sectors, edges=edges, world=world, dynamics=dynamics, policy=policy)
     _validate_codes(cfg)
     return cfg
 

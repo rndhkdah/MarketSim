@@ -36,6 +36,7 @@ Format: `## <task ID> — <one-line question>` · what blocks · option A · opt
 - option A: Keep same-month recon FD; treat the month-1–6 sign as a report item and keep the CONSTRUCT-within-24m / CPI-up checks.
 - option B: Delay or Erlang-spread `claims_to` demand so months 1–6 go negative (invents a lag not in the spec).
 - recommendation: A until the human names a recon lag. Tests xfail with this id; do not invent a kernel.
+- **answered 2026-09-19: A.** Keep same-month recon FD and the xfail. No invented catastrophe lag.
 
 ## T2.23 — Credit-on demand / monetary IRFs miss the §2.12 windows
 
@@ -43,6 +44,7 @@ Format: `## <task ID> — <one-line question>` · what blocks · option A · opt
 - option A: Keep specified defaults; xfail the two credit-on rows; report in T2.24. Live `E^e` (still §2.10) might restore demand but would deepen the hike.
 - option B: Human accepts a config / ADR change (weaker collateral down-factor, or earnings-updated `V_RE`).
 - recommendation: A. Passthrough and `banks.mode: full` (gate off) already meet the table and the monetary timing block.
+- **answered 2026-09-19: A.** Keep specified defaults and the credit-on xfails. No `edges.yaml` / `sectors.yaml` retune.
 
 ## T2.24 — Stochastic volatility ranking misses the §2.12 order
 
@@ -50,3 +52,4 @@ Format: `## <task ID> — <one-line question>` · what blocks · option A · opt
 - option A: Keep defaults; report the gaps and tuning ideas; xfail the ranking test.
 - option B: Human picks a retune (inventory leak, bullwhip, `kappa_util`, cost-push pass-through).
 - recommendation: A (card: out of scope to change defaults).
+- **answered 2026-09-19: A.** Keep defaults; ranking stays xfail; gaps stay in the T2.24 report. No retune.

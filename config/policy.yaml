@@ -1,0 +1,60 @@
+# Policy authorities (D13) and the monetary framework (D15). Autopilot is the default.
+
+govt:
+  control: autopilot
+  legislative_lag_m: 1
+  discretionary_lag_q: 2.0
+  limits:
+    tax_rate: [0.0, 0.6]
+    tariff: 0.5
+    vat: [0.0, 0.6]
+    delta_g_of_gdp_per_quarter: 0.02
+
+cenbank:
+  control: autopilot
+  limits:
+    rate_move: 0.02
+
+monetary:
+  control: autopilot
+  calendar:
+    meetings_per_year: 8
+    rate_step: 0.0025
+    deadband: 0.0010
+    blackout_days: 10
+    minutes_lag_days: 21
+  rule:
+    phi_inflation: 1.50
+    phi_u: 1.0
+    phi_y_mult: 0.0
+    core_weight: 0.5
+    smoothing: 0.80
+    kappa_rstar: 1.0
+    rstar_tau_m: 60
+  data:
+    cpi_lag_m: 1
+    unemployment_lag_m: 1
+    gdp_lag_q: 1
+    use_published_vintages: true
+  strategy:
+    makeup: 0.0
+    makeup_decay: 0.98
+    makeup_clip: 0.02
+  risk_management:
+    enabled: false
+    sahm_threshold: 0.005
+    sahm_cut: 0.005
+    decay_m: 12
+  financial_conditions:
+    phi_fci: 0.0
+    weights: {corp_spread: 0.4, capital_gate: 0.3, equity_drawdown: 0.2, term_premium: 0.1}
+  credit:
+    phi_credit: 0.0
+  elb:
+    rate: 0.0
+    allow_negative: false
+    guidance_credibility: 0.7
+    qe_per_gap_point: 0.02
+  committee:
+    dispersion_bp: 0.0
+    projection_noise_bp: 25
