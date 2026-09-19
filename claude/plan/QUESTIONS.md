@@ -29,3 +29,17 @@ Format: `## <task ID> — <one-line question>` · what blocks · option A · opt
 - option A: Treat T0.15 as N/A; gate = `marketsim/ make check`, invariants, determinism, Vic3 pytest still green.
 - option B: Wait for a legacy dump before ticking T0.15.
 - recommendation: A. Left **GATE P0** for the human.
+
+## T2.23 — Catastrophe months 1–6 are not an output drop
+
+- what blocks: §2.12 wants `gap[1..6] < 0` and CONSTRUCT above baseline within 24m. T2.18 posts the full replacement-cost claim and adds it as same-month final demand, so months 1–5 are `+0.5%…+2.8%` GDP (CONSTRUCT `+11%…+17%`) and the GDP trough is month 14. No extra lag is named in §2.9.
+- option A: Keep same-month recon FD; treat the month-1–6 sign as a report item and keep the CONSTRUCT-within-24m / CPI-up checks.
+- option B: Delay or Erlang-spread `claims_to` demand so months 1–6 go negative (invents a lag not in the spec).
+- recommendation: A until the human names a recon lag. Tests xfail with this id; do not invent a kernel.
+
+## T2.23 — Credit-on demand / monetary IRFs miss the §2.12 windows
+
+- what blocks: Gate 6 says banks+credit+edges must leave §2.12 green. With `credit.gate_enabled: true` the stub `V_RE` (earnings frozen, only `Δρ`) makes every rate rise tighten `Λ_coll`. Measured: demand +2% 24-month gap sum `−2.8%` (price window also slightly negative); monetary trough month 47 at `−0.86%` (passthrough is month 13, `−0.36%`, rebound 0.21, AUTOS 9 < CONSTRUCT 14 < CAPGOODS 15). Retuning `edges.yaml` needs an ADR.
+- option A: Keep specified defaults; xfail the two credit-on rows; report in T2.24. Live `E^e` (still §2.10) might restore demand but would deepen the hike.
+- option B: Human accepts a config / ADR change (weaker collateral down-factor, or earnings-updated `V_RE`).
+- recommendation: A. Passthrough and `banks.mode: full` (gate off) already meet the table and the monetary timing block.

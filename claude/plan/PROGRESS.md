@@ -49,7 +49,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T2.20 — Credit and collateral edges · M · deps: T2.19, T2.21 — 2026-09-19, gate+Λ; crunch |gap| 0.29% y12
 - [x] T2.21 — AssetPriceProvider stub · S · deps: T2.17 — 2026-09-19, Q=1; +100bp: RE −6.3%, AUTOS −2.5%
 - [x] T2.22 — Typed substitution / complement edges · M · deps: T2.12, T0.12 — 2026-09-19, ENERGY+20%: AUTOS −5.3%, UTIL +6.6%
-- [ ] T2.23 — Validation suite: stationarity, IRFs, timing · M · deps: T2.18
+- [x] T2.23 — Validation suite: stationarity, IRFs, timing · M · deps: T2.18 — 2026-09-19, §2.12 green passthrough/banks; credit+cat see QUESTIONS
 - [ ] T2.24 — Stability runs, sweeps, moments report · M · deps: T2.23
 - [ ] T2.25 — Performance baseline · S · deps: T2.17
 - [ ] T2.26 — CES substitution on intermediates (optional, off by default) · M · deps: T2.23 · **HUMAN GATE**
