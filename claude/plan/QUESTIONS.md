@@ -43,3 +43,10 @@ Format: `## <task ID> — <one-line question>` · what blocks · option A · opt
 - option A: Keep specified defaults; xfail the two credit-on rows; report in T2.24. Live `E^e` (still §2.10) might restore demand but would deepen the hike.
 - option B: Human accepts a config / ADR change (weaker collateral down-factor, or earnings-updated `V_RE`).
 - recommendation: A. Passthrough and `banks.mode: full` (gate off) already meet the table and the monetary timing block.
+
+## T2.24 — Stochastic volatility ranking misses the §2.12 order
+
+- what blocks: 1,200 months × 3 seeds at π\* = 2 % are finite, `|gap| < 2.2 %`, U ∈ (3 %, 7 %), envelope ratio < 1.5. Ranking is not: SEMIS is 5th–6th (AGRIFOOD / CAPGOODS lead); CONSTRUCT is 7th–8th; TELECOM is mid-pack on seeds 1–2. Soft `sd(I)/sd(GDP)` is 0.88–1.03 (target 3–4; prototype ≈ 7). Cost-push ENERGY +30 %: GDP trough `−13 %` m42, CPI `+72 %` @12m (prototype `−2.7 %` / `+2.0 %`). Changing `edges.yaml` / `sectors.yaml` needs an ADR.
+- option A: Keep defaults; report the gaps and tuning ideas; xfail the ranking test.
+- option B: Human picks a retune (inventory leak, bullwhip, `kappa_util`, cost-push pass-through).
+- recommendation: A (card: out of scope to change defaults).
