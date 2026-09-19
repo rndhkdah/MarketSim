@@ -8,6 +8,7 @@ import numpy as np
 
 from marketsim.core.clock import EventQueue
 from marketsim.core.config import Config
+from marketsim.real.policy.monetary_rule import MonetaryRule
 
 
 def seed_price_history(g: float, n: int = 13) -> list[float]:
@@ -55,6 +56,9 @@ class CentralBank:
     cpi_hist: list[float] = field(default_factory=list)
     core_hist: list[float] = field(default_factory=list)
     month: int = 0
+    framework: MonetaryRule | None = None
+    u_star: float = 0.05
+    last_payload: dict | None = None
 
     @classmethod
     def from_config(cls, cfg: Config, pi_star: float) -> CentralBank:
@@ -106,9 +110,18 @@ class CentralBank:
         phi_pi: float | None = None,
         phi_y: float | None = None,
         smoothing: float | None = None,
+        u: float | None = None,
+        g_obs: float = 0.0,
+        makeup: float = 0.0,
+        fci: float = 0.0,
+        risk_off: float = 0.0,
     ) -> bool:
-        """If this month is a quarter-end, update ``r_rule`` and ``r``. Returns True on a meeting."""
-        met = is_quarter_end_month(self.month)
+        """If this month is a meeting, update ``r_rule`` and ``r``. Returns True on a meeting."""
+        if self.framework is not None:
+            self.framework.update_rstar(g_obs)
+            met = self.framework.is_meeting(self.month)
+        else:
+            met = is_quarter_end_month(self.month)
         if met:
             if pi_star is not None:
                 self.pi_star = float(pi_star)
@@ -118,9 +131,19 @@ class CentralBank:
                 self.phi_y = float(phi_y)
             if smoothing is not None:
                 self.rho = float(smoothing)
+                if self.framework is not None:
+                    self.framework.rho_q = float(smoothing)
+            if phi_pi is not None and self.framework is not None:
+                self.framework.phi_pi = float(phi_pi)
+            if phi_y is not None and self.framework is not None:
+                self.framework.phi_y = float(phi_y)
             if rate_override is not None:
                 self.r_rule = float(rate_override)
                 self.r = max(self.elb, float(rate_override) + z_mon)
+                if self.framework is not None:
+                    self.framework.r_ann = float(rate_override)
+            elif self.framework is not None:
+                self._framework_meet(gap, z_mon, u=u, g_obs=g_obs, makeup=makeup, fci=fci, risk_off=risk_off)
             else:
                 pi_pol = policy_inflation(
                     self.pi3(),
@@ -133,13 +156,52 @@ class CentralBank:
                 self.r_rule = self.rho * self.r_rule + (1.0 - self.rho) * target
                 self.r = max(self.elb, self.r_rule + z_mon)
         else:
-            self.r = max(self.elb, self.r_rule + z_mon)
+            announced = self.framework.r_ann if self.framework is not None else self.r_rule
+            self.r = max(self.elb, announced + z_mon)
         self.month += 1
         return met
 
+    def _framework_meet(
+        self,
+        gap: float,
+        z_mon: float,
+        *,
+        u: float | None,
+        g_obs: float,
+        makeup: float,
+        fci: float,
+        risk_off: float,
+    ) -> None:
+        del g_obs
+        assert self.framework is not None
+        fw = self.framework
+        pi_pol = policy_inflation(
+            self.pi3(),
+            self.pi12(),
+            infl_n(self.core_hist, 3),
+            infl_n(self.core_hist, 12),
+            fw.core_weight,
+        )
+        r_rule, r_ann, payload = fw.decide(
+            r_n=self.r_n,
+            pi_star=self.pi_star,
+            pi_pol=pi_pol,
+            u=self.u_star if u is None else float(u),
+            u_star=self.u_star,
+            gap=gap,
+            r_rule=self.r_rule,
+            makeup=makeup,
+            fci_tighten=fci,
+            risk_off=risk_off,
+        )
+        self.r_rule = r_rule
+        self.r = max(self.elb, r_ann + z_mon)
+        self.last_payload = payload
+
     def schedule_meetings(self, queue: EventQueue, horizon_months: int, days_per_month: int = 21) -> None:
-        """Queue a ``("cb_meeting", month)`` payload on each quarter-end tick."""
+        """Queue a ``("cb_meeting", month)`` payload on each meeting tick."""
         for m in range(horizon_months):
-            if is_quarter_end_month(m):
+            meet = self.framework.is_meeting(m) if self.framework is not None else is_quarter_end_month(m)
+            if meet:
                 tick = (m + 1) * days_per_month - 1
                 queue.schedule(tick, {"kind": "cb_meeting", "month": m}, priority=0)

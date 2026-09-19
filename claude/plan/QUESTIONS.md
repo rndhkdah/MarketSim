@@ -53,3 +53,10 @@ Format: `## <task ID> — <one-line question>` · what blocks · option A · opt
 - option B: Human picks a retune (inventory leak, bullwhip, `kappa_util`, cost-push pass-through).
 - recommendation: A (card: out of scope to change defaults).
 - **answered 2026-09-19: A.** Keep defaults; ranking stays xfail; gaps stay in the T2.24 report. No retune.
+
+## T2.32 — Dual-mandate calendar flips two §2.12 price windows
+
+- what blocks: T2.32 attaches the D15 autopilot (8 meetings, φ_u 1.0, 25bp grid). Supply −3 % 12q: output window still negative, but mean `lvl[6..36]` is slightly negative (passthrough −0.006 %, banks −0.49 %, credit −3.7 %). Credit-on fiscal +5 %: output window still positive, mean `lvl[18..36]` −0.09 %. T2.35 wants §2.12 unchanged within tolerance; retuning `policy.yaml` / `edges.yaml` needs an ADR.
+- option A: Keep D15 defaults; xfail those two price rows; report in T2.35.
+- option B: Human accepts a config / ADR change (φ_u 0, more core weight, or keep the quarterly skeleton as the default autopilot).
+- recommendation: A. Steady state stays exact; other §2.12 signs and the monetary timing block still pass.

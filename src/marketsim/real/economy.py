@@ -50,6 +50,7 @@ from marketsim.real.policy.monetary import (
 from marketsim.real.policy.monetary import (
     levers_from_merged as cb_levers_from_merged,
 )
+from marketsim.real.policy.monetary_rule import MonetaryRule
 from marketsim.real.prices import PriceState, sector_pass_through, step_prices, tightness, unit_cost
 from marketsim.real.production import (
     expected_sales,
@@ -124,6 +125,9 @@ class RealEconomy:
         self.res = ResidentialBlock(cfg, real)
         self.sales_ma = real.flat(real.s0).copy()
         self.cb = CentralBank.from_config(cfg, fin.pi_star)
+        if cfg.policy is not None:
+            self.cb.framework = MonetaryRule.from_config(cfg, r0=self.cb.r, seed=cfg.world.seed)
+            self.cb.u_star = dyn.labour.u_star
         self.rate_gap_s = ErlangSmoother(dyn.households.rate_lag.k, dyn.households.rate_lag.mean_m, 0.0)
         self.debt = fin.debt.copy()
         self.spread = fin.spread.copy()
@@ -477,7 +481,7 @@ class RealEconomy:
             d_inv,
         )
         gap = gdp / fin.gdp0 - 1.0
-        self.cb.maybe_meet(
+        met = self.cb.maybe_meet(
             gap,
             sh["mon"],
             rate_override=mon.rate,
@@ -485,7 +489,35 @@ class RealEconomy:
             phi_pi=mon.phi_pi,
             phi_y=mon.phi_y,
             smoothing=mon.smoothing,
+            u=u,
+            g_obs=float(self.g_e.mean()),
         )
+        if met and self.cb.last_payload:
+            from dataclasses import asdict
+
+            from marketsim.real.policy.authority import NewsItem
+
+            payload = dict(self.cb.last_payload)
+            item = NewsItem(self.month, "CENBANK", f"rate {payload['rate']:.4f}", payload)
+            self.policy.cenbank.news.append(asdict(item))
+            fw = self.cb.framework
+            if fw is not None and fw.minutes_lag_days > 0:
+                fw.pending_minutes = {"after_month": self.month + 1, "payload": payload}
+            self.cb.last_payload = None
+        fw = self.cb.framework
+        if (
+            fw is not None
+            and fw.pending_minutes
+            and self.month >= fw.pending_minutes["after_month"]
+            and not fw.in_blackout(self.cb.month)
+        ):
+            from dataclasses import asdict
+
+            from marketsim.real.policy.authority import NewsItem
+
+            mins = NewsItem(self.month, "CENBANK", "minutes", fw.pending_minutes["payload"])
+            self.policy.cenbank.news.append(asdict(mins))
+            fw.pending_minutes = None
         self.last_agg = Aggregates(
             gdp_prod_real=gdp,
             gdp_exp_real=gdp_exp,
@@ -630,6 +662,7 @@ class RealEconomy:
                 "cpi_hist": list(cb.cpi_hist),
                 "core_hist": list(cb.core_hist),
                 "month": cb.month,
+                "framework": cb.framework.to_state() if cb.framework is not None else None,
             },
             "rate_gap_s": self.rate_gap_s.to_state(),
             "debt": self.debt.copy(),
@@ -697,6 +730,8 @@ class RealEconomy:
         self.cb.cpi_hist = [float(x) for x in cb["cpi_hist"]]
         self.cb.core_hist = [float(x) for x in cb["core_hist"]]
         self.cb.month = int(cb["month"])
+        if cb.get("framework") and self.cb.framework is not None:
+            self.cb.framework.from_state(cb["framework"])
         self.rate_gap_s = ErlangSmoother.from_state(state["rate_gap_s"])
         self.debt = np.asarray(state["debt"], dtype=float)
         self.prof_s = np.asarray(state["prof_s"], dtype=float)

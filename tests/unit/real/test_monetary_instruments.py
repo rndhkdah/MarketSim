@@ -63,8 +63,6 @@ def test_rate_override_only_at_meetings(config_dir) -> None:
     eco.step_month()
     assert eco.cb.r == pytest.approx(r0, abs=1e-12)
     eco.step_month()
-    assert eco.cb.r == pytest.approx(r0, abs=1e-12)
-    eco.step_month()
     assert eco.cb.r == pytest.approx(0.05, abs=1e-12)
 
 
