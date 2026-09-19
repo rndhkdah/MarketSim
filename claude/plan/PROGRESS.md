@@ -1,0 +1,195 @@
+# PROGRESS — the work queue
+
+Rule: take the **lowest-numbered unchecked task whose dependencies are all checked** (or the one the human names).
+Tick it as `- [x] T2.07 — … — 2026-10-02, short note`. One task per session. Gates are ticked by the human.
+Sizes: S ≤ ~150 LOC · M ≤ ~400 · L ≤ ~800 (incl. tests). Cards live in the phase files; `deps` repeats the card.
+
+## Phase 0 — Foundation (15 tasks) — `01-phase0-foundation.md`
+
+- [x] T0.01 — Repo audit and layout decision record · S · deps: — — 2026-09-19, ADR-000: no legacy tree; layout is `marketsim/`
+- [x] T0.02 — Packaging and tooling · M · deps: T0.01 — 2026-09-19, nested package + Makefile
+- [x] T0.03 — Typed config loading · M · deps: T0.02 — 2026-09-19
+- [x] T0.04 — Single IO loader (fixes B1) · S · deps: T0.03 — 2026-09-19
+- [x] T0.05 — Port `build_io` into the library · S · deps: T0.04 — 2026-09-19, reconstructed seed (nnz 219)
+- [x] T0.06 — Port `derive_betas` as pure functions (fixes B2) · M · deps: T0.04 — 2026-09-19, invariant + regime windows
+- [x] T0.07 — Layer-1 validation suite in pytest · M · deps: T0.05, T0.06 — 2026-09-19
+- [x] T0.08 — `vic3_compare` as a regression test · S · deps: T0.02 — 2026-09-19, self-contained
+- [x] T0.09 — BEA fetch hardening · M · deps: T0.04, T0.07 — 2026-09-19, script only, no network
+- [x] T0.10 — Calendar, clock and event queue · M · deps: T0.02 — 2026-09-19
+- [x] T0.11 — RNG streams, state protocol, hashing · M · deps: T0.02 — 2026-09-19
+- [x] T0.12 — Erlang kernels · S · deps: T0.02 — 2026-09-19
+- [x] T0.13 — World skeleton and module pipeline · M · deps: T0.10, T0.11, T0.12 — 2026-09-19
+- [x] T0.14 — Config corrections B3–B5 with ADRs · S · deps: T0.03 — 2026-09-19, ADR-001…003 proposed
+- [ ] T0.15 — Legacy freeze and removal · S · deps: T0.05, T0.06, T0.07, T0.08 · **HUMAN GATE** — N/A (no legacy tree; see QUESTIONS.md)
+
+- [ ] **GATE P0** — human review against the gate in the phase file
+
+## Phase 2 — Ledger + dynamic real economy (26 tasks) — `02-phase2-dynamic-layer.md`
+
+- [ ] T2.01 — `dynamics.yaml` and its schema · S · deps: T0.14
+- [ ] T2.02 — Ledger core · M · deps: T0.11
+- [ ] T2.03 — Balance-sheet and transaction-flow matrices, SFC assertion · M · deps: T2.02
+- [ ] T2.04 — Steady state, real side · M · deps: T2.01, T0.04, T0.12
+- [ ] T2.05 — Steady state, financial side and opening postings · M · deps: T2.04, T2.03
+- [ ] T2.06 — Production plans and capacity caps (R1, R4) · M · deps: T2.04
+- [ ] T2.07 — Orders, rationing, deliveries, input stocks (R5–R6) · M · deps: T2.06
+- [ ] T2.08 — Price formation (R7) · M · deps: T2.04
+- [ ] T2.09 — Labour and wages (R8) · S · deps: T2.06
+- [ ] T2.10 — Capex, capacity pipeline, supply line (R3, §2.6) · M · deps: T2.04, T0.12, T0.14
+- [ ] T2.11 — Residential investment block · S · deps: T2.10
+- [ ] T2.12 — Household sector (aggregate, scalar-η demand system) · M · deps: T2.05
+- [ ] T2.13 — Government and fiscal rule · S · deps: T2.05
+- [ ] T2.14 — Central bank and inflation expectations · S · deps: T2.04
+- [ ] T2.15 — ROW · S · deps: T2.04
+- [ ] T2.16 — Income settlement on the ledger (R9) · L · deps: T2.03, T2.07, T2.08, T2.09, T2.10, T2.11, T2.12, T2.13, T2.14, T2.15
+- [ ] T2.17 — Monthly orchestrator, aggregates, World integration · M · deps: T2.16, T0.13
+- [ ] T2.18 — Shock bus and the seven primitives · M · deps: T2.17
+- [ ] T2.19 — Banking system (`banks.mode: full`) · M · deps: T2.17
+- [ ] T2.20 — Credit and collateral edges · M · deps: T2.19, T2.21
+- [ ] T2.21 — AssetPriceProvider stub · S · deps: T2.17
+- [ ] T2.22 — Typed substitution / complement edges · M · deps: T2.12, T0.12
+- [ ] T2.23 — Validation suite: stationarity, IRFs, timing · M · deps: T2.18
+- [ ] T2.24 — Stability runs, sweeps, moments report · M · deps: T2.23
+- [ ] T2.25 — Performance baseline · S · deps: T2.17
+- [ ] T2.26 — CES substitution on intermediates (optional, off by default) · M · deps: T2.23 · **HUMAN GATE**
+
+- [ ] **GATE P2** — human review against the gate in the phase file
+
+## Phase 3 — Regions and demand layer (16 tasks) — `03-phase3-regions-demand.md`
+
+- [ ] T3.01 — `regions.yaml` and geometry · S · deps: T2.23
+- [ ] T3.02 — Regionalise the state (R = 1 parity) · M · deps: T3.01
+- [ ] T3.03 — Baseline trade shares and regional steady state · M · deps: T3.02
+- [ ] T3.04 — Regional orders, rationing and link capacity · M · deps: T3.03
+- [ ] T3.05 — Trade-share dynamics and regional prices · M · deps: T3.04
+- [ ] T3.06 — Regional labour pools and migration · S · deps: T3.02
+- [ ] T3.07 — Regional households and national government · S · deps: T3.02
+- [ ] T3.08 — Tiers · S · deps: T2.12
+- [ ] T3.09 — Want layer and within-want allocation · M · deps: T3.08
+- [ ] T3.10 — Need shapes and budget scaling · S · deps: T3.08
+- [ ] T3.11 — Calibrator · M · deps: T3.09, T3.10
+- [ ] T3.12 — Swap in `TiersWantsDemand` · M · deps: T3.11, T3.07
+- [ ] T3.13 — Want shifters (interface for events) · S · deps: T3.12
+- [ ] T3.14 — NPC entry / exit · M · deps: T3.02
+- [ ] T3.15 — Regional validation and golden baseline · M · deps: T3.05, T3.12, T3.14
+- [ ] T3.16 — ADR: goods layer beneath consumer-facing sectors · S · deps: T3.15 · **HUMAN GATE**
+
+- [ ] **GATE P3** — human review against the gate in the phase file
+
+## Phase 4 — Events (13 tasks) — `04-phase4-events.md`
+
+- [ ] T4.01 — Event schema and loader · M · deps: T2.18
+- [ ] T4.02 — Shock-composition engine · M · deps: T4.01
+- [ ] T4.03 — `effects_extra` executor · M · deps: T4.02, T3.13
+- [ ] T4.04 — Hazard model · S · deps: T4.01
+- [ ] T4.05 — Scheduler and chains · M · deps: T4.02, T4.04, T0.10
+- [ ] T4.06 — News feed · S · deps: T4.05
+- [ ] T4.07 — Data release calendar · M · deps: T2.17, T0.10
+- [ ] T4.08 — Historic templates and generic events · M · deps: T4.03
+- [ ] T4.09 — Scenario runner · S · deps: T4.05
+- [ ] T4.10 — Cascade and storm tests · S · deps: T4.08
+- [ ] T4.11 — Template direction tests · M · deps: T4.08, T4.09
+- [ ] T4.12 — Firm-level event hooks · S · deps: T4.03
+- [ ] T4.13 — Magnitude calibration · M · deps: T4.11 · **HUMAN GATE**
+
+- [ ] **GATE P4** — human review against the gate in the phase file
+
+## Phase 5 — Agent-operated firms (19 tasks) — `05-phase5-firms.md`
+
+- [ ] T5.01 — `firms.yaml` and firm state · M · deps: T3.15
+- [ ] T5.02 — Firm accounts on the ledger · M · deps: T5.01, T2.03
+- [ ] T5.03 — Founding and entry · S · deps: T5.02
+- [ ] T5.04 — Cell aggregation with firms (incl. zero-NPC cells) · M · deps: T5.03
+- [ ] T5.05 — Heterogeneous-seller goods market · M · deps: T5.04
+- [ ] T5.06 — Decision levers and validation · M · deps: T5.04
+- [ ] T5.07 — Autopilot · M · deps: T5.06
+- [ ] T5.08 — Labour market with matching · M · deps: T5.06
+- [ ] T5.09 — Procurement and shortage allocation · M · deps: T5.05
+- [ ] T5.10 — Financing, rating, tax, hard budget constraint · M · deps: T5.02, T2.20
+- [ ] T5.11 — Plants, capex and R&D · M · deps: T5.06
+- [ ] T5.12 — Bankruptcy resolution · M · deps: T5.10
+- [ ] T5.13 — Reports and information rules · S · deps: T5.02, T4.07
+- [ ] T5.14 — Abuse controls and optional regulator · S · deps: T5.06, T5.10
+- [ ] T5.15 — Firm-level events · S · deps: T4.12, T5.11
+- [ ] T5.16 — Hybrid ≈ aggregate test · M · deps: T5.07, T5.08, T5.09
+- [ ] T5.17 — Adversarial, monopoly and cascade tests · M · deps: T5.12, T5.14
+- [ ] T5.18 — Minimal single-agent loop (in-process) · S · deps: T5.07
+- [ ] T5.19 — Collusion evaluation harness · S · deps: T5.18
+
+- [ ] **GATE P5** — human review against the gate in the phase file
+
+## Phase 6 — Asset pricing and markets (23 tasks) — `06-phase6-pricing-markets.md`
+
+- [ ] T6.01 — `markets.yaml` and the instrument registry · S · deps: T2.03
+- [ ] T6.02 — Earnings expectations from public information · S · deps: T4.07, T2.21
+- [ ] T6.03 — Yield curve, term premium, bond pricing · M · deps: T2.14
+- [ ] T6.04 — Discount rates and fundamental value · M · deps: T6.02, T6.03
+- [ ] T6.05 — Betas-emerge validation · M · deps: T6.04
+- [ ] T6.06 — Mispricing: sentiment, noise, limits to arbitrage · M · deps: T6.04
+- [ ] T6.07 — Impact kernel · M · deps: T6.01
+- [ ] T6.08 — Engine market maker · M · deps: T6.07
+- [ ] T6.09 — Background order flow · M · deps: T6.08
+- [ ] T6.10 — CLOB · L · deps: T6.01
+- [ ] T6.11 — CLOB liquidity: thin engine quote + queue-reactive-lite · M · deps: T6.10, T6.09
+- [ ] T6.12 — Settlement, fees, taxes · S · deps: T6.08, T6.10
+- [ ] T6.13 — Margin, shorting, forced liquidation · M · deps: T6.12
+- [ ] T6.14 — Cap tables and corporate actions · M · deps: T5.02, T6.12
+- [ ] T6.15 — Listing and IPO auction · S · deps: T6.14, T6.10
+- [ ] T6.16 — Control transfer and the takeover test · M · deps: T6.15, T5.06
+- [ ] T6.17 — Agent-firm valuation and thin quote feed · S · deps: T6.04, T5.13
+- [ ] T6.18 — Commodities · S · deps: T6.08
+- [ ] T6.19 — Feedback edges 4 → 1/2 · M · deps: T6.06, T2.24
+- [ ] T6.20 — Surveillance and limits · M · deps: T6.12
+- [ ] T6.21 — Tier-1 / Tier-2 statistics and the regime flip · M · deps: T6.09, T6.06, T6.07
+- [ ] T6.22 — Domain randomisation and hidden state · S · deps: T6.06
+- [ ] T6.23 — Market performance · S · deps: T6.21
+
+- [ ] **GATE P6** — human review against the gate in the phase file
+
+## Phase 7 — API and SDK (15 tasks) — `07-phase7-api-sdk.md`
+
+- [ ] T7.01 — Versioned API schemas · M · deps: T6.12, T5.06
+- [ ] T7.02 — Sessions, worlds, accounts · M · deps: T7.01
+- [ ] T7.03 — In-process client · S · deps: T7.02
+- [ ] T7.04 — REST endpoints · L · deps: T7.02
+- [ ] T7.05 — WebSocket streams · M · deps: T7.04
+- [ ] T7.06 — Lockstep barrier and real-time pacing · M · deps: T7.02
+- [ ] T7.07 — Python SDK (HTTP / WS) · M · deps: T7.04, T7.05
+- [ ] T7.08 — Gymnasium single-agent environment · M · deps: T7.03
+- [ ] T7.09 — PettingZoo parallel environment · M · deps: T7.08
+- [ ] T7.10 — Replay, export, save / load · M · deps: T7.06
+- [ ] T7.11 — Scenario packs, curricula, evaluation sets · M · deps: T4.09, T7.08
+- [ ] T7.12 — Vectorised parallel worlds · M · deps: T7.08
+- [ ] T7.13 — Throughput and profiling · S · deps: T7.12
+- [ ] T7.14 — End-to-end multi-agent training smoke run · M · deps: T7.09, T7.11
+- [ ] T7.15 — API documentation and quickstart · S · deps: T7.07
+
+- [ ] **GATE P7** — human review against the gate in the phase file
+
+## Phase 8 — Realism and game (coarse) (12 tasks) — `08-phase8-9-realism-game-scale.md`
+
+- [ ] T8.01 — Financing depth · L · deps: T7.14
+- [ ] T8.02 — Supply contracts · M · deps: T7.14
+- [ ] T8.03 — Quality and brand · M · deps: T7.14
+- [ ] T8.04 — Calibration pass · L · deps: T7.14, T0.09 · **HUMAN GATE**
+- [ ] T8.05 — Historic replay comparison · M · deps: T8.04
+- [ ] T8.06 — Explainability traces · L · deps: T7.04
+- [ ] T8.07 — Game layer contract · L · deps: T7.15
+- [ ] T8.08 — Regulator · M · deps: T7.14
+- [ ] T8.09 — Regional real-estate asset · M · deps: T7.14
+- [ ] T8.10 — Tier-3 counterfactual validation (research) · M · deps: T7.14
+- [ ] T8.11 — Korea-flavoured calibration set (optional) · M · deps: T8.04
+- [ ] T8.12 — Goods layer (only if ADR T3.16 approved it) · L · deps: T3.16, T7.14
+
+- [ ] **GATE P8** — human review against the gate in the phase file
+
+## Phase 9 — Scale-out (coarse) (6 tasks) — `08-phase8-9-realism-game-scale.md`
+
+- [ ] T9.01 — Multi-country and FX · L · deps: T8.04
+- [ ] T9.02 — Storage backend · L · deps: T7.10
+- [ ] T9.03 — Parallel worlds at scale · M · deps: T7.12
+- [ ] T9.04 — M&A depth · L · deps: T6.16
+- [ ] T9.05 — Rust core for hot paths (only if profiling demands) · L · deps: T7.13
+- [ ] T9.06 — gRPC transport (optional) · M · deps: T7.04
+
+- [ ] **GATE P9** — human review against the gate in the phase file

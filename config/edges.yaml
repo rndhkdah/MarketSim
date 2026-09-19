@@ -1,0 +1,87 @@
+# Typed edges, policy, labour, capex and the seven primitive shocks.
+# T0.14 corrections (B3–B5) are recorded in claude/plan/DECISIONS.md ADR-001…003.
+
+capex:
+  routing:
+    CAPGOODS: 0.45
+    CONSTRUCT: 0.30
+    SOFTWARE: 0.10
+    BIZSVC: 0.10
+    MATERIALS: 0.05
+  coefficients:
+    phi_accelerator: 1.2
+    psi_utilisation: 0.8
+    chi_cost_of_capital: 0.45
+    q_tobin: 0.30
+  lag_q: 3.0
+  # ADR-002 / B4 — coefficients are percentage points of K per year.
+  unit: pct_pts_of_K_per_year
+  unit_scale: 0.01
+  q_scale: 0.1
+  supply_line_weight: 0.85
+
+credit:
+  bank_capital_gate:
+    midpoint: 0.085
+    steepness: 90.0
+    # ADR-001 / B3 — ratio on risk-weighted assets, normalised to 1 at baseline.
+    ratio: equity_over_rwa
+    baseline_capital_ratio: 0.125
+    normalise_at_baseline: true
+  edges:
+    - {src: BANKSYS, dst: ALL_SECTORS, channel: lending_capacity, elasticity: 0.35, lag: erlang(2), lag_q: 2.0, sign: +}
+    - {src: BANKSYS, dst: CONSTRUCT, channel: lending_capacity, elasticity: 0.90, lag: erlang(2), lag_q: 2.0, sign: +}
+    - {src: BANKSYS, dst: INVESTMENT, channel: residential, elasticity: 0.90, lag: erlang(2), lag_q: 2.0, sign: +}
+    - {src: BANKSYS, dst: AUTOS, channel: hh_credit, elasticity: 0.60, lag: erlang(2), lag_q: 2.0, sign: +}
+    - {src: BANKSYS, dst: DISCRET, channel: hh_credit, elasticity: 0.60, lag: erlang(2), lag_q: 2.0, sign: +}
+
+collateral:
+  - {src: REALESTATE, dst: BANKSYS, channel: collateral, elasticity: 0.55, up: 0.6, down: 1.8, lag: erlang(2), lag_q: 2.0, sign: +}
+
+substitution:
+  - {src: ENERGY, dst: UTILITIES, channel: substitution, elasticity: 0.35, lag: erlang(2), lag_q: 2.0, sign: +, saturation: 0.3}
+
+complement:
+  - {src: ENERGY, dst: AUTOS, channel: complement, elasticity: -0.30, lag: erlang(2), lag_q: 2.0, sign: -, saturation: 0.3}
+
+labour:
+  # Wage share of (pre-import) value added. Scaled so FD 100 → wages 51.82.
+  wage_share:
+    ENERGY: 0.3389
+    MATERIALS: 0.4386
+    AGRIFOOD: 0.3987
+    SEMIS: 0.4785
+    AUTOS: 0.4984
+    STAPLES: 0.5184
+    DISCRET: 0.5582
+    HEALTH: 0.7177
+    CAPGOODS: 0.5184
+    CONSTRUCT: 0.5582
+    UTILITIES: 0.3788
+    TRANSPORT: 0.4984
+    SOFTWARE: 0.6978
+    TELECOM: 0.4187
+    BIZSVC: 0.7377
+    BANKS: 0.5483
+    INSURANCE: 0.4785
+    REALESTATE: 0.2592
+  phillips_slope: 0.40
+  wage_stickiness_q: 4.0
+
+policy:
+  taylor:
+    r_neutral: 0.01
+    phi_inflation: 1.5
+    phi_output_gap: 0.5
+    smoothing: 0.75
+  automatic_stabiliser: -0.35
+  discretionary_lag_q: 2.0
+
+shocks:
+  demand: {persistence_q: 6.0}
+  supply: {persistence_q: 12.0}
+  cost_push: {persistence_q: 8.0, targets: {ENERGY: 1.0, AGRIFOOD: 0.3}}
+  monetary: {persistence_q: 4.0}
+  risk_appetite: {persistence_q: 3.0}
+  fiscal: {persistence_q: 8.0}
+  catastrophe: {persistence_q: 0.0, claims_to: [CONSTRUCT, AUTOS, HEALTH]}

@@ -1,0 +1,6 @@
+scale: 1.0
+seed: 0
+mode: professional          # game | professional
+run_mode: lockstep          # lockstep | realtime
+io_source: seed             # seed | bea
+modules: []

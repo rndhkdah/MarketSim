@@ -1,0 +1,30 @@
+# Nested workflow — GitHub only auto-runs workflows under the repo-root .github/.
+# See claude/plan/QUESTIONS.md (T0.02). Run locally with `make check`.
+name: marketsim
+on:
+  push:
+    paths:
+      - "marketsim/**"
+  pull_request:
+    paths:
+      - "marketsim/**"
+
+defaults:
+  run:
+    working-directory: marketsim
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Check
+        run: make check

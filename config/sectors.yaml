@@ -1,0 +1,240 @@
+# Layer-1 sector parameters. Values are reconstruction defaults (no legacy tree).
+# Changing a value requires an ADR in claude/plan/DECISIONS.md.
+
+defaults:
+  eta: 1.0
+  eps_own: -0.80
+  pass_through: 1.0
+  pass_lag_q: 0.5
+  inv_lag_q: 1.0
+  build_lag_q: 4.0
+  dem_rate_semi: -1.0
+  nd_ebitda: 2.5
+  cf_duration: 8.0
+  fixed_cost: 0.25
+  util_target: 0.80
+  asset_leverage: 2.5
+
+sectors:
+  ENERGY:
+    eta: 0.85
+    eps_own: -0.40
+    pass_through: 0.95
+    pass_lag_q: 0.25
+    inv_lag_q: 1.5
+    build_lag_q: 12.0
+    dem_rate_semi: -0.8
+    nd_ebitda: 2.2
+    cf_duration: 10.0
+    fixed_cost: 0.40
+    util_target: 0.82
+  MATERIALS:
+    eta: 1.15
+    eps_own: -0.70
+    pass_through: 0.90
+    inv_lag_q: 1.5
+    build_lag_q: 6.0
+    dem_rate_semi: -1.2
+    nd_ebitda: 2.4
+    cf_duration: 8.0
+    fixed_cost: 0.30
+  AGRIFOOD:
+    eta: 0.55
+    eps_own: -0.35
+    pass_through: 0.85
+    inv_lag_q: 2.0
+    build_lag_q: 4.0
+    dem_rate_semi: -0.4
+    nd_ebitda: 1.8
+    cf_duration: 7.0
+  SEMIS:
+    eta: 1.55
+    eps_own: -1.10
+    pass_through: 0.90
+    inv_lag_q: 1.0
+    build_lag_q: 8.0
+    dem_rate_semi: -2.0
+    nd_ebitda: 1.6
+    cf_duration: 7.0
+    fixed_cost: 0.45
+    util_target: 0.78
+  AUTOS:
+    eta: 2.40
+    eps_own: -1.40
+    pass_through: 0.85
+    inv_lag_q: 1.0
+    build_lag_q: 4.0
+    dem_rate_semi: -8.0
+    nd_ebitda: 2.8
+    cf_duration: 7.14
+    fixed_cost: 0.35
+  STAPLES:
+    eta: 0.45
+    eps_own: -0.40
+    pass_through: 0.70
+    pass_lag_q: 1.0
+    inv_lag_q: 1.5
+    dem_rate_semi: -0.3
+    nd_ebitda: 2.0
+    cf_duration: 9.0
+  DISCRET:
+    eta: 1.50
+    eps_own: -1.20
+    pass_through: 0.80
+    inv_lag_q: 1.0
+    dem_rate_semi: -5.0
+    nd_ebitda: 2.2
+    cf_duration: 7.5
+  HEALTH:
+    eta: 0.65
+    eps_own: -0.30
+    pass_through: 0.45
+    pass_lag_q: 2.0
+    inv_lag_q: 1.0
+    dem_rate_semi: -0.2
+    nd_ebitda: 1.4
+    cf_duration: 11.0
+    fixed_cost: 0.35
+  CAPGOODS:
+    eta: 1.90
+    eps_own: -1.00
+    pass_through: 0.85
+    inv_lag_q: 1.5
+    build_lag_q: 6.0
+    dem_rate_semi: -2.2
+    nd_ebitda: 2.6
+    cf_duration: 8.0
+    fixed_cost: 0.32
+  CONSTRUCT:
+    eta: 2.10
+    eps_own: -0.90
+    pass_through: 0.80
+    inv_lag_q: 1.0
+    build_lag_q: 2.0
+    dem_rate_semi: -3.0
+    nd_ebitda: 3.2
+    cf_duration: 8.5
+    fixed_cost: 0.20
+  UTILITIES:
+    eta: 0.35
+    eps_own: -0.20
+    pass_through: 0.35
+    pass_lag_q: 4.0
+    inv_lag_q: 0.5
+    build_lag_q: 10.0
+    dem_rate_semi: -0.4
+    nd_ebitda: 4.5
+    cf_duration: 16.0
+    fixed_cost: 0.50
+    util_target: 0.85
+  TRANSPORT:
+    eta: 1.70
+    eps_own: -0.90
+    pass_through: 0.90
+    pass_lag_q: 0.25
+    inv_lag_q: 0.5
+    build_lag_q: 5.0
+    dem_rate_semi: -2.5
+    nd_ebitda: 2.8
+    cf_duration: 8.0
+    fixed_cost: 0.30
+  SOFTWARE:
+    eta: 1.80
+    eps_own: -1.10
+    pass_through: 0.85
+    pass_lag_q: 0.5
+    inv_lag_q: 0.0
+    build_lag_q: 3.0
+    dem_rate_semi: -1.5
+    nd_ebitda: 0.8
+    cf_duration: 12.0
+    fixed_cost: 0.20
+  TELECOM:
+    eta: 0.55
+    eps_own: -0.35
+    pass_through: 0.40
+    pass_lag_q: 3.0
+    inv_lag_q: 0.0
+    build_lag_q: 6.0
+    dem_rate_semi: -0.5
+    nd_ebitda: 3.8
+    cf_duration: 14.0
+    fixed_cost: 0.40
+  BIZSVC:
+    eta: 1.15
+    eps_own: -0.85
+    pass_through: 0.80
+    inv_lag_q: 0.0
+    build_lag_q: 2.0
+    dem_rate_semi: -1.0
+    nd_ebitda: 1.2
+    cf_duration: 8.0
+    fixed_cost: 0.15
+  BANKS:
+    eta: 1.05
+    eps_own: -0.50
+    pass_through: 0.80
+    inv_lag_q: 0.0
+    build_lag_q: 2.0
+    dem_rate_semi: -1.2
+    nd_ebitda: 0.4
+    cf_duration: 2.0
+    asset_leverage: 11.0
+    fixed_cost: 0.20
+  INSURANCE:
+    eta: 0.70
+    eps_own: -0.40
+    pass_through: 0.70
+    inv_lag_q: 0.0
+    build_lag_q: 2.0
+    dem_rate_semi: -0.6
+    nd_ebitda: 0.5
+    cf_duration: 9.0
+    fixed_cost: 0.22
+  REALESTATE:
+    eta: 0.75
+    eps_own: -0.45
+    pass_through: 0.50
+    pass_lag_q: 2.0
+    inv_lag_q: 0.0
+    build_lag_q: 8.0
+    dem_rate_semi: -4.0
+    nd_ebitda: 5.0
+    cf_duration: 18.0
+    fixed_cost: 0.15
+    util_target: 0.88
+
+financials:
+  BANKS:
+    nim_rate_beta: 4.2
+    curve_beta: 0.40
+    bond_mtm_duration: 2.0
+  INSURANCE:
+    float_rate_beta: 1.2
+    curve_beta: 0.60
+    bond_mtm_duration: 8.0
+
+# Cap-weighted NPC sector equity at baseline. Must sum to 1.
+market_cap_weights:
+  ENERGY: 0.06
+  MATERIALS: 0.03
+  AGRIFOOD: 0.01
+  SEMIS: 0.03
+  AUTOS: 0.05
+  STAPLES: 0.06
+  DISCRET: 0.08
+  HEALTH: 0.10
+  CAPGOODS: 0.04
+  CONSTRUCT: 0.02
+  UTILITIES: 0.04
+  TRANSPORT: 0.03
+  SOFTWARE: 0.14
+  TELECOM: 0.05
+  BIZSVC: 0.05
+  BANKS: 0.10
+  INSURANCE: 0.05
+  REALESTATE: 0.06
+
+bond_index:
+  duration: 7.0
+  name: GBOND10

@@ -1,0 +1,66 @@
+[project]
+name = "marketsim"
+version = "0.1.0"
+description = "Headless deterministic economy + financial-market simulation engine (Phase 0)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "Harry" },
+]
+dependencies = [
+    "numpy>=2.0",
+    "scipy>=1.13",
+    "pyyaml>=6.0",
+    "pydantic>=2.0",
+    "sortedcontainers>=2.4",
+]
+
+[project.optional-dependencies]
+api = [
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "websockets>=14.0",
+]
+rl = [
+    "gymnasium>=0.29",
+    "pettingzoo>=1.24",
+]
+bea = [
+    "pandas>=2.2",
+    "openpyxl>=3.1",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-xdist>=3.6",
+    "ruff>=0.6",
+    "hypothesis>=6.112",
+    "pandas>=2.2",
+    "openpyxl>=3.1",
+]
+
+[project.scripts]
+marketsim-build-io = "marketsim.layer1.build_io:main"
+marketsim-derive-betas = "marketsim.layer1.betas:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "scripts"]
+addopts = "-q"
+markers = [
+    "validation: economic behaviour (IRFs, rotation, structure)",
+    "slow: long-running nightly tests",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]

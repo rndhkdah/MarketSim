@@ -1,0 +1,12 @@
+---
+description: marketsim project rules — always follow AGENTS.md and work one task card at a time
+globs:
+alwaysApply: true
+---
+
+- Follow `marketsim/AGENTS.md` (this package). It is authoritative for design rules, workflow and definition of done.
+- Work exactly one task card from `claude/plan/*.md` per session; pick it from `claude/plan/PROGRESS.md`.
+- Before coding read the card's **Read first** sections; conventions are in `claude/plan/00-MASTER-PLAN.md` §6–§8.
+- If a card is ambiguous or a required test cannot pass without changing the economics, stop and write to
+  `claude/plan/QUESTIONS.md`. Never loosen a tolerance or edit a test to get green.
+- All parameters go in `config/*.yaml` with a pydantic model. Randomness only via `core.rng.stream(name)`.

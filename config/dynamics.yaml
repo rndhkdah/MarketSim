@@ -1,0 +1,23 @@
+# Stub for T0.14 / B5. Full schema arrives in T2.01.
+# inv_lag_q no longer doubles as order-book length — production.mode is the switch.
+
+production:
+  mode:
+    ENERGY: stock
+    MATERIALS: stock
+    AGRIFOOD: stock
+    SEMIS: stock
+    AUTOS: stock
+    STAPLES: stock
+    DISCRET: stock
+    HEALTH: stock
+    CAPGOODS: order
+    CONSTRUCT: order
+    UTILITIES: flow
+    TRANSPORT: flow
+    SOFTWARE: flow
+    TELECOM: flow
+    BIZSVC: flow
+    BANKS: flow
+    INSURANCE: flow
+    REALESTATE: flow
