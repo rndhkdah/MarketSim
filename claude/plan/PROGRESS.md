@@ -29,7 +29,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 
 - [x] T2.01 — `dynamics.yaml` and its schema · S · deps: T0.14 — 2026-09-19, §2.11 defaults + pydantic
 - [x] T2.02 — Ledger core · M · deps: T0.11 — 2026-09-19, pos matrix + balanced post
-- [ ] T2.03 — Balance-sheet and transaction-flow matrices, SFC assertion · M · deps: T2.02
+- [x] T2.03 — Balance-sheet and transaction-flow matrices, SFC assertion · M · deps: T2.02 — 2026-09-19
 - [ ] T2.04 — Steady state, real side · M · deps: T2.01, T0.04, T0.12
 - [ ] T2.05 — Steady state, financial side and opening postings · M · deps: T2.04, T2.03
 - [ ] T2.06 — Production plans and capacity caps (R1, R4) · M · deps: T2.04
