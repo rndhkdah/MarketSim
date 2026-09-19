@@ -36,7 +36,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T2.07 — Orders, rationing, deliveries, input stocks (R5–R6) · M · deps: T2.06 — 2026-09-19, three modes + conservation
 - [x] T2.08 — Price formation (R7) · M · deps: T2.04 — 2026-09-19, step bound 0.15; G ranking
 - [x] T2.09 — Labour and wages (R8) · S · deps: T2.06 — 2026-09-19, hire/fire + 4× downward stickiness
-- [ ] T2.10 — Capex, capacity pipeline, supply line (R3, §2.6) · M · deps: T2.04, T0.12, T0.14
+- [x] T2.10 — Capex, capacity pipeline, supply line (R3, §2.6) · M · deps: T2.04, T0.12, T0.14 — 2026-09-19, −0.45pp/100bp; ENERGY lag > CONSTRUCT
 - [ ] T2.11 — Residential investment block · S · deps: T2.10
 - [ ] T2.12 — Household sector (aggregate, scalar-η demand system) · M · deps: T2.05
 - [ ] T2.13 — Government and fiscal rule · S · deps: T2.05
