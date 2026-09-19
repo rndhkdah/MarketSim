@@ -12,6 +12,18 @@ def _spawn_key(name: str) -> int:
     return int.from_bytes(sha256(name.encode("utf-8")).digest()[:4], "little")
 
 
+def _json_safe(obj: Any) -> Any:
+    if isinstance(obj, dict):
+        return {str(k): _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(v) for v in obj]
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, np.generic):
+        return obj.item()
+    return obj
+
+
 class RngHub:
     """Root seed → named `numpy.random.Generator(PCG64)` streams."""
 
@@ -35,18 +47,6 @@ class RngHub:
                 name: _json_safe(gen.bit_generator.state) for name, gen in sorted(self._streams.items())
             },
         }
-
-
-def _json_safe(obj: Any) -> Any:
-    if isinstance(obj, dict):
-        return {str(k): _json_safe(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple)):
-        return [_json_safe(v) for v in obj]
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    if isinstance(obj, np.generic):
-        return obj.item()
-    return obj
 
     @classmethod
     def from_state(cls, state: dict[str, Any]) -> RngHub:

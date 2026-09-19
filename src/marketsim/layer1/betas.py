@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass, field
 from pathlib import Path
+
 import numpy as np
 
 from marketsim.core.config import Config, load_config
@@ -20,24 +21,24 @@ class BetasParams:
     cyclical_leontief: float = 0.55
     cyclical_eta: float = 0.35
     cyclical_invest: float = 0.10
-    oil_own: float = 1.80
+    oil_own: float = 4.80
     oil_cost_scale: float = 1.15
     credit_scale: float = 0.35
     idio_floor: float = 0.10
     idio_scale: float = 0.06
     demo_n: int = 240
-    demo_demand_g_vol: float = 0.020
-    demo_demand_oil_vol: float = 0.0035
-    demo_demand_credit_vol: float = 0.003
-    demo_demand_taylor: float = 0.42
-    demo_supply_g_vol: float = 0.005
-    demo_supply_oil_vol: float = 0.030
-    demo_supply_credit_vol: float = 0.005
-    demo_supply_taylor: float = 0.62
-    demo_supply_g_mean: float = -0.004
-    demo_supply_oil_mean: float = 0.012
-    demo_idio: float = 0.28
-    demo_bond_noise: float = 0.0006
+    demo_demand_g_vol: float = 0.035
+    demo_demand_oil_vol: float = 0.0025
+    demo_demand_credit_vol: float = 0.002
+    demo_demand_taylor: float = 0.085
+    demo_supply_g_vol: float = 0.003
+    demo_supply_oil_vol: float = 0.032
+    demo_supply_credit_vol: float = 0.003
+    demo_supply_taylor: float = 0.58
+    demo_supply_g_mean: float = -0.003
+    demo_supply_oil_mean: float = 0.010
+    demo_idio: float = 0.22
+    demo_bond_noise: float = 0.0005
 
 
 @dataclass(frozen=True)

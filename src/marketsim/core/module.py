@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any, Protocol
 
 
-class Phase(str, Enum):
+class Phase(StrEnum):
     EVENTS = "EVENTS"
     INGEST = "INGEST"
     REAL = "REAL"

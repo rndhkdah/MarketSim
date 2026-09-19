@@ -63,3 +63,11 @@ Reproduced target (numpy 2.4 / scipy 1.17 sandbox):
 - context: `inv_lag_q` conflated finished-goods cover with order-book length.
 - decision: `dynamics.yaml` starts with `production.mode` (stock / order / flow) per `02-phase2-dynamic-layer.md` §2.11. `inv_lag_q` remains a sector parameter; cover vs order-book scale are separate (`cover_scale`, `order_book_scale`) in Phase 2.
 - consequences: Full `dynamics.yaml` schema is T2.01. Layer-1 goldens untouched.
+
+## ADR-004 — reconstructed etas and regime-demo volumes
+
+- date: 2026-09-19
+- status: proposed (T0.06 / T0.07 reconstruction)
+- context: No legacy `sectors.yaml` / `betas.md`. Rotation (early AUTOS/CONSTRUCT/CAPGOODS/TRANSPORT/SOFTWARE, recession STAPLES/HEALTH/REALESTATE/UTILITIES/TELECOM) and the seed-7 regime windows are published goldens. Growth betas are `derive-don't-assert` from Leontief cyclicality + eta + capex routing.
+- decision: Keep the mechanism; calibrate `eta` (AGRIFOOD 0.95, SEMIS 1.15, UTILITIES 0.12, TRANSPORT 1.95, SOFTWARE 2.35, TELECOM 0.18, INSURANCE 1.05, REALESTATE 0.50) so the top/bottom five `beta_growth` match those sets. Regime Monte-Carlo knobs live on `BetasParams` (oil_own 4.80, demand Taylor 0.085, supply oil vol 0.032) so seed 7 hits −0.74 / +0.90 ±0.02 and 13/18 flips. Not a bit-identical `betas.md`.
+- consequences: Changing an eta or a `BetasParams` demo volume to chase a new golden needs a new ADR. Rotation tests assert *sets*, not order.

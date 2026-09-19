@@ -9,11 +9,10 @@ from marketsim.core.erlang import ErlangChain, ErlangSmoother
 def test_impulse_mass_and_mean() -> None:
     mean_m = 6.0
     k = 3
-    chain = ErlangChain(k, mean_m, (1,))
-    out = []
-    out.append(float(chain.push(np.array([1.0]))))
+    chain = ErlangChain(k, mean_m, ())
+    out = [float(chain.push(1.0))]
     for _ in range(400):
-        out.append(float(chain.push(np.array([0.0]))))
+        out.append(float(chain.push(0.0)))
     y = np.array(out)
     assert abs(y.sum() - 1.0) < 1e-6
     t = np.arange(len(y))
@@ -35,11 +34,11 @@ def test_seed_then_constant_inflow_is_fixed_point() -> None:
 
 
 def test_mass_conserved() -> None:
-    chain = ErlangChain(2, 3.0, (4,))
+    chain = ErlangChain(2, 3.0, ())
     inflow = np.array([0.4, 0.0, 1.2, 0.3, 0.0])
     out = 0.0
     for x in inflow:
-        out += float(chain.push(np.array([x])).sum())
+        out += float(chain.push(float(x)))
     assert out + float(chain.content().sum()) == pytest.approx(float(inflow.sum()))
 
 

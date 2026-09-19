@@ -7,8 +7,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from marketsim.core.config import Config, load_config
 from marketsim.core.clock import Clock
+from marketsim.core.config import Config, load_config
 from marketsim.core.hashing import state_hash as _hash
 from marketsim.core.module import PIPELINE, Module, Phase
 from marketsim.core.rng import RngHub

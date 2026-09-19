@@ -39,7 +39,7 @@ sectors:
     cf_duration: 8.0
     fixed_cost: 0.30
   AGRIFOOD:
-    eta: 0.55
+    eta: 0.95
     eps_own: -0.35
     pass_through: 0.85
     inv_lag_q: 2.0
@@ -48,7 +48,7 @@ sectors:
     nd_ebitda: 1.8
     cf_duration: 7.0
   SEMIS:
-    eta: 1.55
+    eta: 1.15
     eps_own: -1.10
     pass_through: 0.90
     inv_lag_q: 1.0
@@ -116,7 +116,7 @@ sectors:
     cf_duration: 8.5
     fixed_cost: 0.20
   UTILITIES:
-    eta: 0.35
+    eta: 0.12
     eps_own: -0.20
     pass_through: 0.35
     pass_lag_q: 4.0
@@ -128,7 +128,7 @@ sectors:
     fixed_cost: 0.50
     util_target: 0.85
   TRANSPORT:
-    eta: 1.70
+    eta: 1.95
     eps_own: -0.90
     pass_through: 0.90
     pass_lag_q: 0.25
@@ -139,7 +139,7 @@ sectors:
     cf_duration: 8.0
     fixed_cost: 0.30
   SOFTWARE:
-    eta: 1.80
+    eta: 2.35
     eps_own: -1.10
     pass_through: 0.85
     pass_lag_q: 0.5
@@ -150,7 +150,7 @@ sectors:
     cf_duration: 12.0
     fixed_cost: 0.20
   TELECOM:
-    eta: 0.55
+    eta: 0.18
     eps_own: -0.35
     pass_through: 0.40
     pass_lag_q: 3.0
@@ -182,7 +182,7 @@ sectors:
     asset_leverage: 11.0
     fixed_cost: 0.20
   INSURANCE:
-    eta: 0.70
+    eta: 1.05
     eps_own: -0.40
     pass_through: 0.70
     inv_lag_q: 0.0
@@ -192,7 +192,7 @@ sectors:
     cf_duration: 9.0
     fixed_cost: 0.22
   REALESTATE:
-    eta: 0.75
+    eta: 0.50
     eps_own: -0.45
     pass_through: 0.50
     pass_lag_q: 2.0
