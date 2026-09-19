@@ -37,6 +37,17 @@ class MonthFlows:
     d_debt: np.ndarray
     deficit: float
     vat: float = 0.0
+    interest_deposits: float = 0.0
+    bank_dividends: float = 0.0
+    writeoffs: np.ndarray | None = None
+    interest_reserves: float = 0.0
+    d_bank_gb: float = 0.0
+    d_cb_gb: float = 0.0
+    d_res: float = 0.0
+    loan_holder: str = ""
+    interest_bonds_hh: float | None = None
+    interest_bonds_bank: float = 0.0
+    interest_bonds_cb: float = 0.0
 
 
 def _pay(tick: int, tag: str, payer: str, payee: str, amount: float, inst: str = "DEP") -> Tx | None:
@@ -47,6 +58,54 @@ def _pay(tick: int, tag: str, payer: str, payee: str, amount: float, inst: str =
 
 def _npc(code: str, region: int = 0) -> str:
     return f"NPC:{region}:{code}"
+
+
+def _issue_bonds_to(ledger: Ledger, buyer: str, amount: float, tick: int) -> None:
+    if abs(amount) < 1e-15:
+        return
+    entries: list[Entry] = []
+    for inst, share in GOVT_MIX:
+        amt = float(amount * share)
+        entries.extend(
+            [
+                Entry(buyer, inst, amt),
+                Entry("GOVT", inst, -amt),
+                Entry(buyer, "DEP", -amt),
+                Entry("GOVT", "DEP", amt),
+            ]
+        )
+    ledger.post(Tx(tick, "bond_issue", tuple(entries)))
+
+
+def _post_full_finance(ledger: Ledger, flows: MonthFlows, tick: int, hh: str) -> None:
+    d_bank = float(flows.d_bank_gb)
+    d_cb = float(flows.d_cb_gb)
+    d_hh = float(flows.deficit) - d_bank - d_cb
+    _issue_bonds_to(ledger, hh, d_hh, tick)
+    _issue_bonds_to(ledger, "BANKSYS", d_bank, tick)
+    if abs(d_cb) > 1e-15:
+        entries: list[Entry] = []
+        for inst, share in GOVT_MIX:
+            amt = float(d_cb * share)
+            entries.extend([Entry("CB", inst, amt), Entry("GOVT", inst, -amt)])
+        res = float(flows.d_res) if abs(flows.d_res) > 1e-15 else d_cb
+        entries.extend(
+            [
+                Entry("BANKSYS", "RES", res),
+                Entry("CB", "RES", -res),
+                Entry("BANKSYS", "DEP", -d_cb),
+                Entry("GOVT", "DEP", d_cb),
+            ]
+        )
+        ledger.post(Tx(tick, "bond_issue", tuple(entries)))
+    elif abs(flows.d_res) > 1e-15:
+        ledger.post(
+            Tx(
+                tick,
+                "bond_issue",
+                (Entry("BANKSYS", "RES", float(flows.d_res)), Entry("CB", "RES", -float(flows.d_res))),
+            )
+        )
 
 
 def settle_month(
@@ -61,6 +120,8 @@ def settle_month(
     """Post one month of passthrough flows. ``clip_debt`` reproduces the prototype bug."""
     hh = f"HH:{region}"
     codes = real.codes
+    loan_cp = flows.loan_holder or hh
+    full = loan_cp == "BANKSYS"
 
     def post(tx: Tx | None) -> None:
         if tx is not None:
@@ -70,7 +131,7 @@ def settle_month(
         firm = _npc(code, region)
         post(_pay(tick, "wages", firm, hh, float(flows.wages[i])))
         post(_pay(tick, "dividends", firm, hh, float(flows.dividends[i])))
-        post(_pay(tick, "interest_loans", firm, hh, float(flows.interest_loans[i])))
+        post(_pay(tick, "interest_loans", firm, loan_cp, float(flows.interest_loans[i])))
         post(_pay(tick, "corp_tax", firm, "GOVT", float(flows.corp_tax[i])))
         post(_pay(tick, "consumption", hh, firm, float(flows.c_nom[i])))
         post(_pay(tick, "govt_purchases", "GOVT", firm, float(flows.g_nom[i])))
@@ -79,7 +140,12 @@ def settle_month(
     post(_pay(tick, "transfers", "GOVT", hh, float(flows.transfers)))
     post(_pay(tick, "income_tax", hh, "GOVT", float(flows.income_tax)))
     post(_pay(tick, "vat", hh, "GOVT", float(flows.vat)))
-    post(_pay(tick, "interest_bonds", "GOVT", hh, float(flows.interest_bonds)))
+    if full and flows.interest_bonds_hh is not None:
+        post(_pay(tick, "interest_bonds", "GOVT", hh, float(flows.interest_bonds_hh)))
+        post(_pay(tick, "interest_bonds", "GOVT", "BANKSYS", float(flows.interest_bonds_bank)))
+        post(_pay(tick, "interest_bonds", "GOVT", "CB", float(flows.interest_bonds_cb)))
+    else:
+        post(_pay(tick, "interest_bonds", "GOVT", hh, float(flows.interest_bonds)))
     post(_pay(tick, "residential", hh, _npc("CONSTRUCT", region), float(flows.res_nom)))
 
     # Intermediate: buyer j pays seller i
@@ -89,6 +155,25 @@ def settle_month(
             if abs(amt) < 1e-14:
                 continue
             post(_pay(tick, "intermediate", _npc(buy, region), _npc(sell, region), amt))
+
+    if full:
+        wo = flows.writeoffs if flows.writeoffs is not None else np.zeros(len(codes))
+        for i, code in enumerate(codes):
+            amt = float(wo[i])
+            if amt > 1e-14:
+                firm = _npc(code, region)
+                ledger.post(
+                    Tx(
+                        tick,
+                        "loan_writeoff",
+                        (Entry("BANKSYS", "LOAN", -amt), Entry(firm, "LOAN", amt)),
+                    )
+                )
+        post(_pay(tick, "interest_deposits", "BANKSYS", hh, float(flows.interest_deposits)))
+        post(_pay(tick, "dividends", "BANKSYS", hh, float(flows.bank_dividends)))
+        post(_pay(tick, "interest_reserves", "CB", "BANKSYS", float(flows.interest_reserves)))
+        remit = float(flows.interest_bonds_cb) - float(flows.interest_reserves)
+        post(_pay(tick, "cb_remittance", "CB", "GOVT", remit))
 
     # Business investment: each firm pays its capex to investment-good firms via a pool on HH? 
     # Payer = firm (uses retained funds / new loans); payee = sellers in i_nom.
@@ -109,7 +194,7 @@ def settle_month(
         for j, code in enumerate(codes):
             post(_pay(tick, "investment", _npc(code, region), hh, float(i_total * weights[j])))
 
-    # Debt: HH holds firm loans
+    # Debt: HH (passthrough) or BANKSYS (full / endogenous money)
     for i, code in enumerate(codes):
         d = float(flows.d_debt[i])
         posted = max(d, 0.0) if clip_debt else d
@@ -117,34 +202,57 @@ def settle_month(
             posted = 0.0
         firm = _npc(code, region)
         if posted > 1e-14:
-            ledger.post(
-                Tx(
-                    tick,
-                    "loan_new",
-                    (
-                        Entry(hh, "LOAN", posted),
-                        Entry(firm, "LOAN", -posted),
-                    ),
+            if full:
+                ledger.post(
+                    Tx(
+                        tick,
+                        "loan_new",
+                        (
+                            Entry(firm, "DEP", posted),
+                            Entry("BANKSYS", "DEP", -posted),
+                            Entry("BANKSYS", "LOAN", posted),
+                            Entry(firm, "LOAN", -posted),
+                        ),
+                    )
                 )
-            )
+            else:
+                ledger.post(
+                    Tx(
+                        tick,
+                        "loan_new",
+                        (Entry(hh, "LOAN", posted), Entry(firm, "LOAN", -posted)),
+                    )
+                )
         elif posted < -1e-14:
             amt = -posted
-            ledger.post(
-                Tx(
-                    tick,
-                    "loan_repay",
-                    (
-                        Entry(hh, "LOAN", -amt),
-                        Entry(firm, "LOAN", amt),
-                    ),
+            if full:
+                ledger.post(
+                    Tx(
+                        tick,
+                        "loan_repay",
+                        (
+                            Entry(firm, "DEP", -amt),
+                            Entry("BANKSYS", "DEP", amt),
+                            Entry("BANKSYS", "LOAN", -amt),
+                            Entry(firm, "LOAN", amt),
+                        ),
+                    )
                 )
-            )
+            else:
+                ledger.post(
+                    Tx(
+                        tick,
+                        "loan_repay",
+                        (Entry(hh, "LOAN", -amt), Entry(firm, "LOAN", amt)),
+                    )
+                )
         if clip_debt and d < -1e-14:
-            # Deposit side of the repayment still happens in the investment/profit
-            # posts; skipping the loan write makes Σ LOAN ≠ 0 after a later mutation.
             pass
 
-    post_bond_issue(ledger, float(flows.deficit), tick, mix=GOVT_MIX)
+    if full:
+        _post_full_finance(ledger, flows, tick, hh)
+    else:
+        post_bond_issue(ledger, float(flows.deficit), tick, mix=GOVT_MIX)
 
 
 def household_saving(flows: MonthFlows) -> float:
@@ -194,22 +302,19 @@ def assert_sector_balances(
     region: int = 0,
     atol: float = 1e-9,
 ) -> None:
-    """Net-lending identity: ΔNFA_HH = −ΔNFA_GOVT − ΔNFA_firms − ΔNFA_ROW."""
+    """Net-lending identity: ΔNFA_HH + ΔNFA_everyone_else = 0."""
     after = nfa_map(ledger)
-    hh = _delta(before, after, f"HH:{region}")
-    govt = _delta(before, after, "GOVT")
-    row = _delta(before, after, "ROW")
-    firms = 0.0
+    hh_name = f"HH:{region}"
+    hh = _delta(before, after, hh_name)
+    rest = 0.0
     for name in after:
-        if name.startswith(f"NPC:{region}:"):
-            firms += _delta(before, after, name)
-    # HH saving = deficit + firm net borrowing + TB, with
-    # deficit = −ΔNFA_GOVT, firm borrow = −ΔNFA_NPC, TB = −ΔNFA_ROW.
-    rhs = -govt + (-firms) + (-row)
-    if abs(hh - rhs) > atol:
+        if name == hh_name:
+            continue
+        rest += _delta(before, after, name)
+    if abs(hh + rest) > atol:
         raise SFCError(
-            f"HH saving {hh} != deficit {-govt} + borrow {-firms} + TB {-row}",
-            amount=hh - rhs,
+            f"HH saving {hh} != -ΔNFA_others {-rest}",
+            amount=hh + rest,
         )
 
 

@@ -10,8 +10,9 @@ from marketsim.core.config import Config
 from marketsim.core.erlang import ErlangSmoother
 from marketsim.core.module import Phase
 from marketsim.layer1.io import IOTable
-from marketsim.ledger.opening import open_passthrough_books
+from marketsim.ledger.opening import GOVT_MIX, open_passthrough_books
 from marketsim.real.aggregates import Aggregates, Published, expenditure_gdp, production_gdp
+from marketsim.real.banks import bank_month_flows, open_full_books
 from marketsim.real.capex import (
     cost_of_capital_gap,
     seed_pipelines,
@@ -35,7 +36,7 @@ from marketsim.real.production import (
 )
 from marketsim.real.residential import ResidentialBlock
 from marketsim.real.row import exports, import_bill
-from marketsim.real.settlement import MonthFlows, settle_and_check
+from marketsim.real.settlement import MonthFlows, settle_and_check, settle_month
 from marketsim.real.shocks import ShockBus
 from marketsim.real.steady_state import (
     FinancialBaseline,
@@ -57,8 +58,15 @@ class RealEconomy:
         self.real: RealBaseline = compute_real_baseline(io, cfg)
         self.fin: FinancialBaseline = compute_financial_baseline(self.real, cfg, io, pi_star=pi_star)
         self.check_sfc = check_sfc
-        self.ledger = open_passthrough_books(cfg, self.real, self.fin)
+        self.ledger = self._open_books()
         self._init_state()
+
+    def _open_books(self):
+        dyn = self.cfg.dynamics
+        assert dyn is not None
+        if dyn.banks.mode == "full":
+            return open_full_books(self.cfg, self.real, self.fin)
+        return open_passthrough_books(self.cfg, self.real, self.fin)
 
     def _init_state(self) -> None:
         cfg, real, fin = self.cfg, self.real, self.fin
@@ -98,6 +106,12 @@ class RealEconomy:
         self.prof_s = (fin.ebitda0 - fin.int0 - fin.tax0).copy()
         self.eb_s = fin.ebitda0.copy()
         self.b = fin.B
+        self.bank_deposits = fin.bank_deposits
+        self.bank_equity = fin.bank_equity
+        self.bank_reserves = fin.bank_reserves
+        self.bank_gb = fin.bank_gb
+        self.cb_gb = fin.cb_gb
+        self.hh_gb = fin.hh_gb if fin.hh_gb else fin.B
         self.wealth = fin.W
         self.yd_e = fin.YD0
         self.tau_eff = fin.tau_y
@@ -275,16 +289,39 @@ class RealEconomy:
         dep = (dyn.capex.delta_annual / 12.0) * real.flat(real.v) * self.k * float((self.route * self.p).sum())
         ctax = dyn.fiscal.corp_tax * np.maximum(ebitda - interest - dep, 0.0)
         prof = ebitda - interest - ctax
+        full = dyn.banks.mode == "full"
+        wo = np.zeros(s)
+        dep_int = 0.0
+        bank_div = 0.0
+        grow_now = (g_d - 1.0) / g_d
+        if full:
+            wo, dep_int, bank_div, _profit, _c = bank_month_flows(
+                r=self.cb.r,
+                debt=self.debt,
+                nd=self.nd,
+                ebitda=ebitda,
+                interest=interest,
+                deposits=self.bank_deposits,
+                reserves=self.bank_reserves,
+                gb=self.bank_gb,
+                equity=self.bank_equity,
+                grow=grow_now,
+                g=g_d,
+                fin=fin,
+                cfg=cfg,
+            )
         self.prof_s = self.prof_s * g_d + (prof - self.prof_s * g_d) / dyn.firms.tau_profit_m
         self.eb_s = self.eb_s * g_d + (ebitda - self.eb_s * g_d) / dyn.firms.tau_ebitda_m
         debt_gap = self.debt * g_d - self.nd * 12.0 * np.maximum(self.eb_s, 0.0)
         div_j = np.maximum(self.payout * np.maximum(self.prof_s, 0.0) - dyn.firms.kappa_leverage / 12.0 * debt_gap, 0.0)
         capex_nom = p_i * spend_real
         d_debt = capex_nom - (prof - div_j)
-        debt_prev = self.debt.copy()
-        self.debt = self.debt + d_debt
+        self.debt = self.debt - wo + d_debt
         transfers = dyn.fiscal.benefit_replacement * self.w * (real.LF - float(self.n.sum()))
-        pretax = float(wages.sum() + div_j.sum() + interest.sum() + self.cb.r * self.b / 12.0 + transfers)
+        if full:
+            pretax = float(wages.sum() + div_j.sum() + bank_div + dep_int + self.cb.r * self.hh_gb / 12.0 + transfers)
+        else:
+            pretax = float(wages.sum() + div_j.sum() + interest.sum() + self.cb.r * self.b / 12.0 + transfers)
         gdp_nom_a = 12.0 * float((rev - (self.p[:, None] * used).sum(0) - imp).sum())
         ratio = debt_ratio(self.b, gdp_nom_a, g_d)
         tau_tgt = tax_rate_target(fin.tau_y, dyn.fiscal.kappa_debt, ratio, dyn.fiscal.debt_to_gdp, dyn.fiscal.tax_rate_bounds)
@@ -298,8 +335,15 @@ class RealEconomy:
         g_nom_sec = self.p * gv
         g_nom = float(g_nom_sec.sum())
         income_tax = self.tau_eff * pretax
-        deficit = g_nom + transfers + self.cb.r * self.b / 12.0 - income_tax - float(ctax.sum())
-        self.b = self.b + deficit
+        b_begin = self.b
+        deficit = g_nom + transfers + self.cb.r * b_begin / 12.0 - income_tax - float(ctax.sum())
+        if full and b_begin > 1e-12:
+            d_bank_gb = deficit * (self.bank_gb / b_begin)
+            d_cb_gb = deficit * (self.cb_gb / b_begin)
+        else:
+            d_bank_gb = 0.0
+            d_cb_gb = 0.0
+        self.b = b_begin + deficit
         # R10
         self.sales_ma = self.sales_ma + (self.sales - self.sales_ma) / dyn.expectations.tau_growth_m
         g_now = 12.0 * np.log(np.maximum(self.sales, 1e-9) / np.maximum(self.sales_ma, 1e-9)) / dyn.expectations.tau_growth_m
@@ -364,15 +408,30 @@ class RealEconomy:
             income_tax=income_tax,
             corp_tax=ctax,
             interest_loans=interest,
-            interest_bonds=self.cb.r * (self.b - deficit) / 12.0,
+            interest_bonds=self.cb.r * b_begin / 12.0,
             dividends=div_j,
-            d_debt=self.debt - debt_prev,
+            d_debt=d_debt,
             deficit=deficit,
             vat=0.0,
+            interest_deposits=dep_int,
+            bank_dividends=bank_div,
+            writeoffs=wo if full else None,
+            interest_reserves=self.cb.r * self.bank_reserves / 12.0 if full else 0.0,
+            d_bank_gb=d_bank_gb,
+            d_cb_gb=d_cb_gb,
+            d_res=d_cb_gb,
+            loan_holder="BANKSYS" if full else "",
+            interest_bonds_hh=self.cb.r * self.hh_gb / 12.0 if full else None,
+            interest_bonds_bank=self.cb.r * self.bank_gb / 12.0 if full else 0.0,
+            interest_bonds_cb=self.cb.r * self.cb_gb / 12.0 if full else 0.0,
         )
         self.last_flows = flows
         if self.check_sfc:
             settle_and_check(self.ledger, real, flows, tick=self.month + 1)
+        else:
+            settle_month(self.ledger, real, flows, tick=self.month + 1)
+        if full:
+            self._refresh_bank_sheet()
         self.bus.decay()
         self.month += 1
         return {
@@ -389,9 +448,20 @@ class RealEconomy:
         if phase is Phase.REAL and ctx.world.clock.calendar.is_month_end(ctx.tick):
             self.step_month()
 
+    def _refresh_bank_sheet(self) -> None:
+        from marketsim.ledger.sfc import net_financial_assets
+
+        led = self.ledger
+        self.bank_deposits = -led.position("BANKSYS", "DEP")
+        self.bank_reserves = led.position("BANKSYS", "RES")
+        self.bank_gb = sum(led.position("BANKSYS", inst) for inst, _ in GOVT_MIX)
+        self.cb_gb = sum(led.position("CB", inst) for inst, _ in GOVT_MIX)
+        self.hh_gb = sum(led.position("HH:0", inst) for inst, _ in GOVT_MIX)
+        self.bank_equity = float(net_financial_assets(led)[led.entities.id("BANKSYS")])
+
     def reset(self, ctx: Any) -> None:
         del ctx
-        self.ledger = open_passthrough_books(self.cfg, self.real, self.fin)
+        self.ledger = self._open_books()
         self._init_state()
 
     def published(self, series: str, lag: int = 0) -> float:
@@ -437,6 +507,12 @@ class RealEconomy:
             "prof_s": self.prof_s.copy(),
             "eb_s": self.eb_s.copy(),
             "b": self.b,
+            "bank_deposits": self.bank_deposits,
+            "bank_equity": self.bank_equity,
+            "bank_reserves": self.bank_reserves,
+            "bank_gb": self.bank_gb,
+            "cb_gb": self.cb_gb,
+            "hh_gb": self.hh_gb,
             "wealth": self.wealth,
             "yd_e": self.yd_e,
             "tau_eff": self.tau_eff,
@@ -488,6 +564,12 @@ class RealEconomy:
         self.prof_s = np.asarray(state["prof_s"], dtype=float)
         self.eb_s = np.asarray(state["eb_s"], dtype=float)
         self.b = float(state["b"])
+        self.bank_deposits = float(state.get("bank_deposits", 0.0))
+        self.bank_equity = float(state.get("bank_equity", 0.0))
+        self.bank_reserves = float(state.get("bank_reserves", 0.0))
+        self.bank_gb = float(state.get("bank_gb", 0.0))
+        self.cb_gb = float(state.get("cb_gb", 0.0))
+        self.hh_gb = float(state.get("hh_gb", self.b))
         self.wealth = float(state["wealth"])
         self.yd_e = float(state["yd_e"])
         self.tau_eff = float(state["tau_eff"])

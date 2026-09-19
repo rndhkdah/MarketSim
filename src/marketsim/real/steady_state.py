@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import numpy as np
 
@@ -237,6 +237,17 @@ class FinancialBaseline:
     transfers0: float
     wages0: float
     div0: float
+    wo0: np.ndarray = field(default_factory=lambda: np.zeros(0))
+    icr0: np.ndarray = field(default_factory=lambda: np.zeros(0))
+    bank_loans: float = 0.0
+    bank_deposits: float = 0.0
+    bank_equity: float = 0.0
+    bank_reserves: float = 0.0
+    bank_gb: float = 0.0
+    cb_gb: float = 0.0
+    hh_gb: float = 0.0
+    bank_profit0: float = 0.0
+    dep_rate0: float = 0.0
 
 
 def compute_financial_baseline(
@@ -291,7 +302,8 @@ def compute_financial_baseline(
     interest_hh = float(int0.sum()) + r0 * b / 12.0 / g
     pretax0 = wages0 + div0 + interest_hh + transfers0
     tau_y = 1.0 - yd0 / pretax0
-    return FinancialBaseline(
+    icr0 = np.where(int0 > 1e-12, ebitda0 / int0, 1e6)
+    fin = FinancialBaseline(
         pi_star=float(pi_star),
         G=g,
         grow=grow,
@@ -314,4 +326,11 @@ def compute_financial_baseline(
         transfers0=float(transfers0),
         wages0=wages0,
         div0=div0,
+        icr0=icr0,
+        wo0=np.zeros_like(debt),
     )
+    if dyn.banks.mode == "full":
+        from marketsim.real.banks import apply_full_initialiser
+
+        fin = apply_full_initialiser(fin, real, cfg)
+    return fin
