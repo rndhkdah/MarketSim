@@ -190,12 +190,284 @@ class WorldSettings(FrozenModel):
     modules: list[str] = Field(default_factory=list)
 
 
+class ErlangLag(FrozenModel):
+    k: int
+    mean_m: float
+
+    @field_validator("k")
+    @classmethod
+    def _k(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("erlang k must be >= 1")
+        return v
+
+    @field_validator("mean_m")
+    @classmethod
+    def _mean(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("erlang mean_m must be >= 0")
+        return v
+
+
+def _positive(name: str, v: float) -> float:
+    if v <= 0:
+        raise ValueError(f"{name} must be > 0")
+    return v
+
+
+def _unit_interval(name: str, v: float) -> float:
+    if not (0.0 <= v <= 1.0):
+        raise ValueError(f"{name} must be in [0, 1]")
+    return v
+
+
+class ExpectationsCfg(FrozenModel):
+    tau_sales_m: float
+    tau_growth_m: float
+    anchor_growth: float
+    infl_anchor: float
+    tau_infl_m: float
+
+    @field_validator("tau_sales_m", "tau_growth_m", "tau_infl_m")
+    @classmethod
+    def _tau(cls, v: float) -> float:
+        return _positive("tau", v)
+
+    @field_validator("anchor_growth", "infl_anchor")
+    @classmethod
+    def _share(cls, v: float) -> float:
+        return _unit_interval("anchor", v)
+
+
+class CriticalInputCfg(FrozenModel):
+    min_share: float
+    suppliers: list[str]
+
+    @field_validator("min_share")
+    @classmethod
+    def _share(cls, v: float) -> float:
+        return _unit_interval("min_share", v)
+
+
 class DynamicsProduction(FrozenModel):
     mode: dict[str, Literal["stock", "order", "flow"]]
+    cover_scale: float
+    tau_inv_mult: float
+    order_book_scale: float
+    input_cover_m: float
+    tau_input_m: float
+    backlog_loss: float
+    tau_backlog_m: float
+    overtime_cap: float
+    critical_input: CriticalInputCfg
+    leak_per_month: dict[str, float] = Field(default_factory=dict)
+
+    @field_validator("tau_inv_mult", "tau_input_m", "tau_backlog_m", "overtime_cap", "cover_scale", "order_book_scale")
+    @classmethod
+    def _pos(cls, v: float) -> float:
+        return _positive("tau/scale", v)
+
+    @field_validator("input_cover_m")
+    @classmethod
+    def _cover(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("input_cover_m must be >= 0")
+        return v
+
+    @field_validator("backlog_loss")
+    @classmethod
+    def _loss(cls, v: float) -> float:
+        return _unit_interval("backlog_loss", v)
+
+    @field_validator("leak_per_month")
+    @classmethod
+    def _leak(cls, v: dict[str, float]) -> dict[str, float]:
+        for code, leak in v.items():
+            if leak < 0:
+                raise ValueError(f"leak for {code} must be >= 0")
+        return v
+
+
+class PricesCfg(FrozenModel):
+    kappa_util: float
+    gamma_cover: float
+    cover_floor: float
+    step_max_month: float
+    fast_mean_m: float
+
+    @field_validator("fast_mean_m", "step_max_month", "cover_floor")
+    @classmethod
+    def _pos(cls, v: float) -> float:
+        return _positive("price param", v)
+
+
+class DynamicsCapexCfg(FrozenModel):
+    delta_annual: float
+    start_rate_cap_mult: float
+    tau_util_m: float
+    q_clip: float
+
+    @field_validator("delta_annual", "start_rate_cap_mult", "tau_util_m", "q_clip")
+    @classmethod
+    def _pos(cls, v: float) -> float:
+        return _positive("capex param", v)
+
+
+class ResidentialCfg(FrozenModel):
+    share_of_investment: float
+    rate_semi: float
+    income_elasticity: float
+    lag: ErlangLag
+
+    @field_validator("share_of_investment")
+    @classmethod
+    def _share(cls, v: float) -> float:
+        return _unit_interval("share_of_investment", v)
+
+
+class HouseholdsCfg(FrozenModel):
+    alpha1: float
+    tau_income_m: float
+    rate_budget_passthrough: float
+    rate_lag: ErlangLag
+
+    @field_validator("alpha1", "rate_budget_passthrough")
+    @classmethod
+    def _share(cls, v: float) -> float:
+        return _unit_interval("household share", v)
+
+    @field_validator("tau_income_m")
+    @classmethod
+    def _tau(cls, v: float) -> float:
+        return _positive("tau_income_m", v)
+
+
+class DynamicsLabourCfg(FrozenModel):
+    tau_hire_m: float
+    tau_fire_m: float
+    u_star: float
+    lf_cap: float
+
+    @field_validator("tau_hire_m", "tau_fire_m")
+    @classmethod
+    def _tau(cls, v: float) -> float:
+        return _positive("labour tau", v)
+
+    @field_validator("u_star", "lf_cap")
+    @classmethod
+    def _share(cls, v: float) -> float:
+        return _unit_interval("labour share", v)
+
+
+class FiscalCfg(FrozenModel):
+    debt_to_gdp: float
+    kappa_debt: float
+    tau_tax_m: float
+    tax_rate_bounds: tuple[float, float]
+    benefit_replacement: float
+    corp_tax: float
+    vat: float
+
+    @field_validator("debt_to_gdp", "benefit_replacement", "corp_tax", "vat")
+    @classmethod
+    def _share(cls, v: float) -> float:
+        return _unit_interval("fiscal share", v)
+
+    @field_validator("tau_tax_m")
+    @classmethod
+    def _tau(cls, v: float) -> float:
+        return _positive("tau_tax_m", v)
+
+
+class FirmsCfg(FrozenModel):
+    kappa_leverage: float
+    tau_profit_m: float
+    tau_ebitda_m: float
+    base_spread: float
+    spread_leverage_floor: float
+
+    @field_validator("tau_profit_m", "tau_ebitda_m")
+    @classmethod
+    def _tau(cls, v: float) -> float:
+        return _positive("firm tau", v)
+
+
+class RowCfg(FrozenModel):
+    export_price_elasticity: float
+    import_prior: dict[str, float]
+
+
+class DynamicsPolicyCfg(FrozenModel):
+    elb: float
+    core_weight: float
+
+    @field_validator("core_weight")
+    @classmethod
+    def _share(cls, v: float) -> float:
+        return _unit_interval("core_weight", v)
+
+
+class BanksCfg(FrozenModel):
+    mode: Literal["passthrough", "full"]
+    dep_margin: float
+    ll0: float
+    kappa_ll: float
+    ll_cap_mult: float
+    capital_target: float
+    reserves_to_deposits: float
+
+    @field_validator("capital_target", "reserves_to_deposits")
+    @classmethod
+    def _share(cls, v: float) -> float:
+        return _unit_interval("bank share", v)
+
+
+class DynamicsCreditCfg(FrozenModel):
+    pricing: Literal["uniform", "risk_based"]
+    s0: float
+    corp_funding_mix: float
+    gate_enabled: bool
+    s_gate: float
+    s_loss: float
+    collateral_trend_years: float
+
+    @field_validator("corp_funding_mix")
+    @classmethod
+    def _share(cls, v: float) -> float:
+        return _unit_interval("corp_funding_mix", v)
+
+
+class DynamicsShocksCfg(FrozenModel):
+    animal_spirits_weight: float
+    cost_push_targets: dict[str, float]
 
 
 class DynamicsConfig(FrozenModel):
+    expectations: ExpectationsCfg
     production: DynamicsProduction
+    prices: PricesCfg
+    capex: DynamicsCapexCfg
+    residential: ResidentialCfg
+    households: HouseholdsCfg
+    labour: DynamicsLabourCfg
+    fiscal: FiscalCfg
+    firms: FirmsCfg
+    row: RowCfg
+    policy: DynamicsPolicyCfg
+    banks: BanksCfg
+    credit: DynamicsCreditCfg
+    shocks: DynamicsShocksCfg
+
+    @field_validator("production")
+    @classmethod
+    def _leak_stock_only(cls, prod: DynamicsProduction) -> DynamicsProduction:
+        for code, leak in prod.leak_per_month.items():
+            mode = prod.mode.get(code)
+            if mode is None:
+                raise ValueError(f"leak on unknown sector {code}")
+            if leak > 0 and mode != "stock":
+                raise ValueError(f"leak only on stock-mode sectors, got {code}={mode}")
+        return prod
 
 
 class Config(FrozenModel):

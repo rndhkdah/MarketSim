@@ -1,5 +1,12 @@
-# Stub for T0.14 / B5. Full schema arrives in T2.01.
-# inv_lag_q no longer doubles as order-book length — production.mode is the switch.
+# T2.01 — verified defaults from 02-phase2-dynamic-layer.md §2.11.
+# Changing a default requires an ADR.
+
+expectations:
+  tau_sales_m: 3
+  tau_growth_m: 12
+  anchor_growth: 0.75
+  infl_anchor: 0.6
+  tau_infl_m: 6
 
 production:
   mode:
@@ -21,3 +28,111 @@ production:
     BANKS: flow
     INSURANCE: flow
     REALESTATE: flow
+  cover_scale: 0.25
+  tau_inv_mult: 1.0
+  order_book_scale: 0.5
+  input_cover_m: 1.0
+  tau_input_m: 2.0
+  backlog_loss: 0.10
+  tau_backlog_m: 3.0
+  overtime_cap: 1.10
+  critical_input:
+    min_share: 0.05
+    suppliers: [ENERGY, UTILITIES, MATERIALS, AGRIFOOD, SEMIS, CAPGOODS, AUTOS, TRANSPORT]
+  leak_per_month:
+    AGRIFOOD: 0.015
+    STAPLES: 0.008
+    DISCRET: 0.008
+    SEMIS: 0.006
+    AUTOS: 0.006
+    HEALTH: 0.006
+    MATERIALS: 0.004
+    ENERGY: 0.004
+
+prices:
+  kappa_util: 1.2
+  gamma_cover: 0.35
+  cover_floor: 0.15
+  step_max_month: 0.15
+  fast_mean_m: 1.0
+
+capex:
+  delta_annual: 0.06
+  start_rate_cap_mult: 3.0
+  tau_util_m: 1.0
+  q_clip: 0.5
+
+residential:
+  share_of_investment: 0.20
+  rate_semi: -4.0
+  income_elasticity: 1.0
+  lag: {k: 2, mean_m: 3}
+
+households:
+  alpha1: 0.70
+  tau_income_m: 12
+  rate_budget_passthrough: 0.5
+  rate_lag: {k: 2, mean_m: 6}
+
+labour:
+  tau_hire_m: 3
+  tau_fire_m: 6
+  u_star: 0.05
+  lf_cap: 0.995
+
+fiscal:
+  debt_to_gdp: 0.60
+  kappa_debt: 0.04
+  tau_tax_m: 12
+  tax_rate_bounds: [0.0, 0.6]
+  benefit_replacement: 0.40
+  corp_tax: 0.20
+  vat: 0.0
+
+firms:
+  kappa_leverage: 0.03
+  tau_profit_m: 6
+  tau_ebitda_m: 12
+  base_spread: 0.015
+  spread_leverage_floor: 0.2
+
+row:
+  export_price_elasticity: 0.8
+  import_prior:
+    ENERGY: 0.15
+    MATERIALS: 0.10
+    SEMIS: 0.12
+    AUTOS: 0.08
+    CAPGOODS: 0.08
+    AGRIFOOD: 0.05
+    STAPLES: 0.04
+    DISCRET: 0.03
+    default: 0.01
+
+policy:
+  elb: 0.0
+  core_weight: 0.5
+
+banks:
+  mode: passthrough
+  dep_margin: 0.005
+  ll0: 0.004
+  kappa_ll: 1.0
+  ll_cap_mult: 5.0
+  capital_target: 0.125
+  reserves_to_deposits: 0.08
+
+credit:
+  pricing: uniform
+  s0: 0.015
+  corp_funding_mix: 0.5
+  gate_enabled: false
+  s_gate: 0.04
+  s_loss: 2.0
+  collateral_trend_years: 5
+
+shocks:
+  animal_spirits_weight: 0.0
+  cost_push_targets:
+    ENERGY: 1.0
+    AGRIFOOD: 0.3

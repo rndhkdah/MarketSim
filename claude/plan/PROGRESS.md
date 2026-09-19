@@ -21,9 +21,9 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T0.12 — Erlang kernels · S · deps: T0.02 — 2026-09-19
 - [x] T0.13 — World skeleton and module pipeline · M · deps: T0.10, T0.11, T0.12 — 2026-09-19
 - [x] T0.14 — Config corrections B3–B5 with ADRs · S · deps: T0.03 — 2026-09-19, ADR-001…003 proposed
-- [ ] T0.15 — Legacy freeze and removal · S · deps: T0.05, T0.06, T0.07, T0.08 · **HUMAN GATE** — N/A (no legacy tree; see QUESTIONS.md)
+- [x] T0.15 — Legacy freeze and removal · S · deps: T0.05, T0.06, T0.07, T0.08 · **HUMAN GATE** — 2026-09-19, N/A (no legacy tree; see QUESTIONS.md)
 
-- [ ] **GATE P0** — human review against the gate in the phase file
+- [x] **GATE P0** — 2026-09-19, accepted by human; Phase 2 unblocked
 
 ## Phase 2 — Ledger + dynamic real economy + policy authorities + monetary framework (35 tasks) — `02-phase2-dynamic-layer.md`
 
