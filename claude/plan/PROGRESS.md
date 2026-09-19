@@ -40,7 +40,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T2.11 — Residential investment block · S · deps: T2.10 — 2026-09-19, 20% of I; −4%/100bp
 - [x] T2.12 — Household sector (aggregate, scalar-η demand system) · M · deps: T2.05 — 2026-09-19, θ=HH FD; AUTOS most rate-sensitive
 - [x] T2.13 — Government and fiscal rule · S · deps: T2.05 — 2026-09-19, deficit=grow·B; debt rule mean-reverting
-- [ ] T2.14 — Central bank and inflation expectations · S · deps: T2.04
+- [x] T2.14 — Central bank and inflation expectations · S · deps: T2.04 — 2026-09-19, quarterly Taylor + seeded π12
 - [ ] T2.15 — ROW · S · deps: T2.04
 - [ ] T2.16 — Income settlement on the ledger (R9) · L · deps: T2.03, T2.07, T2.08, T2.09, T2.10, T2.11, T2.12, T2.13, T2.14, T2.15
 - [ ] T2.17 — Monthly orchestrator, aggregates, World integration · M · deps: T2.16, T0.13
