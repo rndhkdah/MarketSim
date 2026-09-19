@@ -61,7 +61,8 @@ def loss_rate(nd: np.ndarray, icr: np.ndarray, icr0: np.ndarray, ll0: float, kap
     """Annual expected-loss rate ``ll0·(nd/2.5)·exp(κ·(ICR0/ICR−1))``, capped at ``cap_mult``× base."""
     base = ll0 * (np.asarray(nd, dtype=float) / 2.5)
     with np.errstate(divide="ignore", invalid="ignore"):
-        ratio = np.where(np.asarray(icr) > 1e-12, np.asarray(icr0) / np.asarray(icr), 1e6)
+        ratio = np.where(np.asarray(icr) > 1e-12, np.asarray(icr0) / np.asarray(icr), 20.0)
+        ratio = np.clip(ratio, 0.05, 20.0)
     raw = base * np.exp(kappa_ll * (ratio - 1.0))
     return np.minimum(raw, cap_mult * base)
 

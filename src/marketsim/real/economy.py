@@ -11,8 +11,9 @@ from marketsim.core.erlang import ErlangSmoother
 from marketsim.core.module import Phase
 from marketsim.layer1.io import IOTable
 from marketsim.ledger.opening import GOVT_MIX, open_passthrough_books
+from marketsim.pricing.provider import StubAssetPriceProvider
 from marketsim.real.aggregates import Aggregates, Published, expenditure_gdp, production_gdp
-from marketsim.real.banks import bank_month_flows, open_full_books
+from marketsim.real.banks import bank_month_flows, expected_loss, open_full_books
 from marketsim.real.capex import (
     cost_of_capital_gap,
     seed_pipelines,
@@ -21,6 +22,7 @@ from marketsim.real.capex import (
     supply_line,
 )
 from marketsim.real.cenbank import CentralBank
+from marketsim.real.credit import CreditBlock
 from marketsim.real.government import debt_ratio, step_tax_rate, tax_rate_target
 from marketsim.real.households import consumption_nominal, household_basket, income_index, smooth_nominal
 from marketsim.real.labour import step_labour
@@ -119,6 +121,9 @@ class RealEconomy:
         self.theta = real.flat(real.C0) / real.flat(real.C0).sum()
         self.bus = ShockBus.from_config(cfg, real.codes)
         self.sh = self.bus.states
+        self.prices_provider = StubAssetPriceProvider.from_baseline(real, fin, cfg)
+        self.credit = CreditBlock(cfg, real, fin, self.prices_provider)
+        self._ll_bar = float((dyn.banks.ll0 * (self.nd / 2.5)).mean())
         self.month = 0
         self.last_flows: MonthFlows | None = None
         self.last_agg: Aggregates | None = None
@@ -136,6 +141,18 @@ class RealEconomy:
         a = self.A
         sh = self.sh
         s = real.S
+        loans = float(self.debt.sum())
+        cap_ratio = self.bank_equity / max(loans, 1e-12) if dyn.banks.mode == "full" and loans > 0 else 0.125
+        self.credit.update(
+            capital=cap_ratio,
+            r=self.cb.r,
+            pi_e=self.cb.pi_e,
+            z_risk=float(sh["risk"]),
+            ll_bar=self._ll_bar,
+        )
+        if self.credit.enabled and self.credit.lam != 1.0:
+            self.spread[:] = self.credit.spread
+            sh["ds"] = self.credit.spread - self.credit.s0
         # R1
         self.se = expected_sales(self.se, self.sales, dyn.expectations.tau_sales_m)
         pc = float((self.theta * self.p).sum())
@@ -145,7 +162,7 @@ class RealEconomy:
             self.rate_gap_s.push((self.cb.r - self.cb.pi_e - self.cb.r_n) * 100.0 + float(sh["ds"]) * 100.0)
         )
         c_nom_tot = consumption_nominal(dyn.households.alpha1, self.yd_e, fin.alpha2, self.wealth, sh["dem"])
-        c = self.demand.allocate(c_nom_tot, self.p, y, rate_gap)
+        c = self.credit.scale_consumption(self.demand.allocate(c_nom_tot, self.p, y, rate_gap))
         gv = real.flat(real.G0) * np.exp(sh["fisc"])
         ex = exports(real.flat(real.X0), self.p, self.prices.p_imp, dyn.row.export_price_elasticity, sh["row"])
         recon = self.bus.consume_recon()
@@ -181,9 +198,9 @@ class RealEconomy:
             ln_q=q,
             cap_mult=dyn.capex.start_rate_cap_mult,
         )
-        starts = self.k * rate / 12.0
+        starts = self.credit.scale_starts(self.k * rate / 12.0)
         spend_real = self.spend.push(real.flat(real.v) * starts)
-        res_real = self.res.step(y, rate_gap, sh["dem"])
+        res_real = self.credit.scale_residential(self.res.step(y, rate_gap, sh["dem"]))
         inv_goods = real.flat(real.route_bus) * float(spend_real.sum())
         inv_goods = self.res.add_to_final(inv_goods, res_real)
         self.k = step_capacity(self.k, starts, self.pipe, dyn.capex.delta_annual / 12.0)
@@ -310,6 +327,16 @@ class RealEconomy:
                 fin=fin,
                 cfg=cfg,
             )
+            icr = np.where(interest > 1e-12, ebitda / interest, 1e6)
+            ll = expected_loss(
+                self.nd,
+                icr,
+                fin.icr0,
+                ll0=dyn.banks.ll0,
+                kappa_ll=dyn.banks.kappa_ll,
+                cap_mult=dyn.banks.ll_cap_mult,
+            )
+            self._ll_bar = float(ll.mean())
         self.prof_s = self.prof_s * g_d + (prof - self.prof_s * g_d) / dyn.firms.tau_profit_m
         self.eb_s = self.eb_s * g_d + (ebitda - self.eb_s * g_d) / dyn.firms.tau_ebitda_m
         debt_gap = self.debt * g_d - self.nd * 12.0 * np.maximum(self.eb_s, 0.0)
@@ -518,6 +545,8 @@ class RealEconomy:
             "tau_eff": self.tau_eff,
             "sh": {k: (v.copy() if isinstance(v, np.ndarray) else v) for k, v in self.sh.items()},
             "bus": self.bus.to_state(),
+            "credit": self.credit.to_state(),
+            "_ll_bar": self._ll_bar,
             "ledger": self.ledger.to_state(),
             "pub": self.pub.to_state(),
             "pi_star": self.fin.pi_star,
@@ -577,6 +606,10 @@ class RealEconomy:
         if "bus" in state:
             self.bus.from_state(state["bus"])
             self.sh = self.bus.states
+        if "credit" in state:
+            self.credit.from_state(state["credit"])
+        if "_ll_bar" in state:
+            self._ll_bar = float(state["_ll_bar"])
         self.ledger = Ledger.from_state(state["ledger"])
         self.pub = Published.from_state(state["pub"])
 
