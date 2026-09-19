@@ -44,7 +44,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T2.15 — ROW · S · deps: T2.04 — 2026-09-19, balanced TB; +10% p → exports −7.3%
 - [x] T2.16 — Income settlement on the ledger (R9) · L · deps: T2.03, T2.07, T2.08, T2.09, T2.10, T2.11, T2.12, T2.13, T2.14, T2.15 — 2026-09-19, 120m SFC; clip-debt regression
 - [x] T2.17 — Monthly orchestrator, aggregates, World integration · M · deps: T2.16, T0.13 — 2026-09-19, 360m stationarity; μ=A.sum(0)
-- [ ] T2.18 — Shock bus and the seven primitives · M · deps: T2.17
+- [x] T2.18 — Shock bus and the seven primitives · M · deps: T2.17 — 2026-09-19, AR(1) bus; catastrophe conserves claims
 - [ ] T2.19 — Banking system (`banks.mode: full`) · M · deps: T2.17
 - [ ] T2.20 — Credit and collateral edges · M · deps: T2.19, T2.21
 - [ ] T2.21 — AssetPriceProvider stub · S · deps: T2.17

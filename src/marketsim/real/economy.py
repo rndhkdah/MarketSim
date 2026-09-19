@@ -36,6 +36,7 @@ from marketsim.real.production import (
 from marketsim.real.residential import ResidentialBlock
 from marketsim.real.row import exports, import_bill
 from marketsim.real.settlement import MonthFlows, settle_and_check
+from marketsim.real.shocks import ShockBus
 from marketsim.real.steady_state import (
     FinancialBaseline,
     RealBaseline,
@@ -102,17 +103,8 @@ class RealEconomy:
         self.tau_eff = fin.tau_y
         self.demand = household_basket(real, cfg, fin)
         self.theta = real.flat(real.C0) / real.flat(real.C0).sum()
-        self.sh = {
-            "dem": 0.0,
-            "cost": np.zeros(s),
-            "mon": 0.0,
-            "sup": np.zeros(s),
-            "fisc": 0.0,
-            "row": 0.0,
-            "imp": 0.0,
-            "risk": 0.0,
-            "ds": 0.0,
-        }
+        self.bus = ShockBus.from_config(cfg, real.codes)
+        self.sh = self.bus.states
         self.month = 0
         self.last_flows: MonthFlows | None = None
         self.last_agg: Aggregates | None = None
@@ -135,11 +127,14 @@ class RealEconomy:
         pc = float((self.theta * self.p).sum())
         g_d = float(np.exp(self.cb.pi_e / 12.0))
         y = income_index(self.yd_e, pc, fin.YD0)
-        rate_gap = float(self.rate_gap_s.push((self.cb.r - self.cb.pi_e - self.cb.r_n) * 100.0))
+        rate_gap = float(
+            self.rate_gap_s.push((self.cb.r - self.cb.pi_e - self.cb.r_n) * 100.0 + float(sh["ds"]) * 100.0)
+        )
         c_nom_tot = consumption_nominal(dyn.households.alpha1, self.yd_e, fin.alpha2, self.wealth, sh["dem"])
         c = self.demand.allocate(c_nom_tot, self.p, y, rate_gap)
         gv = real.flat(real.G0) * np.exp(sh["fisc"])
         ex = exports(real.flat(real.X0), self.p, self.prices.p_imp, dyn.row.export_price_elasticity, sh["row"])
+        recon = self.bus.consume_recon()
         # R3
         self.u_s = self.u_s + (self.x / self.k - self.u_s) / dyn.capex.tau_util_m
         cap = cfg.edges.capex
@@ -163,7 +158,7 @@ class RealEconomy:
             q_tobin_coef=cap.coefficients.q_tobin,
             q_scale=cap.q_scale,
             q_clip=dyn.capex.q_clip,
-            g_e=self.g_e,
+            g_e=self.g_e + dyn.shocks.animal_spirits_weight * float(sh["dem"]),
             anchor_growth=dyn.expectations.anchor_growth,
             u=self.u_s,
             ustar=self.ustar,
@@ -199,7 +194,7 @@ class RealEconomy:
         orders = order_matrix(
             a, plan, self.s_in, real.stor_in, dyn.production.input_cover_m, dyn.production.tau_input_m
         )
-        final = c + gv + ex + inv_goods
+        final = c + gv + ex + inv_goods + recon
         new_orders = orders.sum(axis=1) + final
         cap_out = np.minimum(k_eff, lab)
         inv_prev = self.inv.copy()
@@ -378,6 +373,7 @@ class RealEconomy:
         self.last_flows = flows
         if self.check_sfc:
             settle_and_check(self.ledger, real, flows, tick=self.month + 1)
+        self.bus.decay()
         self.month += 1
         return {
             "t": self.month,
@@ -400,6 +396,11 @@ class RealEconomy:
 
     def published(self, series: str, lag: int = 0) -> float:
         return self.pub.published(series, lag)
+
+    def inject(self, kind: str, magnitude: float, **kwargs: Any) -> float:
+        """``ShockBus.inject`` — the only public shock entry point (§2.9)."""
+        kwargs.setdefault("economy", self)
+        return self.bus.inject(kind, magnitude, **kwargs)
 
     def to_state(self) -> dict[str, Any]:
         cb = self.cb
@@ -440,6 +441,7 @@ class RealEconomy:
             "yd_e": self.yd_e,
             "tau_eff": self.tau_eff,
             "sh": {k: (v.copy() if isinstance(v, np.ndarray) else v) for k, v in self.sh.items()},
+            "bus": self.bus.to_state(),
             "ledger": self.ledger.to_state(),
             "pub": self.pub.to_state(),
             "pi_star": self.fin.pi_star,
@@ -490,6 +492,9 @@ class RealEconomy:
         self.yd_e = float(state["yd_e"])
         self.tau_eff = float(state["tau_eff"])
         self.sh = {k: (np.asarray(v, dtype=float) if isinstance(v, list) else v) for k, v in state["sh"].items()}
+        if "bus" in state:
+            self.bus.from_state(state["bus"])
+            self.sh = self.bus.states
         self.ledger = Ledger.from_state(state["ledger"])
         self.pub = Published.from_state(state["pub"])
 
