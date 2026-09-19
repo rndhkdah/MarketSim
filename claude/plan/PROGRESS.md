@@ -38,7 +38,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T2.09 — Labour and wages (R8) · S · deps: T2.06 — 2026-09-19, hire/fire + 4× downward stickiness
 - [x] T2.10 — Capex, capacity pipeline, supply line (R3, §2.6) · M · deps: T2.04, T0.12, T0.14 — 2026-09-19, −0.45pp/100bp; ENERGY lag > CONSTRUCT
 - [x] T2.11 — Residential investment block · S · deps: T2.10 — 2026-09-19, 20% of I; −4%/100bp
-- [ ] T2.12 — Household sector (aggregate, scalar-η demand system) · M · deps: T2.05
+- [x] T2.12 — Household sector (aggregate, scalar-η demand system) · M · deps: T2.05 — 2026-09-19, θ=HH FD; AUTOS most rate-sensitive
 - [ ] T2.13 — Government and fiscal rule · S · deps: T2.05
 - [ ] T2.14 — Central bank and inflation expectations · S · deps: T2.04
 - [ ] T2.15 — ROW · S · deps: T2.04
