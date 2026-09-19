@@ -13,7 +13,6 @@ from marketsim.real.policy.monetary_rule import (
     step_plevel_gap,
 )
 
-
 MAKEUP_MSG = "−93 %"
 
 
@@ -30,12 +29,14 @@ def test_makeup_zero_allows_decay_one(config_dir) -> None:
 
 
 def test_plevel_gap_leaks_and_clips() -> None:
+    g = step_plevel_gap(0.0, pi_pol=0.50, pi_star=0.02, decay=0.98, clip=0.02)
+    assert g == pytest.approx(0.02)
     g = 0.0
     for _ in range(5):
         g = step_plevel_gap(g, pi_pol=0.05, pi_star=0.02, decay=0.98, clip=0.02)
-    assert g == pytest.approx(0.02)
-    g = step_plevel_gap(0.02, pi_pol=0.00, pi_star=0.02, decay=0.5, clip=0.02)
-    assert g < 0.02
+    assert 0.0 < g < 0.02
+    leaked = step_plevel_gap(0.02, pi_pol=0.00, pi_star=0.02, decay=0.5, clip=0.02)
+    assert leaked < 0.02
 
 
 def test_sahm_recession_not_soft_landing() -> None:
@@ -64,11 +65,20 @@ def test_phi_fci_wider_spread_lowers_rate() -> None:
 
 
 def test_elb_toolkit_order() -> None:
-    engaged, r, qe = elb_toolkit(shadow=-0.01, elb=0.0, gap=-0.02, guidance=0.01, credibility=0.7, qe_per_gap=0.02)
+    # Guidance first; still at the floor → QE. A lift-off path skips QE.
+    engaged, r, qe = elb_toolkit(
+        shadow=-0.01, elb=0.0, gap=-0.02, guidance=-0.01, credibility=0.7, qe_per_gap=0.02
+    )
     assert engaged[0] == "guidance"
     assert engaged[1] == "qe"
-    assert r >= 0.0
+    assert r == pytest.approx(0.0)
     assert qe > 0
+    lift, r_lift, qe_lift = elb_toolkit(
+        shadow=-0.01, elb=0.0, gap=-0.02, guidance=0.01, credibility=0.7, qe_per_gap=0.02
+    )
+    assert lift == ("guidance",)
+    assert r_lift > 0.0
+    assert qe_lift == 0.0
     engaged2, r2, qe2 = elb_toolkit(shadow=0.02, elb=0.0, gap=0.0, guidance=None, credibility=0.7, qe_per_gap=0.02)
     assert engaged2 == ()
     assert r2 == pytest.approx(0.02)
