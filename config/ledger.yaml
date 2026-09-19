@@ -17,6 +17,9 @@ flow_tags:
   - opening
   - consumption
   - vat
+  - excise
+  - tariff
+  - subsidy
   - govt_purchases
   - investment
   - residential

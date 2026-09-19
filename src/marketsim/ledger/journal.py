@@ -22,6 +22,9 @@ from marketsim.ledger.instruments import (
 FLOW_TAGS: tuple[str, ...] = (
     "consumption",
     "vat",
+    "excise",
+    "tariff",
+    "subsidy",
     "govt_purchases",
     "investment",
     "residential",

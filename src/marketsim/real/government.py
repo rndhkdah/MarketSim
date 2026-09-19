@@ -1,4 +1,4 @@
-"""Government purchases, transfers, taxes and the debt rule (§2.5)."""
+"""Government purchases, transfers, taxes and the debt rule (§2.5, §2.13)."""
 
 from __future__ import annotations
 
@@ -54,6 +54,13 @@ def baseline_deficit(real: RealBaseline, fin: FinancialBaseline) -> float:
     interest = fin.r0 * fin.B / 12.0 / fin.G
     income_tax = fin.tau_y * fin.pretax0
     return budget_deficit(g_nom, fin.transfers0, interest, income_tax, float(fin.tax0.sum()), vat=0.0)
+
+
+def cover_deposit_shortfall(ledger: Ledger, *, tick: int) -> float:
+    """Bond-finance a negative GOVT deposit. See ``policy.fiscal.cover_govt_shortfall``."""
+    from marketsim.real.policy.fiscal import cover_govt_shortfall
+
+    return cover_govt_shortfall(ledger, tick=tick)
 
 
 def post_bond_issue(ledger: Ledger, amount: float, tick: int, mix: tuple[tuple[str, float], ...] = GOVT_MIX) -> None:

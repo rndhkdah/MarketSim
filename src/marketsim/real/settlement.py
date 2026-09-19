@@ -11,6 +11,13 @@ from marketsim.ledger.journal import Entry, Ledger, Tx
 from marketsim.ledger.opening import GOVT_MIX
 from marketsim.ledger.sfc import assert_consistent, net_financial_assets
 from marketsim.real.government import post_bond_issue
+from marketsim.real.policy.fiscal import (
+    cover_govt_shortfall,
+    post_excise,
+    post_rescue_banksys,
+    post_subsidy,
+    post_tariff,
+)
 from marketsim.real.steady_state import RealBaseline
 
 
@@ -37,6 +44,11 @@ class MonthFlows:
     d_debt: np.ndarray
     deficit: float
     vat: float = 0.0
+    excise: float = 0.0
+    tariff: float = 0.0
+    subsidy: float = 0.0
+    rescue: float = 0.0
+    subsidy_by_code: dict[str, float] | None = None
     interest_deposits: float = 0.0
     bank_dividends: float = 0.0
     writeoffs: np.ndarray | None = None
@@ -140,6 +152,20 @@ def settle_month(
     post(_pay(tick, "transfers", "GOVT", hh, float(flows.transfers)))
     post(_pay(tick, "income_tax", hh, "GOVT", float(flows.income_tax)))
     post(_pay(tick, "vat", hh, "GOVT", float(flows.vat)))
+    post_excise(ledger, float(flows.excise), tick=tick, hh=hh)
+    if float(flows.tariff) > 1e-14:
+        weights = np.maximum(flows.imp_nom, 0.0)
+        wsum = float(weights.sum())
+        if wsum <= 1e-14:
+            post_tariff(ledger, float(flows.tariff), tick=tick, firm=_npc(codes[0], region))
+        else:
+            for i, code in enumerate(codes):
+                post_tariff(ledger, float(flows.tariff) * float(weights[i] / wsum), tick=tick, firm=_npc(code, region))
+    if flows.subsidy_by_code:
+        post_subsidy(ledger, flows.subsidy_by_code, tick=tick, region=region)
+    elif float(flows.subsidy) > 1e-14:
+        post_subsidy(ledger, {codes[0]: float(flows.subsidy)}, tick=tick, region=region)
+    post_rescue_banksys(ledger, float(flows.rescue), tick=tick)
     if full and flows.interest_bonds_hh is not None:
         post(_pay(tick, "interest_bonds", "GOVT", hh, float(flows.interest_bonds_hh)))
         post(_pay(tick, "interest_bonds", "GOVT", "BANKSYS", float(flows.interest_bonds_bank)))
@@ -253,6 +279,7 @@ def settle_month(
         _post_full_finance(ledger, flows, tick, hh)
     else:
         post_bond_issue(ledger, float(flows.deficit), tick, mix=GOVT_MIX)
+    cover_govt_shortfall(ledger, tick=tick)
 
 
 def household_saving(flows: MonthFlows) -> float:
@@ -264,7 +291,7 @@ def household_saving(flows: MonthFlows) -> float:
         + float(flows.transfers)
     )
     yd = pretax - float(flows.income_tax)
-    return yd - float(flows.c_nom.sum()) - float(flows.res_nom) - float(flows.vat)
+    return yd - float(flows.c_nom.sum()) - float(flows.res_nom) - float(flows.vat) - float(flows.excise)
 
 
 def government_deficit(flows: MonthFlows) -> float:
@@ -272,9 +299,13 @@ def government_deficit(flows: MonthFlows) -> float:
         float(flows.g_nom.sum())
         + float(flows.transfers)
         + float(flows.interest_bonds)
+        + float(flows.subsidy)
+        + float(flows.rescue)
         - float(flows.income_tax)
         - float(flows.corp_tax.sum())
         - float(flows.vat)
+        - float(flows.excise)
+        - float(flows.tariff)
     )
 
 

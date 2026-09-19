@@ -31,6 +31,7 @@ class ScalarEtaDemand:
         dem_rate_semi: np.ndarray,
         zeta: float,
         vat: float = 0.0,
+        excise: np.ndarray | None = None,
     ) -> None:
         self.theta = np.asarray(theta, dtype=float)
         self.eta = np.asarray(eta, dtype=float)
@@ -38,6 +39,7 @@ class ScalarEtaDemand:
         self.dem_rate_semi = np.asarray(dem_rate_semi, dtype=float)
         self.zeta = float(zeta)
         self.vat = float(vat)
+        self.excise = np.zeros_like(self.theta) if excise is None else np.asarray(excise, dtype=float)
 
     def allocate(
         self,
@@ -63,4 +65,5 @@ class ScalarEtaDemand:
         if zsum <= 0:
             return np.zeros_like(p)
         hh_shift = zsum / float(self.theta.sum())
-        return budget * (hh_shift**self.zeta) * (z / zsum) / (p * (1.0 + self.vat))
+        wedge = 1.0 + self.vat + self.excise
+        return budget * (hh_shift**self.zeta) * (z / zsum) / (p * wedge)

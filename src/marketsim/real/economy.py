@@ -29,6 +29,17 @@ from marketsim.real.households import consumption_nominal, household_basket, inc
 from marketsim.real.labour import step_labour
 from marketsim.real.orders import order_matrix, supply_and_ration
 from marketsim.real.policy.authority import PolicyDesk
+from marketsim.real.policy.fiscal import (
+    apply_purchases,
+    consume_oneoffs,
+    consumer_prices,
+    excise_array,
+    excise_revenue,
+    levers_from_merged,
+    subsidised_v,
+    tariff_revenue,
+    vat_revenue,
+)
 from marketsim.real.prices import PriceState, sector_pass_through, step_prices, tightness, unit_cost
 from marketsim.real.production import (
     expected_sales,
@@ -147,6 +158,10 @@ class RealEconomy:
         sh = self.sh
         s = real.S
         self.policy.tick_month(self.month)
+        fisc = levers_from_merged(self.policy.govt.merged())
+        excise_vec = excise_array(fisc.excise, self.codes)
+        self.demand.vat = fisc.vat
+        self.demand.excise = excise_vec
         loans = float(self.debt.sum())
         cap_ratio = self.bank_equity / max(loans, 1e-12) if dyn.banks.mode == "full" and loans > 0 else 0.125
         self.credit.update(
@@ -171,7 +186,7 @@ class RealEconomy:
         )
         c_nom_tot = consumption_nominal(dyn.households.alpha1, self.yd_e, fin.alpha2, self.wealth, sh["dem"])
         c = self.credit.scale_consumption(self.demand.allocate(c_nom_tot, self.p, y, rate_gap, shifters=fd_shift))
-        gv = real.flat(real.G0) * np.exp(sh["fisc"])
+        gv = apply_purchases(real.flat(real.G0), sh["fisc"], fisc.purchases_level, fisc.purchases_mix, self.codes)
         ex = exports(real.flat(real.X0), self.p, self.prices.p_imp, dyn.row.export_price_elasticity, sh["row"]) * fd_shift
         recon = self.bus.consume_recon()
         # R3
@@ -207,7 +222,9 @@ class RealEconomy:
             cap_mult=dyn.capex.start_rate_cap_mult,
         )
         starts = self.credit.scale_starts(self.k * rate / 12.0)
-        spend_real = self.spend.push(real.flat(real.v) * starts)
+        v_eff = subsidised_v(real.flat(real.v), fisc.capex_subsidy, self.codes)
+        spend_real = self.spend.push(v_eff * starts)
+        sub_rate = excise_array(fisc.capex_subsidy, self.codes)
         res_real = self.credit.scale_residential(self.res.step(y, rate_gap, sh["dem"]))
         inv_goods = real.flat(real.route_bus) * float(spend_real.sum())
         inv_goods = self.res.add_to_final(inv_goods, res_real) * fd_shift
@@ -261,7 +278,8 @@ class RealEconomy:
         self.fill_prev = supplied.fill
         dshare = supplied.dshare
         # R7
-        nuc = unit_cost(a, self.p, self.w, real.flat(real.ell), real.flat(real.m), self.prices.p_imp, sh["sup"])
+        p_imp_duty = self.prices.p_imp * (1.0 + fisc.tariff)
+        nuc = unit_cost(a, self.p, self.w, real.flat(real.ell), real.flat(real.m), p_imp_duty, sh["sup"])
         tight = tightness(
             self.x,
             self.k,
@@ -307,12 +325,15 @@ class RealEconomy:
         used = a * self.x[None, :]
         rev = self.p * self.sales
         wages = self.w * self.n
-        imp = import_bill(self.prices.p_imp, real.flat(real.m), self.x)
+        imp_cif = import_bill(self.prices.p_imp, real.flat(real.m), self.x)
+        tariff_rev = tariff_revenue(float(imp_cif.sum()), fisc.tariff)
+        imp = imp_cif + fisc.tariff * imp_cif
         interest = (self.cb.r + self.spread) * self.debt / 12.0
         ebitda = rev - (self.p[:, None] * used).sum(0) - wages - imp
         p_i = float((real.flat(real.route_bus) * self.p).sum())
         dep = (dyn.capex.delta_annual / 12.0) * real.flat(real.v) * self.k * float((self.route * self.p).sum())
-        ctax = dyn.fiscal.corp_tax * np.maximum(ebitda - interest - dep, 0.0)
+        tau_c = fisc.tau_c if fisc.tau_c is not None else dyn.fiscal.corp_tax
+        ctax = tau_c * np.maximum(ebitda - interest - dep, 0.0)
         prof = ebitda - interest - ctax
         full = dyn.banks.mode == "full"
         wo = np.zeros(s)
@@ -352,26 +373,53 @@ class RealEconomy:
         capex_nom = p_i * spend_real
         d_debt = capex_nom - (prof - div_j)
         self.debt = self.debt - wo + d_debt
-        transfers = dyn.fiscal.benefit_replacement * self.w * (real.LF - float(self.n.sum()))
+        br = fisc.benefit_replacement if fisc.benefit_replacement is not None else dyn.fiscal.benefit_replacement
+        transfers = br * self.w * (real.LF - float(self.n.sum())) + fisc.transfer_oneoff
         if full:
             pretax = float(wages.sum() + div_j.sum() + bank_div + dep_int + self.cb.r * self.hh_gb / 12.0 + transfers)
         else:
             pretax = float(wages.sum() + div_j.sum() + interest.sum() + self.cb.r * self.b / 12.0 + transfers)
-        gdp_nom_a = 12.0 * float((rev - (self.p[:, None] * used).sum(0) - imp).sum())
+        gdp_nom_a = 12.0 * float((rev - (self.p[:, None] * used).sum(0) - imp_cif).sum())
         ratio = debt_ratio(self.b, gdp_nom_a, g_d)
-        tau_tgt = tax_rate_target(fin.tau_y, dyn.fiscal.kappa_debt, ratio, dyn.fiscal.debt_to_gdp, dyn.fiscal.tax_rate_bounds)
-        self.tau_eff = step_tax_rate(self.tau_eff, tau_tgt, dyn.fiscal.tau_tax_m)
+        kappa = fisc.kappa_debt if fisc.kappa_debt is not None else dyn.fiscal.kappa_debt
+        bstar = fisc.debt_target if fisc.debt_target is not None else dyn.fiscal.debt_to_gdp
+        if fisc.fiscal_rule_on is False:
+            kappa = 0.0
+        if fisc.tau_y is not None:
+            self.tau_eff = float(fisc.tau_y)
+        else:
+            tau_tgt = tax_rate_target(fin.tau_y, kappa, ratio, bstar, dyn.fiscal.tax_rate_bounds)
+            self.tau_eff = step_tax_rate(self.tau_eff, tau_tgt, dyn.fiscal.tau_tax_m)
         yd = (1.0 - self.tau_eff) * pretax
         c_nom_sec = self.p * c * np.where(real.is_order, 1.0, dshare)
         c_spent = float(c_nom_sec.sum())
+        vat_rev = vat_revenue(c_spent, fisc.vat)
+        excise_rev = excise_revenue(c_nom_sec, excise_vec)
         res_nom = float(self.p[real.codes.index("CONSTRUCT")] * res_real)
-        self.wealth = self.wealth + yd - c_spent - res_nom
+        self.wealth = self.wealth + yd - c_spent - res_nom - vat_rev - excise_rev
         self.yd_e = smooth_nominal(self.yd_e, yd, dyn.households.tau_income_m, g_d)
         g_nom_sec = self.p * gv
         g_nom = float(g_nom_sec.sum())
         income_tax = self.tau_eff * pretax
+        subsidy_nom = float((sub_rate * real.flat(real.v) * starts * p_i).sum())
+        subsidy_by_code = {
+            code: float(sub_rate[i] * real.flat(real.v)[i] * starts[i] * p_i)
+            for i, code in enumerate(self.codes)
+            if sub_rate[i] > 1e-14
+        }
         b_begin = self.b
-        deficit = g_nom + transfers + self.cb.r * b_begin / 12.0 - income_tax - float(ctax.sum())
+        deficit = (
+            g_nom
+            + transfers
+            + self.cb.r * b_begin / 12.0
+            + subsidy_nom
+            + fisc.rescue_banksys
+            - income_tax
+            - float(ctax.sum())
+            - vat_rev
+            - excise_rev
+            - tariff_rev
+        )
         if full and b_begin > 1e-12:
             d_bank_gb = deficit * (self.bank_gb / b_begin)
             d_cb_gb = deficit * (self.cb_gb / b_begin)
@@ -383,12 +431,13 @@ class RealEconomy:
         self.sales_ma = self.sales_ma + (self.sales - self.sales_ma) / dyn.expectations.tau_growth_m
         g_now = 12.0 * np.log(np.maximum(self.sales, 1e-9) / np.maximum(self.sales_ma, 1e-9)) / dyn.expectations.tau_growth_m
         self.g_e = self.g_e + (g_now - self.g_e) / dyn.expectations.tau_growth_m
-        cpi = float((self.theta * self.p).sum())
+        p_cons = consumer_prices(self.p, fisc.vat, excise_vec)
+        cpi = float((self.theta * p_cons).sum())
         core_w = self.theta.copy()
         core_w[real.codes.index("ENERGY")] = 0.0
         core_w[real.codes.index("AGRIFOOD")] = 0.0
         core_w /= core_w.sum()
-        core = float((core_w * self.p).sum())
+        core = float((core_w * p_cons).sum())
         self.cb.observe_prices(cpi, core)
         leak = real.flat(real.leak)
         mu = real.flat(real.mu)
@@ -409,8 +458,8 @@ class RealEconomy:
         self.last_agg = Aggregates(
             gdp_prod_real=gdp,
             gdp_exp_real=gdp_exp,
-            gdp_prod_nom=float((rev - (self.p[:, None] * used).sum(0) - imp).sum() + (self.p * d_inv).sum()),
-            gdp_exp_nom=float(c_spent + g_nom + float((p_i * spend_real).sum()) + res_nom + float((self.p * ex_real).sum() - imp.sum()) + float((self.p * d_inv).sum())),
+            gdp_prod_nom=float((rev - (self.p[:, None] * used).sum(0) - imp_cif).sum() + (self.p * d_inv).sum()),
+            gdp_exp_nom=float(c_spent + g_nom + float((p_i * spend_real).sum()) + res_nom + float((self.p * ex_real).sum() - imp_cif.sum()) + float((self.p * d_inv).sum())),
             cpi=cpi,
             core_cpi=core,
             u=u,
@@ -418,8 +467,8 @@ class RealEconomy:
             x=self.x.copy(),
             govt_balance=-deficit,
             debt_gdp=self.b / (12.0 * max(gdp * cpi, 1e-12)),
-            trade_balance=float((self.p * ex_real).sum() - imp.sum()),
-            saving_rate=float((yd - c_spent - res_nom) / max(yd, 1e-12)),
+            trade_balance=float((self.p * ex_real).sum() - imp_cif.sum()),
+            saving_rate=float((yd - c_spent - res_nom - vat_rev - excise_rev) / max(yd, 1e-12)),
             leverage=float(self.debt.sum() / max(float(np.maximum(self.eb_s, 1e-12).sum()) * 12.0, 1e-12)),
             pi12=self.cb.pi12(),
         )
@@ -436,7 +485,7 @@ class RealEconomy:
             i_nom=i_bus,
             res_nom=res_nom,
             ex_nom=self.p * ex * np.where(real.is_order, 1.0, dshare),
-            imp_nom=imp,
+            imp_nom=imp_cif,
             deliv_nom=self.p[:, None] * supplied.deliveries,
             wages=wages,
             transfers=transfers,
@@ -447,7 +496,12 @@ class RealEconomy:
             dividends=div_j,
             d_debt=d_debt,
             deficit=deficit,
-            vat=0.0,
+            vat=vat_rev,
+            excise=excise_rev,
+            tariff=tariff_rev,
+            subsidy=subsidy_nom,
+            rescue=fisc.rescue_banksys,
+            subsidy_by_code=subsidy_by_code or None,
             interest_deposits=dep_int,
             bank_dividends=bank_div,
             writeoffs=wo if full else None,
@@ -467,6 +521,7 @@ class RealEconomy:
             settle_month(self.ledger, real, flows, tick=self.month + 1)
         if full:
             self._refresh_bank_sheet()
+        consume_oneoffs(self.policy.govt)
         self.bus.decay()
         self.month += 1
         return {
