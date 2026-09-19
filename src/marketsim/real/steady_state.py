@@ -101,7 +101,8 @@ def compute_real_baseline(
     s = io.n
     r_dim = 1
     A = io.A
-    mu = io.mu
+    # Accounting intensity is the live column sum; io.mu can differ by reconstruction tol (~2e-6).
+    mu = A.sum(axis=0)
     is_stock, is_order, is_flow = mode_masks(cfg)
     leak, cover, tau_inv, tau_ob = leak_cover_tau(cfg)
     if leak_override is not None:

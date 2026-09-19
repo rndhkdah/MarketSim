@@ -11,6 +11,7 @@ from marketsim.core.erlang import ErlangSmoother
 from marketsim.core.module import Phase
 from marketsim.layer1.io import IOTable
 from marketsim.ledger.opening import open_passthrough_books
+from marketsim.real.aggregates import Aggregates, Published, expenditure_gdp, production_gdp
 from marketsim.real.capex import (
     cost_of_capital_gap,
     seed_pipelines,
@@ -114,6 +115,15 @@ class RealEconomy:
         }
         self.month = 0
         self.last_flows: MonthFlows | None = None
+        self.last_agg: Aggregates | None = None
+        self.pub = Published()
+        self.pub.push(
+            gdp=fin.gdp0,
+            cpi=1.0,
+            core_cpi=1.0,
+            u=dyn.labour.u_star,
+            infl=fin.pi_star,
+        )
 
     def step_month(self) -> dict[str, Any]:
         cfg, real, fin, dyn = self.cfg, self.real, self.fin, self.cfg.dynamics
@@ -306,9 +316,40 @@ class RealEconomy:
         core_w /= core_w.sum()
         core = float((core_w * self.p).sum())
         self.cb.observe_prices(cpi, core)
-        gdp = float((self.x - real.flat(real.leak) * inv_prev - (real.flat(real.mu) + real.flat(real.m)) * self.x).sum())
+        leak = real.flat(real.leak)
+        mu = real.flat(real.mu)
+        mvec = real.flat(real.m)
+        gdp = production_gdp(self.x, leak, inv_prev, mu, mvec)
+        ex_real = ex * np.where(real.is_order, 1.0, dshare)
+        d_inv = self.x - leak * inv_prev - self.sales
+        gdp_exp = expenditure_gdp(
+            c,
+            gv,
+            float(spend_real.sum() + res_real),
+            ex,
+            mvec * self.x,
+            d_inv,
+        )
         gap = gdp / fin.gdp0 - 1.0
         self.cb.maybe_meet(gap, sh["mon"])
+        self.last_agg = Aggregates(
+            gdp_prod_real=gdp,
+            gdp_exp_real=gdp_exp,
+            gdp_prod_nom=float((rev - (self.p[:, None] * used).sum(0) - imp).sum() + (self.p * d_inv).sum()),
+            gdp_exp_nom=float(c_spent + g_nom + float((p_i * spend_real).sum()) + res_nom + float((self.p * ex_real).sum() - imp.sum()) + float((self.p * d_inv).sum())),
+            cpi=cpi,
+            core_cpi=core,
+            u=u,
+            utilisation=float((self.x / self.k).mean()),
+            x=self.x.copy(),
+            govt_balance=-deficit,
+            debt_gdp=self.b / (12.0 * max(gdp * cpi, 1e-12)),
+            trade_balance=float((self.p * ex_real).sum() - imp.sum()),
+            saving_rate=float((yd - c_spent - res_nom) / max(yd, 1e-12)),
+            leverage=float(self.debt.sum() / max(float(np.maximum(self.eb_s, 1e-12).sum()) * 12.0, 1e-12)),
+            pi12=self.cb.pi12(),
+        )
+        self.pub.push(gdp=gdp, cpi=cpi, core_cpi=core, u=u, infl=self.cb.pi12())
         i_nom = self.p * inv_goods * np.where(real.is_order, 1.0, dshare)
         # residential is already inside inv_goods on CONSTRUCT — split it back out of i_nom for the tag
         i_bus = i_nom.copy()
@@ -357,11 +398,109 @@ class RealEconomy:
         self.ledger = open_passthrough_books(self.cfg, self.real, self.fin)
         self._init_state()
 
+    def published(self, series: str, lag: int = 0) -> float:
+        return self.pub.published(series, lag)
+
     def to_state(self) -> dict[str, Any]:
-        return {"month": self.month, "x": self.x.copy(), "p": self.p.copy(), "r": self.cb.r}
+        cb = self.cb
+        return {
+            "month": self.month,
+            "p": self.p.copy(),
+            "w": self.w,
+            "prices": {"p": self.prices.p.copy(), "pf": self.prices.pf.copy(), "ps": self.prices.ps.copy(), "p_imp": self.prices.p_imp},
+            "x": self.x.copy(),
+            "sales": self.sales.copy(),
+            "se": self.se.copy(),
+            "k": self.k.copy(),
+            "inv": self.inv.copy(),
+            "backlog": self.backlog.copy(),
+            "s_in": self.s_in.copy(),
+            "fill_prev": self.fill_prev.copy(),
+            "n": self.n.copy(),
+            "pipe": self.pipe.to_state(),
+            "spend": self.spend.to_state(),
+            "g_e": self.g_e.copy(),
+            "u_s": self.u_s.copy(),
+            "res": self.res.smoother.to_state(),
+            "sales_ma": self.sales_ma.copy(),
+            "cb": {
+                "r_rule": cb.r_rule,
+                "r": cb.r,
+                "pi_e": cb.pi_e,
+                "cpi_hist": list(cb.cpi_hist),
+                "core_hist": list(cb.core_hist),
+                "month": cb.month,
+            },
+            "rate_gap_s": self.rate_gap_s.to_state(),
+            "debt": self.debt.copy(),
+            "prof_s": self.prof_s.copy(),
+            "eb_s": self.eb_s.copy(),
+            "b": self.b,
+            "wealth": self.wealth,
+            "yd_e": self.yd_e,
+            "tau_eff": self.tau_eff,
+            "sh": {k: (v.copy() if isinstance(v, np.ndarray) else v) for k, v in self.sh.items()},
+            "ledger": self.ledger.to_state(),
+            "pub": self.pub.to_state(),
+            "pi_star": self.fin.pi_star,
+        }
 
     def from_state(self, state: dict[str, Any]) -> None:
+        from marketsim.core.erlang import ErlangChain
+        from marketsim.ledger.journal import Ledger
+
         self.month = int(state["month"])
-        self.x = np.asarray(state["x"], dtype=float)
         self.p = np.asarray(state["p"], dtype=float)
-        self.cb.r = float(state["r"])
+        self.w = float(state["w"])
+        pr = state["prices"]
+        self.prices = PriceState(
+            p=np.asarray(pr["p"], dtype=float),
+            pf=np.asarray(pr["pf"], dtype=float),
+            ps=np.asarray(pr["ps"], dtype=float),
+            p_imp=float(pr["p_imp"]),
+        )
+        self.x = np.asarray(state["x"], dtype=float)
+        self.sales = np.asarray(state["sales"], dtype=float)
+        self.se = np.asarray(state["se"], dtype=float)
+        self.k = np.asarray(state["k"], dtype=float)
+        self.inv = np.asarray(state["inv"], dtype=float)
+        self.backlog = np.asarray(state["backlog"], dtype=float)
+        self.s_in = np.asarray(state["s_in"], dtype=float)
+        self.fill_prev = np.asarray(state["fill_prev"], dtype=float)
+        self.n = np.asarray(state["n"], dtype=float)
+        self.pipe = ErlangChain.from_state(state["pipe"])
+        self.spend = ErlangChain.from_state(state["spend"])
+        self.g_e = np.asarray(state["g_e"], dtype=float)
+        self.u_s = np.asarray(state["u_s"], dtype=float)
+        self.res.smoother = ErlangSmoother.from_state(state["res"])
+        self.sales_ma = np.asarray(state["sales_ma"], dtype=float)
+        cb = state["cb"]
+        self.cb.r_rule = float(cb["r_rule"])
+        self.cb.r = float(cb["r"])
+        self.cb.pi_e = float(cb["pi_e"])
+        self.cb.cpi_hist = [float(x) for x in cb["cpi_hist"]]
+        self.cb.core_hist = [float(x) for x in cb["core_hist"]]
+        self.cb.month = int(cb["month"])
+        self.rate_gap_s = ErlangSmoother.from_state(state["rate_gap_s"])
+        self.debt = np.asarray(state["debt"], dtype=float)
+        self.prof_s = np.asarray(state["prof_s"], dtype=float)
+        self.eb_s = np.asarray(state["eb_s"], dtype=float)
+        self.b = float(state["b"])
+        self.wealth = float(state["wealth"])
+        self.yd_e = float(state["yd_e"])
+        self.tau_eff = float(state["tau_eff"])
+        self.sh = {k: (np.asarray(v, dtype=float) if isinstance(v, list) else v) for k, v in state["sh"].items()}
+        self.ledger = Ledger.from_state(state["ledger"])
+        self.pub = Published.from_state(state["pub"])
+
+
+def make_real_world(config_dir, seed: int = 0, *, pi_star: float = 0.0, check_sfc: bool = True):
+    """World with a single RealEconomy module (R = 1)."""
+    from marketsim.core.config import load_config
+    from marketsim.layer1.io import load_io, resolve_io_path
+    from marketsim.world import World
+
+    cfg = load_config(config_dir)
+    io = load_io(resolve_io_path(cfg))
+    eco = RealEconomy(cfg, io, pi_star=pi_star, check_sfc=check_sfc)
+    return World.create(config_dir, seed=seed, modules=[eco])
