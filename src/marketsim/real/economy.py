@@ -25,6 +25,7 @@ from marketsim.real.capex import (
 from marketsim.real.cenbank import CentralBank
 from marketsim.real.credit import CreditBlock
 from marketsim.real.edges import TypedEdgeBlock
+from marketsim.real.entry_exit import step_entry_exit
 from marketsim.real.government import debt_ratio, step_tax_rate, tax_rate_target
 from marketsim.real.households import consumption_nominal, household_basket, income_index, smooth_nominal
 from marketsim.real.labour import step_labour
@@ -182,6 +183,9 @@ class RealEconomy:
         self.credit = CreditBlock(cfg, real, fin, self.prices_provider)
         self.typed = TypedEdgeBlock(cfg, real.codes)
         self._last_fd_shift = np.ones((r_dim, s))
+        self._pr0 = np.asarray(fin.ebitda0, dtype=float) / np.maximum(real.flat(real.K0), 1e-12)
+        self._excess_sm = np.ones(s)
+        self._last_scrap = np.zeros(s)
         self._ll_bar = float((dyn.banks.ll0 * (self.nd / 2.5)).mean())
         self.policy = PolicyDesk.from_config(cfg)
         self.toolkit = PolicyToolkit()
@@ -278,6 +282,13 @@ class RealEconomy:
             cap_mult=dyn.capex.start_rate_cap_mult,
         )
         starts = self.credit.scale_starts(self.k * rate / 12.0)
+        ee = step_entry_exit(self.eb_s, self.k, self._pr0, self._excess_sm, dyn.entry_exit, p=self.p)
+        self._excess_sm = ee.smoothed
+        if dyn.entry_exit.enabled:
+            starts = starts + ee.entry_rate / 12.0 * self.k
+            self._last_scrap = ee.scrap
+        else:
+            self._last_scrap = np.zeros(s)
         v_eff = subsidised_v(real.flat(real.v), fisc.capex_subsidy, self.codes)
         spend_real = self.spend.push(v_eff * starts)
         sub_rate = excise_array(fisc.capex_subsidy, self.codes)
@@ -285,6 +296,8 @@ class RealEconomy:
         inv_goods = real.flat(real.route_bus) * float(spend_real.sum())
         inv_goods = self.res.add_to_final(inv_goods, res_real) * fd_shift
         self.k = step_capacity(self.k, starts, self.pipe, dyn.capex.delta_annual / 12.0)
+        if dyn.entry_exit.enabled:
+            self.k = self.k - self._last_scrap
         k_eff = self.k * np.exp(sh["sup"])
         # R4
         plan = plan_output(
@@ -730,6 +743,8 @@ class RealEconomy:
             "ledger": self.ledger.to_state(),
             "pub": self.pub.to_state(),
             "pi_star": self.fin.pi_star,
+            "excess_sm": self._excess_sm.copy(),
+            "pr0": self._pr0.copy(),
         }
 
     def from_state(self, state: dict[str, Any]) -> None:
@@ -805,6 +820,10 @@ class RealEconomy:
             self.toolkit.last_lolr = float(state["toolkit"].get("last_lolr") or 0.0)
         self.ledger = Ledger.from_state(state["ledger"])
         self.pub = Published.from_state(state["pub"])
+        if "excess_sm" in state:
+            self._excess_sm = np.asarray(state["excess_sm"], dtype=float)
+        if "pr0" in state:
+            self._pr0 = np.asarray(state["pr0"], dtype=float)
 
 
 def make_real_world(config_dir, seed: int = 0, *, pi_star: float = 0.0, check_sfc: bool = True):

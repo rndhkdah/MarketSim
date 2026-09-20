@@ -443,6 +443,24 @@ class DynamicsShocksCfg(FrozenModel):
     cost_push_targets: dict[str, float]
 
 
+class EntryExitCfg(FrozenModel):
+    """NPC entry / exit on excess profit (§3.5). Rates are per year."""
+
+    enabled: bool = True
+    theta_entry: float = 0.15
+    kappa_entry: float = 0.10
+    theta_exit: float = 0.25
+    kappa_exit: float = 0.05
+    tau_excess_m: float = 12.0
+
+    @field_validator("theta_entry", "kappa_entry", "theta_exit", "kappa_exit", "tau_excess_m")
+    @classmethod
+    def _pos(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("entry/exit parameters must be >= 0")
+        return v
+
+
 class DynamicsConfig(FrozenModel):
     expectations: ExpectationsCfg
     production: DynamicsProduction
@@ -458,6 +476,7 @@ class DynamicsConfig(FrozenModel):
     banks: BanksCfg
     credit: DynamicsCreditCfg
     shocks: DynamicsShocksCfg
+    entry_exit: EntryExitCfg = Field(default_factory=EntryExitCfg)
 
     @field_validator("production")
     @classmethod

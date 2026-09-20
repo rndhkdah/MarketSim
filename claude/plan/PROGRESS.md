@@ -72,8 +72,8 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T3.03 — Baseline trade shares and regional steady state · M · deps: T3.02 — 2026-09-20, T0 + stacked Leontief; national totals 1e-9
 - [x] T3.04 — Regional orders, rationing and link capacity · M · deps: T3.03 — 2026-09-20, spill + source ration; R=1 SFC ok
 - [x] T3.05 — Trade-share dynamics and regional prices · M · deps: T3.04 — 2026-09-20, Armington + gate 3 band
-- [ ] T3.06 — Regional labour pools and migration · S · deps: T3.02
-- [ ] T3.07 — Regional households and national government · S · deps: T3.02
+- [x] T3.06 — Regional labour pools and migration · S · deps: T3.02 — 2026-09-20, LF conserved; 0.1%/yr/pp
+- [x] T3.07 — Regional households and national government · S · deps: T3.02 — 2026-09-20, YD sums; G by pop; HH:r SFC
 - [ ] T3.08 — Tiers · S · deps: T2.12
 - [ ] T3.09 — Want layer and within-want allocation · M · deps: T3.08
 - [ ] T3.10 — Need shapes and budget scaling · S · deps: T3.08

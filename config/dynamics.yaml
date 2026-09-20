@@ -136,3 +136,11 @@ shocks:
   cost_push_targets:
     ENERGY: 1.0
     AGRIFOOD: 0.3
+
+entry_exit:
+  enabled: true
+  theta_entry: 0.15
+  kappa_entry: 0.10
+  theta_exit: 0.25
+  kappa_exit: 0.05
+  tau_excess_m: 12
