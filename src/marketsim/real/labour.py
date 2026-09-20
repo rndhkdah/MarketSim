@@ -27,19 +27,35 @@ def adjust_employment(
     lf: float,
     lf_cap: float,
 ) -> np.ndarray:
-    """Asymmetric partial adjustment, then ``Σ n ≤ lf_cap · LF``."""
+    """Asymmetric partial adjustment, then ``Σ n ≤ lf_cap · LF``.
+
+    ``n`` may be ``(S,)`` (national) or ``(R, S)`` with ``lf`` of shape ``(R,)``.
+    The 1-d path is the Phase-2 formula and stays bit-identical.
+    """
     tau = np.where(n_star > n, tau_hire, tau_fire)
     n_new = n + (n_star - n) / tau
-    total = float(n_new.sum())
-    cap = lf_cap * lf
-    if total > cap:
-        n_new = n_new * (cap / total)
-    return n_new
+    if n_new.ndim == 1:
+        total = float(n_new.sum())
+        cap = lf_cap * lf
+        if total > cap:
+            n_new = n_new * (cap / total)
+        return n_new
+    lf_r = np.asarray(lf, dtype=float)
+    total = n_new.sum(axis=-1)
+    cap = lf_cap * lf_r
+    scale = np.ones_like(total)
+    over = total > cap
+    scale[over] = cap[over] / total[over]
+    return n_new * scale[..., None]
 
 
-def unemployment(n: np.ndarray, lf: float) -> float:
-    """Unemployment rate (share of LF)."""
-    return 1.0 - float(n.sum()) / lf
+def unemployment(n: np.ndarray, lf: float | np.ndarray) -> float | np.ndarray:
+    """Unemployment rate (share of LF). ``(R, S)`` / ``(R,)`` returns ``(R,)``."""
+    n_arr = np.asarray(n, dtype=float)
+    if n_arr.ndim == 1:
+        return 1.0 - float(n_arr.sum()) / float(lf)
+    lf_r = np.asarray(lf, dtype=float)
+    return 1.0 - n_arr.sum(axis=-1) / lf_r
 
 
 def wage_growth(

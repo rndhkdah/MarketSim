@@ -15,6 +15,13 @@ def real_purchases(g0: np.ndarray, z_fisc: float = 0.0) -> np.ndarray:
     return np.asarray(g0, dtype=float) * np.exp(z_fisc)
 
 
+def allocate_by_population(g_national: np.ndarray, pop_share: np.ndarray) -> np.ndarray:
+    """Regional government purchases ``(R, S)``. Rows sum to ``g_national`` (cr/month)."""
+    g = np.asarray(g_national, dtype=float)
+    pop = np.asarray(pop_share, dtype=float)
+    return pop[:, None] * g[None, :]
+
+
 def transfers(benefit: float, w: float, lf: float, n: np.ndarray) -> float:
     """Unemployment benefits (cr/month nominal)."""
     return float(benefit * w * (lf - float(n.sum())))

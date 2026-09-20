@@ -8,6 +8,15 @@ import numpy as np
 
 from marketsim.core.config import Config
 from marketsim.layer1.io import IOTable
+from marketsim.regions.geometry import Geometry, RegionsConfig, RegionSpec, build_geometry
+
+
+def national_geometry(sector_codes: tuple[str, ...]) -> Geometry:
+    """Single-region geometry used for Phase-2 / R = 1 parity."""
+    return build_geometry(
+        RegionsConfig(regions=[RegionSpec(code="NATIONAL", population_share=1.0, wage_level=1.0)]),
+        sector_codes,
+    )
 
 
 @dataclass
@@ -37,6 +46,8 @@ class RealBaseline:
     S_in0: np.ndarray
     n0: np.ndarray
     LF: float
+    lf_r: np.ndarray
+    wage_level: np.ndarray
     cover: np.ndarray
     leak: np.ndarray
     tau_ob: np.ndarray
@@ -189,6 +200,8 @@ def compute_real_baseline(
         S_in0=s_in0[None, ...],
         n0=r1(n0),
         LF=float(lf),
+        lf_r=np.asarray([lf], dtype=float),
+        wage_level=np.ones(r_dim, dtype=float),
         cover=r1(cover),
         leak=r1(leak),
         tau_ob=r1(tau_ob),

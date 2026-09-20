@@ -46,3 +46,14 @@ def income_index(yd_e: float, pc: float, yd0: float) -> float:
 def wealth_from_ledger(ledger, hh: str = "HH:0") -> float:
     """Consumption-relevant W from the opening / running ledger."""
     return opening_wealth(ledger, hh)
+
+
+def split_regional(national: float, weights: np.ndarray) -> np.ndarray:
+    """Split a national scalar across regions. ``weights`` sum to 1; units follow ``national``."""
+    w = np.asarray(weights, dtype=float)
+    return float(national) * w
+
+
+def regional_incomes(yd: np.ndarray, wealth: np.ndarray) -> tuple[float, float]:
+    """National totals of per-region ``YD`` and ``W`` (cr)."""
+    return float(np.asarray(yd, dtype=float).sum()), float(np.asarray(wealth, dtype=float).sum())

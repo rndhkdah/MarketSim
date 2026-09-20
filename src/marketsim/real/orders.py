@@ -16,8 +16,14 @@ def order_matrix(
     tau_in: float,
 ) -> np.ndarray:
     """Buyer-plan orders ``O[i,j]`` (cr/month). Floored at 0."""
-    o = a * plan[None, :]
-    o = o + np.where(stor_in, (n_in * a * plan[None, :] - s_in) / tau_in, 0.0)
+    plan_a = np.asarray(plan, dtype=float)
+    # National: (S, S). Regional buyers: (R, S, S) with plan (R, S).
+    if plan_a.ndim == 1:
+        o = a * plan_a[None, :]
+        o = o + np.where(stor_in, (n_in * a * plan_a[None, :] - s_in) / tau_in, 0.0)
+    else:
+        o = a * plan_a[..., None, :]
+        o = o + np.where(stor_in, (n_in * a * plan_a[..., None, :] - s_in) / tau_in, 0.0)
     return np.maximum(o, 0.0)
 
 

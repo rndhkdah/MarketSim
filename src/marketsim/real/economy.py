@@ -13,6 +13,7 @@ from marketsim.layer1.io import IOTable
 from marketsim.ledger.opening import GOVT_MIX, open_passthrough_books
 from marketsim.pricing.provider import StubAssetPriceProvider
 from marketsim.real.aggregates import Aggregates, Published, expenditure_gdp, production_gdp
+from marketsim.real.arrays import RegionalArray
 from marketsim.real.banks import bank_month_flows, expected_loss, open_full_books
 from marketsim.real.capex import (
     cost_of_capital_gap,
@@ -69,13 +70,38 @@ from marketsim.real.steady_state import (
     RealBaseline,
     compute_financial_baseline,
     compute_real_baseline,
+    national_geometry,
 )
+from marketsim.regions.geometry import build_geometry
 
 
 class RealEconomy:
-    """NPC-mass monthly model. Shape is (S,) with R = 1 in Phase 2."""
+    """NPC-mass monthly model. Live cell arrays are ``(R, S)``; ``R = 1`` is a ``(S,)`` view."""
 
     name = "real_economy"
+    p = RegionalArray()
+    x = RegionalArray()
+    sales = RegionalArray()
+    se = RegionalArray()
+    k = RegionalArray()
+    inv = RegionalArray()
+    backlog = RegionalArray()
+    fill_prev = RegionalArray()
+    n = RegionalArray()
+    g_e = RegionalArray()
+    u_s = RegionalArray()
+    debt = RegionalArray()
+    spread = RegionalArray()
+    payout = RegionalArray()
+    prof_s = RegionalArray()
+    eb_s = RegionalArray()
+    sales_ma = RegionalArray()
+    last_fd_shift = RegionalArray()
+    s_in = RegionalArray()
+    w = RegionalArray()
+    lf = RegionalArray()
+    yd_e = RegionalArray()
+    wealth = RegionalArray()
 
     def __init__(self, cfg: Config, io: IOTable, *, pi_star: float = 0.0, check_sfc: bool = True) -> None:
         assert cfg.dynamics is not None
@@ -97,43 +123,46 @@ class RealEconomy:
     def _init_state(self) -> None:
         cfg, real, fin = self.cfg, self.real, self.fin
         dyn = cfg.dynamics
-        s = real.S
+        r_dim, s = real.R, real.S
+        self.R = r_dim
+        self.geom = national_geometry(real.codes) if r_dim == 1 else build_geometry(cfg.regions, real.codes)
         self.codes = real.codes
         self.A = self.io.A
-        self.p = np.ones(s)
-        self.w = 1.0
-        self.prices = PriceState(p=self.p, pf=np.zeros(s), ps=np.zeros(s), p_imp=1.0)
-        self.x = real.flat(real.x0).copy()
-        self.sales = real.flat(real.s0).copy()
-        self.se = real.flat(real.s0).copy()
-        self.k = real.flat(real.K0).copy()
-        self.inv = real.flat(real.inv0).copy()
-        self.backlog = real.flat(real.backlog0).copy()
-        self.s_in = real.S_in0[0].copy()
-        self.fill_prev = np.ones(s)
-        self.n = real.flat(real.n0).copy()
+        self._p = np.ones((r_dim, s))
+        self._w = np.ones(r_dim)
+        self.prices = PriceState(p=np.ones(s), pf=np.zeros(s), ps=np.zeros(s), p_imp=1.0)
+        self._x = real.x0.copy()
+        self._sales = real.s0.copy()
+        self._se = real.s0.copy()
+        self._k = real.K0.copy()
+        self._inv = real.inv0.copy()
+        self._backlog = real.backlog0.copy()
+        self._s_in = real.S_in0.copy()
+        self._fill_prev = np.ones((r_dim, s))
+        self._n = real.n0.copy()
         self.pipe, self.spend, self.pipe0 = seed_pipelines(real, cfg)
-        self.g_e = np.zeros(s)
-        self.u_s = np.array([cfg.sectors.params(c).util_target for c in real.codes])
+        self._g_e = np.zeros((r_dim, s))
+        ustar_s = np.array([cfg.sectors.params(c).util_target for c in real.codes])
+        self._u_s = np.broadcast_to(ustar_s, (r_dim, s)).copy()
         self.fc = np.array([cfg.sectors.params(c).fixed_cost for c in real.codes])
-        self.ustar = self.u_s.copy()
+        self.ustar = ustar_s.copy()
         self.nd = np.array([cfg.sectors.params(c).nd_ebitda for c in real.codes])
         self.pt, self.ptlag = sector_pass_through(cfg, real.codes)
         self.route = np.zeros(s)
         for c, w in cfg.edges.capex.routing.items():
             self.route[real.codes.index(c)] = w
         self.res = ResidentialBlock(cfg, real)
-        self.sales_ma = real.flat(real.s0).copy()
+        self._sales_ma = real.s0.copy()
         self.cb = CentralBank.from_config(cfg, fin.pi_star)
         if cfg.policy is not None:
             self.cb.framework = MonetaryRule.from_config(cfg, r0=self.cb.r, seed=cfg.world.seed)
             self.cb.u_star = dyn.labour.u_star
         self.rate_gap_s = ErlangSmoother(dyn.households.rate_lag.k, dyn.households.rate_lag.mean_m, 0.0)
-        self.debt = fin.debt.copy()
-        self.spread = fin.spread.copy()
-        self.payout = fin.payout.copy()
-        self.prof_s = (fin.ebitda0 - fin.int0 - fin.tax0).copy()
-        self.eb_s = fin.ebitda0.copy()
+        self._debt = np.broadcast_to(fin.debt, (r_dim, s)).copy()
+        self._spread = np.broadcast_to(fin.spread, (r_dim, s)).copy()
+        self._payout = np.broadcast_to(fin.payout, (r_dim, s)).copy()
+        self._prof_s = np.broadcast_to(fin.ebitda0 - fin.int0 - fin.tax0, (r_dim, s)).copy()
+        self._eb_s = np.broadcast_to(fin.ebitda0, (r_dim, s)).copy()
         self.b = fin.B
         self.bank_deposits = fin.bank_deposits
         self.bank_equity = fin.bank_equity
@@ -141,8 +170,9 @@ class RealEconomy:
         self.bank_gb = fin.bank_gb
         self.cb_gb = fin.cb_gb
         self.hh_gb = fin.hh_gb if fin.hh_gb else fin.B
-        self.wealth = fin.W
-        self.yd_e = fin.YD0
+        self._wealth = np.full(r_dim, fin.W, dtype=float)
+        self._yd_e = np.full(r_dim, fin.YD0, dtype=float)
+        self._lf = real.lf_r.copy()
         self.tau_eff = fin.tau_y
         self.demand = household_basket(real, cfg, fin)
         self.theta = real.flat(real.C0) / real.flat(real.C0).sum()
@@ -151,7 +181,7 @@ class RealEconomy:
         self.prices_provider = StubAssetPriceProvider.from_baseline(real, fin, cfg)
         self.credit = CreditBlock(cfg, real, fin, self.prices_provider)
         self.typed = TypedEdgeBlock(cfg, real.codes)
-        self.last_fd_shift = np.ones(s)
+        self._last_fd_shift = np.ones((r_dim, s))
         self._ll_bar = float((dyn.banks.ll0 * (self.nd / 2.5)).mean())
         self.policy = PolicyDesk.from_config(cfg)
         self.toolkit = PolicyToolkit()
@@ -642,8 +672,11 @@ class RealEconomy:
         cb = self.cb
         return {
             "month": self.month,
+            "R": self.R,
+            "geom_codes": list(self.geom.codes),
             "p": self.p.copy(),
-            "w": self.w,
+            "w": float(self.w),
+            "lf": self._lf.copy(),
             "prices": {"p": self.prices.p.copy(), "pf": self.prices.pf.copy(), "ps": self.prices.ps.copy(), "p_imp": self.prices.p_imp},
             "x": self.x.copy(),
             "sales": self.sales.copy(),
@@ -704,6 +737,8 @@ class RealEconomy:
         from marketsim.ledger.journal import Ledger
 
         self.month = int(state["month"])
+        if "lf" in state:
+            self._lf = np.asarray(state["lf"], dtype=float)
         self.p = np.asarray(state["p"], dtype=float)
         self.w = float(state["w"])
         pr = state["prices"]
@@ -773,7 +808,7 @@ class RealEconomy:
 
 
 def make_real_world(config_dir, seed: int = 0, *, pi_star: float = 0.0, check_sfc: bool = True):
-    """World with a single RealEconomy module (R = 1)."""
+    """World with a single RealEconomy module (default R = 1)."""
     from marketsim.core.config import load_config
     from marketsim.layer1.io import load_io, resolve_io_path
     from marketsim.world import World
