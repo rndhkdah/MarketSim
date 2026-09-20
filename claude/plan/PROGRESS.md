@@ -131,7 +131,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 
 ## Phase 6 — Asset pricing, markets and the bond market (32 tasks) — `06-phase6-pricing-markets.md`
 
-- [ ] T6.01 — `markets.yaml` and the instrument registry · S · deps: T2.03
+- [x] T6.01 — `markets.yaml` and the instrument registry · S · deps: T2.03 — 2026-09-20, ADV=0.4%/day; EQ:NPC×18 + dynamic EQ:FIRM
 - [ ] T6.02 — Earnings expectations from public information · S · deps: T4.07, T2.21
 - [ ] T6.03 — Yield curve, term premium, bond pricing · M · deps: T2.14
 - [ ] T6.04 — Discount rates and fundamental value · M · deps: T6.02, T6.03
