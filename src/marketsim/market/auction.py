@@ -134,7 +134,8 @@ def clear_uniform(
             break
     agent_amt = sum(agent_fill.values())
     npc_fill = max(size - agent_amt, 0.0)
-    cover = (sum(b.qty for b in ordered) + npc_schedule(stop, y_fair, q0, eta_a)) / size
+    # Bid-to-cover uses the advertised book at y_fair (not the residual at stop).
+    cover = (sum(b.qty for b in ordered) + npc_schedule(y_fair, y_fair, q0, eta_a)) / size
     return AuctionResult(
         stop_out=float(stop),
         size=float(size),
@@ -175,3 +176,36 @@ def settle_auction(
         )
     if entries:
         ledger.post(Tx(tick, "bond_issue", entries, memo=f"auction {instrument}"))
+
+
+def buyback(
+    ledger: Ledger,
+    *,
+    instrument: str,
+    face: float,
+    tick: int,
+    holder: str = "MM",
+    price: float = 1.0,
+) -> None:
+    """GOVT retires ``face`` (cr) from ``holder`` at ``price``. Tag ``bond_redeem``.
+
+    Mirror of :func:`settle_auction`: cash leaves ``GOVT`` deposits, the instrument
+    sums to zero. Caller must fund ``GOVT`` deposits; we never clip a shortfall.
+    """
+    qty = float(face)
+    if qty <= 0:
+        raise ConfigError("buyback face must be > 0")
+    cash = qty * float(price)
+    ledger.post(
+        Tx(
+            tick,
+            "bond_redeem",
+            (
+                Entry(holder, instrument, -qty),
+                Entry("GOVT", instrument, qty),
+                Entry(holder, "DEP", cash),
+                Entry("GOVT", "DEP", -cash),
+            ),
+            memo=f"buyback {instrument}",
+        )
+    )

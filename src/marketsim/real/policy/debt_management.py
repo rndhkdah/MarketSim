@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from marketsim.core.clock import EventQueue
 from marketsim.core.errors import ConfigError
 from marketsim.ledger.opening import GOVT_MIX
 from marketsim.market.auction import ANNOUNCE_LEAD_TICKS, announce_tick, auction_tick
@@ -57,3 +58,10 @@ def dmo_state(need: float, bonds: BondsFile | None = None) -> dict[str, Any]:
         "sizes": split_issuance(need, bonds=bonds),
         "mix": list(issuance_mix_tuple(bonds)),
     }
+
+
+def schedule_month(queue: EventQueue, month: int, *, sizes: dict[str, float] | None = None) -> None:
+    """Queue the announcement and the auction as two payloads (§6.11, 5-tick lead)."""
+    payload = {"month": int(month), "sizes": dict(sizes or {})}
+    queue.schedule(announce_tick(month), {"kind": "auction_announce", **payload}, priority=0)
+    queue.schedule(auction_tick(month), {"kind": "auction", **payload}, priority=0)
