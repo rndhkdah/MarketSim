@@ -280,7 +280,7 @@ them into cards of this granularity after the Phase-7 gate.
 | 6 | Stack | Python + NumPy, FastAPI; Rust later if profiling demands |
 | 7 | RL reward | operators: Δ(equity value) + dividends; traders: risk-adjusted P&L; both report net worth |
 | 8 | Calibration flavour | generic developed economy (BEA IO, FRED/BLS moments); Korea-flavoured set optional later |
-| 9 | Goods layer beneath consumer-facing sectors | decide after Phase 3 (T3.16) |
+| 9 | Goods layer beneath consumer-facing sectors | **no in v1** (ADR-006 proposed T3.16); T8.12 skipped unless accepted |
 | 10 | Commercial use | in scope → licence rule in AGENTS.md |
 | 11 | Who runs `GOVT` and `CENBANK` | autopilot; `scripted` for scenarios; `agent` only when a client registers the `policymaker` role. A policymaker cannot also hold a trading account in professional mode |
 | 12 | Scope of the common borrowing rate | all firms (NPC cells and agent firms), bank loans and the corporate pool, all regions; households and the government are **not** covered. In a future multi-country world (T9.01) it becomes one rate per currency unless decided otherwise |

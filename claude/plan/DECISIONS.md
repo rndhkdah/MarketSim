@@ -94,3 +94,27 @@ Reproduced target (numpy 2.4 / scipy 1.17 sandbox):
 - context: The Phase 0 tree was built against the v1.0 pack. A later zip (v1.2 — D15 monetary framework) adds D12–D15 and new cards without changing Phase 0 or Phase 3, or the Layer-1 goldens.
 - decision: Adopt the v1.2 pack as the spec. Replace `marketsim/claude/plan/` (and the store `docs/marketsim-plan/` copy) with that pack. Keep reconstruction QUESTIONS (T0.01 / T0.05 / T0.02 / T0.15) and ADRs 000–004. Phase 0 code, World skeleton, and Layer-1 goldens stay unchanged. New cards stay unticked.
 - consequences: After GATE P0 the next named card is still T2.01. D14/D15 first affect T2.01 → T2.14 / T2.27+. `policy.yaml` is T2.27/T2.32; `bonds.yaml` is T6.24. AGENTS.md rules 15–17 apply from this ADR.
+
+## ADR-006 — no goods layer under consumer-facing sectors (v1)
+
+- date: 2026-09-20
+- status: proposed (T3.16 HUMAN GATE; higher-reasoning recommendation)
+- context: Victoria 3 splits consumer goods (grain, clothes, furniture…) under pop needs, while MarketSim’s financial
+  unit is the 18-sector IO table. Open decision 9 in the master plan asked whether to add a goods layer under
+  STAPLES / DISCRET / AGRIFOOD for game SKUs, with sectors remaining the listed equity. Phase 3 now has a two-shape
+  want layer (FOOD_HOME survival + BASIC_GOODS vanish on STAPLES; EATING_OUT / LUXURY on DISCRET) RAS-fitted to the
+  HOUSEHOLD basket (Spearman 0.816, basket 1e-9). T8.12 is the only implementation card and is gated on this ADR.
+- decision: **Do not add a goods layer in v1.** Keep the 18 sectors as the real *and* financial unit. Within-want
+  allocation (`share ∝ M (p/P)^{-σ} avail^κ`) is the substitution surface. Game legibility is names, icons and
+  flavour text on existing sectors and wants — not a second production graph. T8.12 stays skipped unless a later
+  accepted ADR reverses this.
+- where it would plug (if reversed): below the want layer only. Wants allocate to goods; goods map many-to-one onto
+  STAPLES / DISCRET / AGRIFOOD for IO, prices, inventories and listed equity. No goods-level listed instrument.
+  RAS and SFC stay on the 18-sector table; goods quantities would be a pure split of those three columns.
+- cost if reversed: new `config/goods.yaml`, `(R, G)` inventories and prices, a mapping matrix, a second RAS or
+  nested CES, calibration against no public goods-level IO, and a risk of breaking gate 4 (HOUSEHOLD basket identity)
+  plus every `(R, S)` kernel. T8.12 is sized L. Mizuta: the Phase-3 question (non-homothetic composition + regional
+  prices) is already answered without it.
+- consequences: T8.12 is not in the v1 path. Phase 4 events target wants and sectors, not SKUs. GATE P3 does **not**
+  include a goods layer. Reversal needs a new accepted ADR before any goods state is added.
+
