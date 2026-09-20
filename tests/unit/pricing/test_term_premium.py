@@ -32,7 +32,7 @@ def _weights(cfg: Config, name: str) -> tuple:
 
 def test_gate10_plus_100bp_gb_bond_35bp_and_bill_quiet(cfg: Config) -> None:
     assert cfg.bonds is not None
-    r_n, pi_star = 0.01, 0.0
+    r_n, pi_star = DURATION_REF_YIELD, 0.0
     r0 = r_n + pi_star
     r1 = r0 + 0.01
     path0 = expected_policy_path(r0, r_n, pi_star)

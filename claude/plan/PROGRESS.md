@@ -155,7 +155,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [ ] T6.22 — Domain randomisation and hidden state · S · deps: T6.06
 - [ ] T6.23 — Market performance · S · deps: T6.21
 - [x] T6.24 — Bond buckets: instruments, arithmetic, par ↔ market switch (D12) · M · deps: T6.01, T2.16 — 2026-09-20, P=(κ+δ)/(y+δ); GB_BOND 7.07y; par bitwise; reval ≠ income
-- [ ] T6.25 — Bucket fair yields and term premium · M · deps: T6.03, T6.24
+- [x] T6.25 — Bucket fair yields and term premium · M · deps: T6.03, T6.24 — 2026-09-20, ω-weighted path; tp debt/QE/FTQ; guidance×credibility; gate 10
 - [ ] T6.26 — Debt-management office and auctions · M · deps: T6.25, T2.28
 - [ ] T6.27 — Secondary bond market and NPC holders · M · deps: T6.24, T6.08, T6.09
 - [ ] T6.28 — Central-bank operations: QE, QT, open-market operations · M · deps: T6.27, T2.29
