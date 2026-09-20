@@ -1,4 +1,4 @@
-"""Heterogeneous-seller goods market (T5.05 / §5.3)."""
+"""Heterogeneous-seller goods market (T5.05 / §5.3; quality T8.03)."""
 
 from __future__ import annotations
 
@@ -7,6 +7,12 @@ from dataclasses import dataclass
 import numpy as np
 
 from marketsim.firms.firm import FirmsFile
+
+QUALITY_PHI = 1.0  # elasticity of share on quality (dimensionless). T8.03.
+QUALITY_DECAY_M = 0.10  # fraction of (Q-1) leaked per month. T8.03.
+QUALITY_GAIN = 0.01  # 1/(cr/month) scale for spend. T8.03.
+QUALITY_MIN = 0.2  # dimensionless floor. T8.03.
+QUALITY_MAX = 5.0  # dimensionless ceiling. T8.03.
 
 
 @dataclass
@@ -20,6 +26,7 @@ class SellerQuote:
     share: float
     backlog: float = 0.0
     availability: float = 1.0  # dimensionless fill / stock-cover factor (§5.3)
+    quality: float = 1.0  # dimensionless brand / product quality (1 = baseline). T8.03.
 
 
 @dataclass
@@ -39,16 +46,41 @@ class MarketResult:
         return float(sum(self.sales.values()))
 
 
+def evolve_quality(
+    quality: float,
+    rnd_spend: float = 0.0,
+    marketing_spend: float = 0.0,
+) -> float:
+    """Advance brand quality one month. No RNG.
+
+    ``quality`` is a dimensionless index (1 = baseline). ``rnd_spend`` and
+    ``marketing_spend`` are cr / month. Returns Q clipped to
+    [QUALITY_MIN, QUALITY_MAX].
+
+    Law (T8.03, leak + clip): ``Q ← 1 + (Q-1)·(1-δ) + γ·(R&D + marketing)``
+    with ``δ = QUALITY_DECAY_M`` (1/month) and ``γ = QUALITY_GAIN`` (1/(cr/month)).
+    """
+    spend = max(float(rnd_spend), 0.0) + max(float(marketing_spend), 0.0)
+    q_next = 1.0 + (float(quality) - 1.0) * (1.0 - QUALITY_DECAY_M) + QUALITY_GAIN * spend
+    return float(min(QUALITY_MAX, max(QUALITY_MIN, q_next)))
+
+
 def _target_shares(
     quotes: list[SellerQuote],
     p_ref: float,
     epsilon_s: float,
     kappa: float,
 ) -> np.ndarray:
+    """Capacity × relative-price × availability × quality weights, L1-normalised.
+
+    ``raw ∝ capacity · (p / p_ref)^{-ε} · availability^κ · Q^φ`` (dimensionless).
+    Equal Q factors out, so shares match the Q = 1 market. ``φ = QUALITY_PHI``.
+    """
     raw = []
     for q in quotes:
         rel = q.posted_price / p_ref if p_ref > 0 else 1.0
-        raw.append(max(q.capacity, 0.0) * (rel ** (-epsilon_s)) * (max(q.availability, 0.0) ** kappa))
+        qterm = max(float(q.quality), 0.0) ** QUALITY_PHI
+        raw.append(max(q.capacity, 0.0) * (rel ** (-epsilon_s)) * (max(q.availability, 0.0) ** kappa) * qterm)
     w = np.asarray(raw, dtype=float)
     tot = float(w.sum())
     if tot <= 0.0:
@@ -78,7 +110,12 @@ def allocate(
     *,
     backlog_loss: float = 0.10,
 ) -> MarketResult:
-    """Stickiness + pro-rata ration + spare-supply spill. Conserves demand up to loss."""
+    """Stickiness + pro-rata ration + spare-supply spill. Conserves demand up to loss.
+
+    Target shares use the T8.03 quality term ``Q^φ`` (see ``_target_shares``).
+    Quality itself is not stepped here — call ``evolve_quality`` from R&D /
+    marketing spend. ``p_ref``, ``ε``, ``κ``, loyalty ``τ`` and rationing are unchanged.
+    """
     if not quotes:
         return MarketResult(1.0, {}, {}, {}, {}, 0.0, demand)
     gm = cfg.goods_market
