@@ -1,0 +1,18 @@
+# T8.08 merger-control narrative. The veto is controls.merger_control (quantity).
+id: regulator_merger
+category: policy
+hazard:
+  base_rate_per_year: 0.03
+cooldown_days: 252
+composition:
+  - shock: demand
+    magnitude: {dist: fixed, value: 0.02, sign: -1, min: 0.01, max: 0.05}
+    persistence_q: 1
+    targets: {sectors: [AUTOS]}
+targets: {regions: all}
+effects_extra: []
+followups: []
+news:
+  headline: Merger review delays a proposed combination
+  publication_lag_days: 2
+  noise: 0.2
