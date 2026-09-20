@@ -1,5 +1,6 @@
 """Event catalog (Phase 4)."""
 
+from marketsim.events.firm_hooks import FIRM_EVENT_IDS, FirmHookBus, FirmHookPayload
 from marketsim.events.schema import (
     CATEGORIES,
     PRIMITIVES,
@@ -11,6 +12,9 @@ from marketsim.events.schema import (
 
 __all__ = [
     "CATEGORIES",
+    "FIRM_EVENT_IDS",
+    "FirmHookBus",
+    "FirmHookPayload",
     "PRIMITIVES",
     "EventSpec",
     "load_catalog",

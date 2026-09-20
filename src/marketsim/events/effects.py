@@ -8,14 +8,17 @@ from typing import Any
 
 import numpy as np
 
+from marketsim.events.chains import CB_POLICY_IDS, GOVT_POLICY_IDS
 from marketsim.events.compose import sample_dist
-from marketsim.events.schema import DistSpec, ExtraEffect, parse_extra_variable
+from marketsim.events.schema import DistSpec, EventSpec, ExtraEffect, parse_extra_variable
 from marketsim.ledger.journal import Entry, Ledger, Tx
 from marketsim.ledger.sfc import assert_consistent, net_financial_assets
 from marketsim.real.credit import write_off_bank_equity
+from marketsim.real.policy.authority import PolicyDecision
 
 # Decay time-constant as a fraction of duration (§4.2 shape family).
 DECAY_TAU_FRAC = 3.0
+DAYS_PER_MONTH = 21
 
 
 def shape_factor(shape: str, age_days: int, duration: int) -> float:
@@ -159,7 +162,8 @@ class ExtraEffects:
 
     def _write_economy(self, economy: Any, tick: int) -> None:
         if self._lf0 is None:
-            self._lf0 = np.asarray(economy.lf, dtype=float).copy()
+            raw_lf = np.asarray(getattr(economy, "_lf", economy.lf), dtype=float).copy()
+            self._lf0 = raw_lf.reshape(-1)
         lf = np.asarray(self._lf0, dtype=float).copy()
         nat = self.labour_mult.get("*", 1.0)
         lf = lf * nat
@@ -167,9 +171,25 @@ class ExtraEffects:
             if key == "*":
                 continue
             idx = _region_index(economy, key)
-            if idx is not None and lf.ndim >= 1 and idx < lf.shape[0]:
-                lf[idx] = self._lf0[idx] * mult
-        economy.lf = lf
+            if idx is not None and idx < lf.shape[0]:
+                lf[idx] = float(self._lf0[idx]) * float(mult)
+        if getattr(economy, "R", 1) == 1 and lf.size == 1:
+            economy.lf = float(lf[0])
+        else:
+            economy.lf = lf
+        pref = np.ones(len(getattr(economy, "codes", ())), dtype=float)
+        if pref.size:
+            star = self.capex_pref.get("*", 0.0)
+            pref = pref * (1.0 + star)
+            for key, add in self.capex_pref.items():
+                if key == "*":
+                    continue
+                if key in economy.codes:
+                    pref[economy.codes.index(key)] *= 1.0 + add
+            economy.event_capex_pref = pref
+        credit = getattr(economy, "credit", None)
+        if credit is not None:
+            credit.event_coll_mult = float(self.collateral_mult)
         bus = getattr(economy, "bus", None)
         if bus is not None:
             if self._row0 is None:
@@ -201,6 +221,14 @@ class ExtraEffects:
             elif abs(self.vat) <= 1e-15 and holder == "event":
                 govt.effective.pop("vat", None)
                 govt.source_of.pop("vat", None)
+            th = govt.source_of.get("tariff", "autopilot")
+            tariff = self.import_price.get("*", 0.0)
+            if abs(tariff) > 1e-15 and rank.get(th, 0) <= 1:
+                govt.effective["tariff"] = float(max(tariff, 0.0))
+                govt.source_of["tariff"] = "event"
+            elif abs(tariff) <= 1e-15 and th == "event":
+                govt.effective.pop("tariff", None)
+                govt.source_of.pop("tariff", None)
         del tick
 
     def to_state(self) -> dict[str, Any]:
@@ -245,3 +273,33 @@ def _post_ledger(stem: str, magnitude: float, economy: Any, tick: int) -> None:
             ledger.post(Tx(tick, "vat", (Entry(hh, "DEP", -amt), Entry("GOVT", "DEP", amt))))
     if getattr(economy, "check_sfc", False):
         assert_consistent(ledger, tick)
+
+
+def apply_policy_levers(spec: EventSpec, magnitude: float, economy: Any, tick: int) -> None:
+    """Map a policy-category event onto GOVT / CENBANK levers (D13 / T4.14).
+
+    Fiscal events post a one-shot ``transfer_oneoff`` (cr) so the lever does not stick
+    above autopilot rank. Rate overrides are not applied here: the ``monetary`` primitive
+    stays the persistent path (sticky ``rate`` would outrank the autopilot rule).
+    Units: ``magnitude`` is the sampled composition size (annual decimal or log points).
+    """
+    desk = getattr(economy, "policy", None)
+    if desk is None or spec.category != "policy":
+        return
+    month = int(tick) // DAYS_PER_MONTH
+    mag = float(magnitude)
+    eid = spec.id
+    if eid in GOVT_POLICY_IDS:
+        g0 = float(np.asarray(economy.real.flat(economy.real.G0)).sum())
+        decision = PolicyDecision(source="event", transfer_oneoff=abs(mag) * g0)
+        desk.govt.submit(decision, month=month, lag_m=0, tick=int(tick))
+        return
+    if eid in CB_POLICY_IDS:
+        desk.cenbank.news.append(
+            {
+                "tick": int(tick),
+                "authority": "CENBANK",
+                "headline": f"policy event {eid}",
+                "payload": {"magnitude": mag},
+            }
+        )

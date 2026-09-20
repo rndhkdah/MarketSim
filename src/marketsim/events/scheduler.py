@@ -9,11 +9,12 @@ import numpy as np
 
 from marketsim.core.config import Config
 from marketsim.core.module import Phase
-from marketsim.events.chains import check_subcritical
+from marketsim.events.chains import check_subcritical, policy_followup_blocked
 from marketsim.events.compose import apply_composition, sample_dist
-from marketsim.events.effects import ExtraEffects
+from marketsim.events.effects import ExtraEffects, apply_policy_levers
+from marketsim.events.firm_hooks import FIRM_EVENT_IDS, FirmHookBus, payload_from_event
 from marketsim.events.hazard import should_fire
-from marketsim.events.news import NewsFeed
+from marketsim.events.news import NewsFeed, NewsItem
 from marketsim.events.schema import EventSpec, load_catalog
 from marketsim.real.shocks import ShockBus
 
@@ -45,6 +46,7 @@ class Events:
     last_fire_cat: dict[str, int] = field(default_factory=dict)
     extras: ExtraEffects = field(default_factory=ExtraEffects)
     news: NewsFeed = field(default_factory=NewsFeed)
+    firm_hooks: FirmHookBus = field(default_factory=FirmHookBus)
     _bus: ShockBus | None = None
 
     @classmethod
@@ -93,14 +95,23 @@ class Events:
         bus_use = bus or self._bus
         if bus_use is None and economy is not None:
             bus_use = economy.bus
+        applied_mag = 0.0
         if bus_use is not None and spec.composition:
-            apply_composition(spec, bus_use, rng, day=day, economy=economy, tick=tick)
+            applied = apply_composition(spec, bus_use, rng, day=day, economy=economy, tick=tick)
+            if applied:
+                applied_mag = float(applied[0].magnitude)
+        elif spec.composition:
+            applied_mag = float(sample_dist(spec.composition[0].magnitude, rng))
+        if spec.category == "policy" and economy is not None:
+            apply_policy_levers(spec, applied_mag, economy, tick)
         if spec.effects_extra:
             self.extras.start(spec.effects_extra, rng, tick, economy=economy)
         self.history.append(CascadeNode(int(tick), spec.id, parent, int(depth), spec.category))
         self.last_fire_id[spec.id] = int(tick)
         self.last_fire_cat[spec.category] = int(tick)
         self.news.enqueue(spec, tick, rng)
+        if spec.id in FIRM_EVENT_IDS or spec.category == "firm":
+            self.firm_hooks.dispatch(payload_from_event(spec, tick))
         return True
 
     def schedule_followups(
@@ -110,9 +121,24 @@ class Events:
         tick: int,
         depth: int,
         queue: Any,
+        economy: Any | None = None,
     ) -> None:
         """Sample delayed follow-ups with probability ``p × damping^depth``."""
         for fu in spec.followups:
+            if policy_followup_blocked(fu.event_id, economy):
+                self.news.published.append(
+                    NewsItem(
+                        id=f"pressure:{fu.event_id}",
+                        tick=int(tick),
+                        category="policy",
+                        headline=f"policy pressure: {fu.event_id}",
+                        regions=(),
+                        sectors=(),
+                        severity_hint=1,
+                        is_rumour=False,
+                    )
+                )
+                continue
             p = float(fu.probability) * (float(self.damping) ** int(depth))
             if p <= 0.0:
                 continue
@@ -185,7 +211,9 @@ class Events:
                 day=day,
                 ignore_cooldown=kind == "scripted",
             ):
-                self.schedule_followups(self.catalog[eid], rng, ctx.tick, depth, ctx.world.clock.queue)
+                self.schedule_followups(
+                    self.catalog[eid], rng, ctx.tick, depth, ctx.world.clock.queue, economy=eco
+                )
         for eid in sorted(self.catalog):
             spec = self.catalog[eid]
             if not should_fire(
@@ -200,7 +228,7 @@ class Events:
             if self.try_fire(
                 eid, rng, ctx.tick, depth=0, parent=None, bus=bus, economy=eco, day=day
             ):
-                self.schedule_followups(spec, rng, ctx.tick, 0, ctx.world.clock.queue)
+                self.schedule_followups(spec, rng, ctx.tick, 0, ctx.world.clock.queue, economy=eco)
 
     def to_state(self) -> dict[str, Any]:
         return {
@@ -209,6 +237,7 @@ class Events:
             "last_fire_cat": dict(self.last_fire_cat),
             "extras": self.extras.to_state(),
             "news": self.news.to_state(),
+            "firm_hooks": self.firm_hooks.to_state(),
         }
 
     def from_state(self, state: dict[str, Any]) -> None:
@@ -219,6 +248,8 @@ class Events:
             self.extras.from_state(state["extras"])
         if "news" in state:
             self.news.from_state(state["news"])
+        if "firm_hooks" in state:
+            self.firm_hooks.from_state(state["firm_hooks"])
 
 
 def _economy(ctx: Any) -> Any | None:

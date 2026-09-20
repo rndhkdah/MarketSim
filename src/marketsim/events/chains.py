@@ -81,19 +81,60 @@ def _longest_path(graph: dict[str, list[tuple[str, float]]]) -> int:
     return max(depth(n) for n in graph)
 
 
-def expected_cascade_size(catalog: dict[str, EventSpec], damping: float = 0.7) -> dict[str, float]:
-    """Branching-process mean extra events by root (finite on a DAG)."""
+def expected_cascade_size(
+    catalog: dict[str, EventSpec],
+    damping: float = 0.7,
+    max_depth: int | None = None,
+) -> dict[str, float]:
+    """Branching-process mean cascade size by root (finite on a DAG)."""
     graph = followup_graph(catalog)
     memo: dict[tuple[str, int], float] = {}
 
     def size(node: str, depth: int) -> float:
+        if max_depth is not None and depth > max_depth:
+            return 0.0
         key = (node, depth)
         if key in memo:
             return memo[key]
         total = 1.0
-        for dst, p in graph.get(node, []):
-            total += float(p) * (float(damping) ** depth) * size(dst, depth + 1)
+        if max_depth is None or depth < max_depth:
+            for dst, p in graph.get(node, []):
+                total += float(p) * (float(damping) ** depth) * size(dst, depth + 1)
         memo[key] = total
         return total
 
     return {eid: size(eid, 0) for eid in catalog}
+
+
+GOVT_POLICY_IDS = frozenset(
+    {
+        "fiscal_stimulus",
+        "covid_fiscal_stimulus",
+        "gfc_fiscal_stimulus",
+        "energy_subsidy",
+        "vat_change",
+        "trade_tariff",
+    }
+)
+CB_POLICY_IDS = frozenset(
+    {
+        "monetary_tightening",
+        "oil_monetary_tightening",
+        "energy_monetary_tightening",
+        "policy_surprise",
+    }
+)
+
+
+def policy_followup_blocked(event_id: str, economy: object | None) -> bool:
+    """True when a policy follow-up must not execute because the authority is not on autopilot (D13)."""
+    if economy is None:
+        return False
+    desk = getattr(economy, "policy", None)
+    if desk is None:
+        return False
+    if event_id in GOVT_POLICY_IDS:
+        return getattr(getattr(desk, "govt", None), "control", "autopilot") != "autopilot"
+    if event_id in CB_POLICY_IDS:
+        return getattr(getattr(desk, "cenbank", None), "control", "autopilot") != "autopilot"
+    return False
