@@ -176,7 +176,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T7.06 — Lockstep barrier and real-time pacing · M · deps: T7.02 — 2026-09-20, (agent,seq) apply; timeout empty; late→next tick; gate 2
 - [x] T7.07 — Python SDK (HTTP / WS) · M · deps: T7.04, T7.05 — 2026-09-20, HttpClient+AsyncHttpClient; LOCAL_METHODS; WS reconnect since
 - [x] T7.08 — Gymnasium single-agent environment · M · deps: T7.03 — 2026-09-20, Dict orders+firm+mask; env_checker; seed-deterministic; masked levers ignored
-- [ ] T7.09 — PettingZoo parallel environment · M · deps: T7.08
+- [x] T7.09 — PettingZoo parallel environment · M · deps: T7.08 — 2026-09-20, ParallelEnv; parallel_api_test; bankrupt agent removed; seed-deterministic
 - [x] T7.10 — Replay, export, save / load · M · deps: T7.06 — 2026-09-20, event-sourced ReplayLog; (agent,seq) replay; npz export schema; save/load continue
 - [ ] T7.11 — Scenario packs, curricula, evaluation sets · M · deps: T4.09, T7.08
 - [ ] T7.12 — Vectorised parallel worlds · M · deps: T7.08
