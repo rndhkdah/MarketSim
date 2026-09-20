@@ -1,0 +1,49 @@
+# T3.09 — want layer. Priors for M0; the calibrator RAS-fits buy_packages.yaml.
+# Two-shape rule (2026-09-20): every HH-facing sector is in ≥ 2 wants of different shapes.
+# T3.09-A: SEMIS sits in HOUSEHOLD_GOODS.
+
+sigma_default: 0.8
+sigma:
+  FOOD_HOME: 0.6
+  MOBILITY: 1.0
+min_share: 0.01
+max_share: 0.95
+availability_kappa: 1.0
+
+wants:
+  FOOD_HOME:
+    shape: survival
+    sectors: {STAPLES: 0.75, AGRIFOOD: 0.25}
+  BASIC_GOODS:
+    shape: vanish
+    sectors: {STAPLES: 0.65, AGRIFOOD: 0.25, MATERIALS: 0.10}
+  SHELTER:
+    shape: plateau
+    sectors: {REALESTATE: 0.78, CONSTRUCT: 0.06, MATERIALS: 0.04, UTILITIES: 0.08, INSURANCE: 0.04}
+  HEAT_POWER:
+    shape: survival
+    sectors: {UTILITIES: 0.7, ENERGY: 0.3}
+  HEALTH:
+    shape: normal
+    sectors: {HEALTH: 0.85, INSURANCE: 0.15}
+  MOBILITY:
+    shape: plateau
+    sectors: {AUTOS: 0.45, ENERGY: 0.20, TRANSPORT: 0.25, CAPGOODS: 0.10}
+  COMMUNICATION:
+    shape: plateau
+    sectors: {TELECOM: 0.60, SOFTWARE: 0.25, SEMIS: 0.15}
+  HOUSEHOLD_GOODS:
+    shape: plateau
+    sectors: {DISCRET: 0.65, CAPGOODS: 0.12, AUTOS: 0.08, SEMIS: 0.08, TELECOM: 0.07}
+  EATING_OUT_LEISURE:
+    shape: luxury
+    sectors: {DISCRET: 0.85, TRANSPORT: 0.15}
+  FINANCIAL_PROTECTION:
+    shape: normal
+    sectors: {BANKS: 0.45, INSURANCE: 0.40, BIZSVC: 0.15}
+  PERSONAL_SERVICES:
+    shape: luxury
+    sectors: {BIZSVC: 0.50, SOFTWARE: 0.22, HEALTH: 0.18, TELECOM: 0.10}
+  LUXURY:
+    shape: luxury
+    sectors: {DISCRET: 0.34, AUTOS: 0.16, REALESTATE: 0.14, BIZSVC: 0.08, CONSTRUCT: 0.08, BANKS: 0.08, SEMIS: 0.06, CAPGOODS: 0.06}

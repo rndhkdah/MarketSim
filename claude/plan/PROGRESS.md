@@ -74,13 +74,13 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T3.05 — Trade-share dynamics and regional prices · M · deps: T3.04 — 2026-09-20, Armington + gate 3 band
 - [x] T3.06 — Regional labour pools and migration · S · deps: T3.02 — 2026-09-20, LF conserved; 0.1%/yr/pp
 - [x] T3.07 — Regional households and national government · S · deps: T3.02 — 2026-09-20, YD sums; G by pop; HH:r SFC
-- [ ] T3.08 — Tiers · S · deps: T2.12
-- [ ] T3.09 — Want layer and within-want allocation · M · deps: T3.08
-- [ ] T3.10 — Need shapes and budget scaling · S · deps: T3.08
+- [x] T3.08 — Tiers · S · deps: T2.12 — 2026-09-20, ι sum 10; Gini 0.38–0.42
+- [x] T3.09 — Want layer and within-want allocation · M · deps: T3.08 — 2026-09-20, two-shape + SEMIS in HOUSEHOLD_GOODS
+- [x] T3.10 — Need shapes and budget scaling · S · deps: T3.08 — 2026-09-20, five shapes; survival first
 - [ ] T3.11 — Calibrator · M · deps: T3.09, T3.10
 - [ ] T3.12 — Swap in `TiersWantsDemand` · M · deps: T3.11, T3.07
 - [ ] T3.13 — Want shifters (interface for events) · S · deps: T3.12
-- [ ] T3.14 — NPC entry / exit · M · deps: T3.02
+- [x] T3.14 — NPC entry / exit · M · deps: T3.02 — 2026-09-20, §3.5; gate 5 AUTOS 8y; SS bitwise
 - [ ] T3.15 — Regional validation and golden baseline · M · deps: T3.05, T3.12, T3.14
 - [ ] T3.16 — ADR: goods layer beneath consumer-facing sectors · S · deps: T3.15 · **HUMAN GATE**
 
