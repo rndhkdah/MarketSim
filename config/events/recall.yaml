@@ -1,0 +1,22 @@
+id: recall
+category: firm
+hazard:
+  base_rate_per_year: 0.09
+composition:
+- shock: demand
+  magnitude:
+    dist: uniform
+    min: -0.02
+    max: -0.005
+    sign: 1.0
+    verify: true
+  persistence_q: 2
+news:
+  headline: Product recall hits demand
+  publication_lag_days: 1
+  noise: 0.25
+effects_extra: []
+followups: []
+targets:
+  regions: all
+cooldown_days: 252

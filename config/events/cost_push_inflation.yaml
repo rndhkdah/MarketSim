@@ -1,0 +1,32 @@
+id: cost_push_inflation
+category: energy
+hazard:
+  base_rate_per_year: 0.0
+composition:
+- shock: cost_push
+  magnitude:
+    dist: uniform
+    min: 0.1
+    max: 0.25
+    sign: 1.0
+    verify: true
+  persistence_q: 4
+  targets:
+    sectors:
+    - ENERGY
+    - AGRIFOOD
+followups:
+- event_id: monetary_tightening
+  probability: 0.7
+  delay:
+    dist: uniform
+    low_days: 21
+    high_days: 84
+news:
+  headline: Cost-push inflation follows the reopening
+  publication_lag_days: 0
+  noise: 0.2
+effects_extra: []
+targets:
+  regions: all
+cooldown_days: 252

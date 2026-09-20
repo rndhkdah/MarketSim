@@ -95,8 +95,8 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T4.05 — Scheduler and chains · M · deps: T4.02, T4.04, T0.10 — 2026-09-20, DAG check; depth/concurrency caps; gate 4 RNG
 - [x] T4.06 — News feed · S · deps: T4.05 — 2026-09-20, no magnitudes; lag; noise≈misclass; rumours debug-only
 - [x] T4.07 — Data release calendar · M · deps: T2.17, T0.10 — 2026-09-20, CPI d10 / U d5 / GDP q+rev; observe vintages only
-- [ ] T4.08 — Historic templates and generic events · M · deps: T4.03
-- [ ] T4.09 — Scenario runner · S · deps: T4.05
+- [x] T4.08 — Historic templates and generic events · M · deps: T4.03 — 2026-09-20, 11 templates + generics; DAG Σp≤0.9
+- [x] T4.09 — Scenario runner · S · deps: T4.05 — 2026-09-20, scripted ticks; hazards off; RNG isolation
 - [ ] T4.10 — Cascade and storm tests · S · deps: T4.08
 - [ ] T4.11 — Template direction tests · M · deps: T4.08, T4.09
 - [ ] T4.12 — Firm-level event hooks · S · deps: T4.03

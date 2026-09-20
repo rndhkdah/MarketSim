@@ -1,0 +1,30 @@
+id: tech_correction
+category: technology
+hazard:
+  base_rate_per_year: 0.0
+composition:
+- shock: risk_appetite
+  magnitude:
+    dist: uniform
+    min: 0.01
+    max: 0.03
+    sign: 1.0
+    verify: true
+  persistence_q: 4
+effects_extra:
+- variable: sentiment
+  shape: step
+  magnitude:
+    dist: fixed
+    value: -0.25
+    sign: 1.0
+    verify: true
+  duration: 126
+news:
+  headline: Tech correction after the boom
+  publication_lag_days: 0
+  noise: 0.3
+followups: []
+targets:
+  regions: all
+cooldown_days: 252

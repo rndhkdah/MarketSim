@@ -1,0 +1,42 @@
+id: oil_embargo_1973
+category: energy
+hazard:
+  base_rate_per_year: 0.01
+  multipliers:
+  - feature: utilisation_gap
+    sector: ENERGY
+    coef: 2.0
+cooldown_days: 2520
+composition:
+- shock: cost_push
+  magnitude:
+    dist: lognormal
+    median: 1.25
+    sigma: 0.15
+    sign: 1
+    min: 1.1
+    max: 1.4
+    verify: true
+  persistence_q: 8
+  targets:
+    sectors:
+    - ENERGY
+followups:
+- event_id: oil_monetary_tightening
+  probability: 0.6
+  delay:
+    dist: uniform
+    low_days: 40
+    high_days: 120
+news:
+  headline: Oil exporters cut shipments; crude prices jump
+  publication_lag_days: 0
+  noise: 0.2
+historic_reference:
+  episode: 1973 oil embargo
+  source: T4.13
+  calibrated_params:
+    verify: true
+effects_extra: []
+targets:
+  regions: all

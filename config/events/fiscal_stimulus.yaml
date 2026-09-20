@@ -1,0 +1,22 @@
+id: fiscal_stimulus
+category: policy
+hazard:
+  base_rate_per_year: 0.05
+composition:
+- shock: fiscal
+  magnitude:
+    dist: uniform
+    min: 0.02
+    max: 0.05
+    sign: 1.0
+    verify: true
+  persistence_q: 3
+news:
+  headline: Discretionary fiscal stimulus
+  publication_lag_days: 0
+  noise: 0.2
+effects_extra: []
+followups: []
+targets:
+  regions: all
+cooldown_days: 252

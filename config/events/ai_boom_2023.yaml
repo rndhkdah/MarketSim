@@ -1,0 +1,60 @@
+id: ai_boom_2023
+category: technology
+hazard:
+  base_rate_per_year: 0.05
+cooldown_days: 504
+composition:
+- shock: risk_appetite
+  magnitude:
+    dist: uniform
+    min: -0.015
+    max: -0.005
+    sign: 1.0
+    verify: true
+  persistence_q: 8
+effects_extra:
+- variable: capex_preference[SEMIS]
+  shape: ramp
+  magnitude:
+    dist: uniform
+    min: 0.2
+    max: 0.4
+    sign: 1.0
+    verify: true
+  duration: 504
+- variable: capex_preference[SOFTWARE]
+  shape: ramp
+  magnitude:
+    dist: uniform
+    min: 0.2
+    max: 0.4
+    sign: 1.0
+    verify: true
+  duration: 504
+- variable: capex_preference[UTILITIES]
+  shape: ramp
+  magnitude:
+    dist: uniform
+    min: 0.2
+    max: 0.4
+    sign: 1.0
+    verify: true
+  duration: 504
+followups:
+- event_id: tech_correction
+  probability: 0.35
+  delay:
+    dist: uniform
+    low_days: 504
+    high_days: 1260
+news:
+  headline: AI capex boom in chips, software and power
+  publication_lag_days: 0
+  noise: 0.25
+historic_reference:
+  episode: 2023 AI boom
+  source: T4.13
+  calibrated_params:
+    verify: true
+targets:
+  regions: all

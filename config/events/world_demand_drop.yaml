@@ -1,0 +1,23 @@
+id: world_demand_drop
+category: trade
+hazard:
+  base_rate_per_year: 0.06
+effects_extra:
+- variable: world_demand
+  shape: step
+  magnitude:
+    dist: uniform
+    min: -0.08
+    max: -0.03
+    sign: 1.0
+    verify: true
+  duration: 126
+news:
+  headline: World demand slumps
+  publication_lag_days: 1
+  noise: 0.25
+followups: []
+targets:
+  regions: all
+cooldown_days: 252
+composition: []
