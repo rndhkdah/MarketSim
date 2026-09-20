@@ -153,7 +153,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [ ] T6.20 — Surveillance and limits · M · deps: T6.12
 - [x] T6.21 — Tier-1 / Tier-2 statistics and the regime flip · M · deps: T6.09, T6.06, T6.07 — 2026-09-20, gates 2–4; δ∈[0.4,0.7]; demand corr<−0.15
 - [x] T6.22 — Domain randomisation and hidden state · S · deps: T6.06 — 2026-09-20, stream randomise; observe() whitelist
-- [ ] T6.23 — Market performance · S · deps: T6.21
+- [x] T6.23 — Market performance · S · deps: T6.21 — 2026-09-20, 25 names 15.1k ticks/s; hash-stable
 - [x] T6.24 — Bond buckets: instruments, arithmetic, par ↔ market switch (D12) · M · deps: T6.01, T2.16 — 2026-09-20, P=(κ+δ)/(y+δ); GB_BOND 7.07y; par bitwise; reval ≠ income
 - [x] T6.25 — Bucket fair yields and term premium · M · deps: T6.03, T6.24 — 2026-09-20, ω-weighted path; tp debt/QE/FTQ; guidance×credibility; gate 10
 - [x] T6.26 — Debt-management office and auctions · M · deps: T6.25, T2.28 — 2026-09-20, uniform-price; gate 12; 20/40/40; buybacks
