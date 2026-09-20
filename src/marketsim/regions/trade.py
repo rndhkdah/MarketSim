@@ -124,6 +124,47 @@ def route_with_spill(
     return delivered
 
 
+def delivered_prices(t_shares: np.ndarray, p: np.ndarray) -> np.ndarray:
+    """Buyer-region delivered price ``P_in[dst, i] = Σ_src T[i,src,dst] · p[src,i]`` (index)."""
+    return np.einsum("isd,si->di", t_shares, np.asarray(p, dtype=float))
+
+
+def armington_target(
+    t0: np.ndarray,
+    p: np.ndarray,
+    cost: np.ndarray,
+    sigma: np.ndarray,
+    avail: np.ndarray,
+    kappa: float,
+) -> np.ndarray:
+    """``T* ∝ T0 · (p_src·(1+cost)/P̄)^{−σ} · avail^κ``, renormalised over sources.
+
+    ``p`` and ``avail`` are ``(R, S)``; ``cost`` is ``(R, R)``; ``sigma`` is ``(S,)``.
+    Transport cost is a preference friction only (no ledger wedge).
+    """
+    p_a = np.asarray(p, dtype=float)
+    # p_src[i, src, dst] = p[src, i] * (1 + cost[src, dst])
+    landed = p_a.T[:, :, None] * (1.0 + np.asarray(cost, dtype=float)[None, :, :])
+    t_now = np.asarray(t0, dtype=float)
+    pbar = np.einsum("isd,isd->id", t_now, landed)
+    pbar = np.maximum(pbar, 1e-12)
+    rel = landed / pbar[:, None, :]
+    sig = np.asarray(sigma, dtype=float)[:, None, None]
+    avail_term = np.maximum(np.asarray(avail, dtype=float).T[:, :, None], 1e-12) ** float(kappa)
+    raw = t_now * np.power(rel, -sig) * avail_term
+    denom = raw.sum(axis=1, keepdims=True)
+    return np.divide(raw, denom, out=np.zeros_like(raw), where=denom > 0)
+
+
+def smooth_shares(t_shares: np.ndarray, target: np.ndarray, tau: float) -> np.ndarray:
+    """``T ← T + (T* − T)/τ`` then project onto the simplex (Σ_src = 1, T ≥ 0)."""
+    tau = max(float(tau), 1.0)
+    t_new = np.asarray(t_shares, dtype=float) + (np.asarray(target, dtype=float) - t_shares) / tau
+    t_new = np.maximum(t_new, 0.0)
+    denom = t_new.sum(axis=1, keepdims=True)
+    return np.divide(t_new, denom, out=np.zeros_like(t_new), where=denom > 0)
+
+
 def ration_sources(flows: np.ndarray, avail: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Pro-rata supplier rationing across buying regions.
 

@@ -70,7 +70,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T3.01 — `regions.yaml` and geometry · S · deps: T2.23 — 2026-09-20, §3.2 schema; R=1 accepted
 - [x] T3.02 — Regionalise the state (R = 1 parity) · M · deps: T3.01 — 2026-09-20, (R,S) live state; Phase-2 golden 1e-12
 - [x] T3.03 — Baseline trade shares and regional steady state · M · deps: T3.02 — 2026-09-20, T0 + stacked Leontief; national totals 1e-9
-- [ ] T3.04 — Regional orders, rationing and link capacity · M · deps: T3.03
+- [x] T3.04 — Regional orders, rationing and link capacity · M · deps: T3.03 — 2026-09-20, spill + source ration; R=1 SFC ok
 - [ ] T3.05 — Trade-share dynamics and regional prices · M · deps: T3.04
 - [ ] T3.06 — Regional labour pools and migration · S · deps: T3.02
 - [ ] T3.07 — Regional households and national government · S · deps: T3.02

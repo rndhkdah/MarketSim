@@ -27,7 +27,7 @@ def unit_cost(
     p_arr = np.asarray(p, dtype=float)
     if p_arr.ndim == 1:
         return a.T @ p_arr + w * ell * np.exp(-z_sup) + m * p_imp
-    # (R, S): buyer pays own-region source prices (T3.05 replaces this with delivered P_in)
+    # (R, S): ``p`` is the delivered input price P_in[d, i] (T3.05).
     return p_arr @ a + np.asarray(w, dtype=float)[..., None] * ell * np.exp(-z_sup) + m * p_imp
 
 
