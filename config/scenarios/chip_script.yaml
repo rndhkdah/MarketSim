@@ -1,0 +1,6 @@
+# T4.09 example: chip shortage on day 21, hazards off.
+id: chip_script
+seed: 7
+hazards: false
+events:
+  - {event_id: chip_shortage_2020, tick: 21}

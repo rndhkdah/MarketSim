@@ -75,6 +75,7 @@ class Events:
         bus: ShockBus | None = None,
         economy: Any | None = None,
         day: int = 0,
+        ignore_cooldown: bool = False,
     ) -> bool:
         """Fire one event if depth, concurrency and cooldown allow. Returns True if fired."""
         if int(depth) > self.max_depth:
@@ -82,12 +83,13 @@ class Events:
         if self.concurrent(tick) >= self.max_concurrent:
             return False
         spec = self.catalog[event_id]
-        last = self.last_fire_id.get(spec.id)
-        if last is not None and spec.cooldown_days > 0 and int(tick) - last < spec.cooldown_days:
-            return False
-        last_c = self.last_fire_cat.get(spec.category)
-        if last_c is not None and spec.cooldown_days > 0 and int(tick) - last_c < spec.cooldown_days:
-            return False
+        if not ignore_cooldown:
+            last = self.last_fire_id.get(spec.id)
+            if last is not None and spec.cooldown_days > 0 and int(tick) - last < spec.cooldown_days:
+                return False
+            last_c = self.last_fire_cat.get(spec.category)
+            if last_c is not None and spec.cooldown_days > 0 and int(tick) - last_c < spec.cooldown_days:
+                return False
         bus_use = bus or self._bus
         if bus_use is None and economy is not None:
             bus_use = economy.bus
@@ -162,15 +164,26 @@ class Events:
         features = _features(eco, ctx.tick, self.last_fire_cat)
         self.news.maybe_rumour(self.catalog, ctx.tick, rng)
         for payload in ctx.due:
-            if not isinstance(payload, dict) or payload.get("kind") != "followup":
+            if not isinstance(payload, dict):
+                continue
+            kind = payload.get("kind")
+            if kind not in ("followup", "scripted"):
                 continue
             eid = str(payload["event_id"])
-            depth = int(payload.get("depth") or 0)
-            parent = payload.get("parent")
+            depth = 0 if kind == "scripted" else int(payload.get("depth") or 0)
+            parent = None if kind == "scripted" else payload.get("parent")
             if eid not in self.catalog:
                 continue
             if self.try_fire(
-                eid, rng, ctx.tick, depth=depth, parent=parent, bus=bus, economy=eco, day=day
+                eid,
+                rng,
+                ctx.tick,
+                depth=depth,
+                parent=parent,
+                bus=bus,
+                economy=eco,
+                day=day,
+                ignore_cooldown=kind == "scripted",
             ):
                 self.schedule_followups(self.catalog[eid], rng, ctx.tick, depth, ctx.world.clock.queue)
         for eid in sorted(self.catalog):
