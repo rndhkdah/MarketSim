@@ -14,14 +14,17 @@ from marketsim.pricing.fundamentals import financials_dlnv, fundamental_values
 from marketsim.real.steady_state import FinancialBaseline, RealBaseline
 
 PricingMode = Literal["structural", "factor_lite"]
+RHO_RATE_WEIGHT = 0.35  # §2.10 DISC_PASS; economy `values(r,π_e,z)` stays on this
 
 
 @dataclass
 class AssetPriceProvider:
-    """``ln V = ln E^e + ln PE0 − D·Δρ + D·Δg_lr`` plus financials add-on.
+    """``ln V = ln E^e + ln PE0 − D·Δρ + D·Δg_lr`` plus optional financials add-on.
 
-    ``Q = V / (v K) = 1`` at baseline. ``values(r, π_e, z_risk)`` keeps the
-    Phase-2 signature (constant baseline earnings → stub parity).
+    ``Q = V / (v K) = 1`` at baseline. The Phase-2 call ``values(r, π_e, z_risk)``
+    keeps the stub ``Δρ = 0.35·(r − π_e − r_n) + z_risk`` so credit / capex
+    IRFs stay put. The curve-based ``Δρ`` and financials override are used when
+    ``ee`` / ``apply_financials`` are passed, or in ``factor_lite``.
     """
 
     ee: np.ndarray
@@ -65,8 +68,8 @@ class AssetPriceProvider:
         )
 
     def delta_rho(self, r: float, pi_e: float, z_risk: float = 0.0) -> float:
-        """``ρ_t − ρ_0`` from the §6.3 curve (reproduces Layer-1 0.35 pass-through)."""
-        return curve_delta_rho(r, self.r_n, pi_e, z_risk=z_risk)
+        """Phase-2 ``Δρ`` (annual decimal). Exact stub: ``0.35·(r − π_e − r_n) + z_risk``."""
+        return RHO_RATE_WEIGHT * (r - pi_e - self.r_n) + z_risk
 
     def values(
         self,
@@ -77,17 +80,20 @@ class AssetPriceProvider:
         ee: np.ndarray | None = None,
         delta_g_lr: float | np.ndarray = 0.0,
         sentiment: float = 0.0,
+        apply_financials: bool = False,
     ) -> np.ndarray:
         """Fundamental values ``V_j`` (cr)."""
         ee_use = self.ee if ee is None else np.asarray(ee, dtype=float)
         r_base = self.r_n + pi_e if self.r0 is None else float(self.r0)
         if self.mode == "factor_lite" and self.beta_rate is not None:
-            # Fast training: d ln V = β_r · (r − r0) + z_risk on an equal-duration unit.
             dln = self.beta_rate * (r - r_base) - z_risk * self.duration
             return self.v_k * np.exp(dln)
+        if ee is None and not apply_financials and np.all(np.asarray(delta_g_lr) == 0.0) and sentiment == 0.0:
+            drho = self.delta_rho(r, pi_e, z_risk)
+            return fundamental_values(ee_use, self.pe0, self.duration, drho, 0.0)
         drho = curve_delta_rho(r, self.r_n, pi_e, z_risk=z_risk, sentiment=sentiment)
         v = fundamental_values(ee_use, self.pe0, self.duration, drho, delta_g_lr)
-        if self.cfg is not None:
+        if apply_financials and self.cfg is not None:
             y_t = y10(r, self.r_n, pi_e)
             y_0 = y10(r_base, self.r_n, pi_e)
             v = v * np.exp(financials_dlnv(self.codes, self.cfg, r=r, r0=r_base, y10_t=y_t, y10_0=y_0))
@@ -104,5 +110,5 @@ class AssetPriceProvider:
         return float(v[list(names).index("REALESTATE")])
 
 
-# T2.21 name. Same object; structural path reduces to the stub when E^e is the baseline.
+# T2.21 name. Default ``values(r, π_e, z)`` is the stub formula.
 StubAssetPriceProvider = AssetPriceProvider

@@ -44,11 +44,7 @@ def test_stub_parity_when_earnings_constant(cfg: Config, io) -> None:
     drho_stub = 0.35 * 0.01
     v_stub = fundamental_values(structural.ee, structural.pe0, structural.duration, drho_stub)
     v_new = structural.values(fin.r0 + 0.01, fin.pi_star, 0.0)
-    fin_idx = [list(real.codes).index(c) for c in cfg.sectors.financials]
-    mask = np.ones(len(real.codes), dtype=bool)
-    mask[fin_idx] = False
-    # Curve pass-through is ≈ 0.3524, not the asserted 0.35; stay inside 2 %.
-    assert np.allclose(v_new[mask], v_stub[mask], rtol=0.02, atol=0.0)
+    assert np.allclose(v_new, v_stub, rtol=0.0, atol=1e-12)
     # Same interface name still constructs.
     stub = StubAssetPriceProvider.from_baseline(real, fin, cfg)
     assert np.allclose(stub.q_tobin(fin.r0, 0.0), 1.0, atol=1e-12)
