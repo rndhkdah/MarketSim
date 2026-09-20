@@ -173,7 +173,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T7.03 — In-process client · S · deps: T7.02 — 2026-09-20, LocalClient; LOCAL_METHODS contract; hash-identical to World
 - [x] T7.04 — REST endpoints · L · deps: T7.02 — 2026-09-20, FastAPI /v1; 401/403/422; idempotent orders; observe no hidden state
 - [ ] T7.05 — WebSocket streams · M · deps: T7.04
-- [ ] T7.06 — Lockstep barrier and real-time pacing · M · deps: T7.02
+- [x] T7.06 — Lockstep barrier and real-time pacing · M · deps: T7.02 — 2026-09-20, (agent,seq) apply; timeout empty; late→next tick; gate 2
 - [ ] T7.07 — Python SDK (HTTP / WS) · M · deps: T7.04, T7.05
 - [ ] T7.08 — Gymnasium single-agent environment · M · deps: T7.03
 - [ ] T7.09 — PettingZoo parallel environment · M · deps: T7.08
