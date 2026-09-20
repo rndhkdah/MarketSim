@@ -57,3 +57,16 @@ def split_regional(national: float, weights: np.ndarray) -> np.ndarray:
 def regional_incomes(yd: np.ndarray, wealth: np.ndarray) -> tuple[float, float]:
     """National totals of per-region ``YD`` and ``W`` (cr)."""
     return float(np.asarray(yd, dtype=float).sum()), float(np.asarray(wealth, dtype=float).sum())
+
+
+def household_entity(region: int) -> str:
+    """Ledger name ``HH:<r>``."""
+    return f"HH:{int(region)}"
+
+
+def regional_disposable(
+    pretax_r: np.ndarray,
+    tau_y: float,
+) -> np.ndarray:
+    """Per-region disposable income ``(1 − τ_y)·pretax_r`` (cr/month)."""
+    return (1.0 - float(tau_y)) * np.asarray(pretax_r, dtype=float)
