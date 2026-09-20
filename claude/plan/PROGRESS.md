@@ -109,7 +109,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 
 - [x] T5.01 — `firms.yaml` and firm state · M · deps: T3.15 — 2026-09-20, FirmsFile + Plant/Firm registry; unknown cell rejected
 - [x] T5.02 — Firm accounts on the ledger · M · deps: T5.01, T2.03 — 2026-09-20, FIRM:/AGENT: + equity; 24m A=L+E SFC
-- [ ] T5.03 — Founding and entry · S · deps: T5.02
+- [x] T5.03 — Founding and entry · S · deps: T5.02 — 2026-09-20, NPC purchase conserves K; greenfield after build_lag_q
 - [ ] T5.04 — Cell aggregation with firms (incl. zero-NPC cells) · M · deps: T5.03
 - [ ] T5.05 — Heterogeneous-seller goods market · M · deps: T5.04
 - [ ] T5.06 — Decision levers and validation · M · deps: T5.04
