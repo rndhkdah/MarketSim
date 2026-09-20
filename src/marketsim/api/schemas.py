@@ -20,7 +20,7 @@ from marketsim.market.clob import Fill as EngineFill
 from marketsim.market.clob import Order as EngineOrder
 from marketsim.market.clob import OrderType, Side, SubmitResult, TimeInForce
 
-API_SCHEMA_VERSION = "v1"
+API_SCHEMA_VERSION = "v1.1"
 
 # Public observe() keys — same set as ``scenarios.randomise.OBSERVE_PUBLIC_KEYS``.
 # Never add a T6.22 hidden key here.
@@ -523,6 +523,128 @@ class LabourView(ApiModel):
         return _nonempty("region", v)
 
 
+class BondHoldings(ApiModel):
+    """Published bond book. Face amounts are cr."""
+
+    own: dict[str, float] = Field(default_factory=dict)
+    published: dict[str, dict[str, float]] = Field(default_factory=dict)
+
+
+class BondCashEvent(ApiModel):
+    """One coupon + redemption. Money fields are cr; ``tick`` is days."""
+
+    tick: int
+    agent_id: str
+    instrument: str
+    coupon: float
+    redemption: float
+    face_next: float
+
+    @field_validator("agent_id", "instrument")
+    @classmethod
+    def _id(cls, v: str) -> str:
+        return _nonempty("bond cashflow id", v)
+
+    @field_validator("tick")
+    @classmethod
+    def _tick(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("tick must be >= 0 (days)")
+        return v
+
+
+class BondsView(ApiModel):
+    """GET …/bonds. Yields are annual decimals; prices are indices; face is cr."""
+
+    curve: dict[str, float] = Field(default_factory=dict)
+    bucket_prices: dict[str, float] = Field(default_factory=dict)
+    outstanding: dict[str, float] = Field(default_factory=dict)
+    holdings: BondHoldings = Field(default_factory=BondHoldings)
+    cashflows: list[BondCashEvent] = Field(default_factory=list)
+
+
+class BondAuctionSlot(ApiModel):
+    """One DMO slot. ``size`` is face (cr); ``y_fair`` is an annual decimal; ticks are days."""
+
+    auction_id: str
+    month: int
+    instrument: str
+    announce_tick: int
+    auction_tick: int
+    size: float
+    y_fair: float
+    status: Literal["announced", "open", "cleared"] = "open"
+
+    @field_validator("auction_id", "instrument")
+    @classmethod
+    def _id(cls, v: str) -> str:
+        return _nonempty("auction slot id", v)
+
+    @field_validator("month", "announce_tick", "auction_tick")
+    @classmethod
+    def _nonneg(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError("auction month and ticks must be >= 0")
+        return v
+
+
+class BondAuctionResultView(ApiModel):
+    """Uniform-price outcome. Yields are annual decimals; qtys are face (cr)."""
+
+    auction_id: str
+    stop_out: float
+    size: float
+    filled: float
+    npc_fill: float
+    agent_fill: dict[str, float] = Field(default_factory=dict)
+    bid_to_cover: float
+    tail: float
+    winners: list[str] = Field(default_factory=list)
+
+    @field_validator("auction_id")
+    @classmethod
+    def _id(cls, v: str) -> str:
+        return _nonempty("auction id", v)
+
+
+class BondAuctionsView(ApiModel):
+    """GET …/bonds/auctions. Calendar ticks are days; sizes are face (cr)."""
+
+    calendar: list[BondAuctionSlot] = Field(default_factory=list)
+    sizes: dict[str, float] = Field(default_factory=dict)
+    results: list[BondAuctionResultView] = Field(default_factory=list)
+
+
+class BondBidRequest(ApiModel):
+    """POST …/bonds/auctions/{aid}/bids. ``qty`` is face (cr); ``yield_annual`` is an annual decimal."""
+
+    yield_annual: float
+    qty: float
+    agent_id: str | None = None
+
+    @field_validator("qty")
+    @classmethod
+    def _qty(cls, v: float) -> float:
+        if v <= 0:
+            raise ValueError("qty must be > 0 (cr face)")
+        return v
+
+
+class BondBidAck(ApiModel):
+    """Accepted competitive bid. ``qty`` is face (cr); ``yield_annual`` is an annual decimal."""
+
+    auction_id: str
+    agent_id: str
+    yield_annual: float
+    qty: float
+    accepted: bool = True
+
+    @field_validator("auction_id", "agent_id")
+    @classmethod
+    def _id(cls, v: str) -> str:
+        return _nonempty("bond bid id", v)
+
+
 class PortfolioPosition(ApiModel):
     """One holding. ``qty`` is shares or face; ``market_value`` is cr."""
 
@@ -693,6 +815,10 @@ CARD_MODELS: tuple[type[ApiModel], ...] = (
     NewsItem,
     Report,
     ErrorModel,
+    BondsView,
+    BondAuctionsView,
+    BondBidRequest,
+    BondBidAck,
 )
 
 SUPPORTING_MODELS: tuple[type[ApiModel], ...] = (
@@ -703,6 +829,10 @@ SUPPORTING_MODELS: tuple[type[ApiModel], ...] = (
     PortfolioPosition,
     PortfolioView,
     SubmitPayload,
+    BondHoldings,
+    BondCashEvent,
+    BondAuctionSlot,
+    BondAuctionResultView,
 )
 
 V1_MODELS: tuple[type[ApiModel], ...] = CARD_MODELS + SUPPORTING_MODELS

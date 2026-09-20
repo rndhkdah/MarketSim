@@ -184,7 +184,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [ ] T7.14 — End-to-end multi-agent training smoke run · M · deps: T7.09, T7.11
 - [ ] T7.15 — API documentation and quickstart · S · deps: T7.07
 - [ ] T7.16 — Policy-maker role and endpoints (D13) · M · deps: T7.04, T2.31
-- [ ] T7.17 — Bond-market endpoints · S · deps: T7.04, T6.26
+- [x] T7.17 — Bond-market endpoints · S · deps: T7.04, T6.26 — 2026-09-20, calendar+bids; stop-out win/lose; coupons/redemptions; schema v1.1
 
 - [ ] **GATE P7** — human review against the gate in the phase file
 

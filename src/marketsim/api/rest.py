@@ -16,6 +16,14 @@ from marketsim.api.schemas import (
     OBSERVATION_FIELDS,
     AgentRegistration,
     ApiModel,
+    BondAuctionResultView,
+    BondAuctionSlot,
+    BondAuctionsView,
+    BondBidAck,
+    BondBidRequest,
+    BondCashEvent,
+    BondHoldings,
+    BondsView,
     ErrorModel,
     Fill,
     FirmDecision,
@@ -31,8 +39,18 @@ from marketsim.api.schemas import (
     WorldStatus,
 )
 from marketsim.api.sessions import AuthError, Session, WorldManager, issue_token
-from marketsim.core.errors import ConfigError, MarketsimError
-from marketsim.firms.accounts import agent_entity
+from marketsim.core.errors import ConfigError, MarketsimError, StateError
+from marketsim.firms.accounts import AGENT_PREFIX, agent_entity
+from marketsim.ledger.journal import Ledger
+from marketsim.ledger.sfc import assert_consistent
+from marketsim.market.auction import DAYS_PER_MONTH, Bid, clear_uniform, settle_auction
+from marketsim.pricing.bond_buckets import (
+    BUCKET_ORDER,
+    GOVT_BUCKETS,
+    BondBooks,
+    post_coupon_and_redeem,
+)
+from marketsim.real.policy.debt_management import autopilot_calendar, split_issuance
 from marketsim.scenarios.randomise import sanitise_observe
 
 # Page size (unitless count). T7.04 cannot add yaml / config.py keys.
@@ -108,23 +126,6 @@ class RegionsView(ApiModel):
     regions: list[RegionRow] = Field(default_factory=list)
 
 
-class BondsView(ApiModel):
-    """GET …/bonds. Stub until T7.17; prices are indices, face is cr."""
-
-    curve: dict[str, Any] = Field(default_factory=dict)
-    bucket_prices: dict[str, float] = Field(default_factory=dict)
-    outstanding: dict[str, float] = Field(default_factory=dict)
-    holdings: dict[str, Any] = Field(default_factory=dict)
-
-
-class BondAuctionsView(ApiModel):
-    """GET …/bonds/auctions. Stub until T7.17."""
-
-    calendar: list[Any] = Field(default_factory=list)
-    sizes: dict[str, Any] = Field(default_factory=dict)
-    results: list[Any] = Field(default_factory=list)
-
-
 class FirmStateView(ApiModel):
     """GET …/firms/{fid}/state (operator). ``live`` is a flag; books may be empty."""
 
@@ -194,6 +195,236 @@ class PolicyDecisionAck(ApiModel):
     levers: dict[str, Any] = Field(default_factory=dict)
 
 
+# §6.11 / T6.26: issue need and NPC Q0 so a competitive bid can win or lose
+# at the stop-out (same Q0/size pair as tests/market/test_auctions.py).
+_BOND_ISSUE_NEED_CR = 25.0  # cr face / month; 20/40/40 → GB_NOTE = 10
+_BOND_NPC_Q0_CR = 5.0  # cr; NPC schedule at y_fair
+_BOND_CALENDAR_MONTHS = 2  # months 0 and 1
+_NPC_ENTITY = "MM"
+_ISSUER = "GOVT"
+
+
+def _auction_id(month: int, instrument: str) -> str:
+    """Stable auction id. ``month`` is 0-based; instrument is a bucket code."""
+    return f"{month}:{instrument}"
+
+
+def _public_agent(entity: str) -> str:
+    """Strip ``AGENT:`` for the wire. ``entity`` is a ledger name."""
+    if entity.startswith(AGENT_PREFIX):
+        return entity[len(AGENT_PREFIX) :]
+    return entity
+
+
+@dataclass
+class _AuctionBook:
+    """One DMO slot. ``size`` / ``q0`` are face (cr); ``y_fair`` is an annual decimal."""
+
+    auction_id: str
+    month: int
+    instrument: str
+    size: float
+    y_fair: float
+    q0: float
+    announce_tick: int  # days
+    auction_tick: int  # days
+    bids: list[Bid] = field(default_factory=list)
+    result: Any = None
+
+
+@dataclass
+class BondDesk:
+    """Process-local DMO book. Settlement posts on ``WorldManager.ledger`` (cr)."""
+
+    y_fair: float  # annual decimal
+    kappa: dict[str, float]  # annual decimal
+    decay: dict[str, float]  # 1/year
+    issuer: dict[str, str]
+    sizes: dict[str, float]  # cr face / month
+    auctions: dict[str, _AuctionBook]
+    cashflows: list[dict[str, Any]] = field(default_factory=list)
+    coupons_through_month: int = 0
+
+    @classmethod
+    def from_world(cls, world: Any) -> BondDesk:
+        """Build months 0–1 from ``world.cfg.bonds``. ``world`` is the engine object."""
+        bonds = world.cfg.bonds
+        if bonds is None:
+            raise ConfigError("bonds.yaml is required for the bond API")
+        y_fair = float(bonds.duration_ref_yield)
+        books = BondBooks.from_bonds(bonds, ss_yield=y_fair)
+        sizes = split_issuance(_BOND_ISSUE_NEED_CR, bonds=bonds)
+        auctions: dict[str, _AuctionBook] = {}
+        for month in range(_BOND_CALENDAR_MONTHS):
+            cal = autopilot_calendar(month)
+            for inst in GOVT_BUCKETS:
+                aid = _auction_id(month, inst)
+                auctions[aid] = _AuctionBook(
+                    auction_id=aid,
+                    month=month,
+                    instrument=inst,
+                    size=float(sizes[inst]),
+                    y_fair=y_fair,
+                    q0=_BOND_NPC_Q0_CR,
+                    announce_tick=int(cal["announce"]),
+                    auction_tick=int(cal["auction"]),
+                )
+        return cls(
+            y_fair=y_fair,
+            kappa=dict(books.kappa),
+            decay=dict(books.decay),
+            issuer=dict(books.issuer),
+            sizes=sizes,
+            auctions=auctions,
+        )
+
+    def on_advance(self, ledger: Ledger, tick: int) -> None:
+        """Clear due auctions and pay a month of coupons. ``tick`` is days."""
+        self._ensure_entities(ledger)
+        for aid in sorted(self.auctions):
+            book = self.auctions[aid]
+            if book.result is None and int(tick) > book.auction_tick:
+                self._clear(book, ledger, int(tick))
+        months_done = int(tick) // DAYS_PER_MONTH
+        while self.coupons_through_month < months_done:
+            self._pay_coupons(ledger, int(tick))
+            self.coupons_through_month += 1
+
+    def add_bid(self, auction_id: str, entity: str, yield_annual: float, qty: float) -> _AuctionBook:
+        """Queue a competitive bid. ``qty`` is face (cr); ``yield_annual`` is an annual decimal."""
+        book = self.auctions.get(auction_id)
+        if book is None:
+            raise KeyError(auction_id)
+        if book.result is not None:
+            raise StateError(f"auction {auction_id} already cleared")
+        if qty <= 0:
+            raise ValueError("qty must be > 0 (cr face)")
+        book.bids.append(Bid(agent_id=entity, yield_=float(yield_annual), qty=float(qty)))
+        return book
+
+    def view_bonds(self, ledger: Ledger, entity: str) -> BondsView:
+        """Published curve / books. ``entity`` is the caller's ledger name."""
+        own = {inst: self._face(ledger, entity, inst) for inst in BUCKET_ORDER}
+        published: dict[str, dict[str, float]] = {}
+        for name in ledger.entities.names:
+            if name in {_ISSUER, _NPC_ENTITY, "BANKSYS"}:
+                continue
+            row = {inst: self._face(ledger, name, inst) for inst in BUCKET_ORDER}
+            if any(v > 1e-15 for v in row.values()):
+                published[_public_agent(name)] = row
+        outstanding = {inst: -self._face(ledger, _ISSUER, inst) for inst in BUCKET_ORDER}
+        curve = {inst: self.y_fair for inst in BUCKET_ORDER}
+        for book in self.auctions.values():
+            if book.result is not None:
+                curve[book.instrument] = float(book.result.stop_out)
+        prices = {inst: 1.0 for inst in BUCKET_ORDER}  # par (shipped bonds.pricing)
+        return BondsView(
+            curve=curve,
+            bucket_prices=prices,
+            outstanding=outstanding,
+            holdings=BondHoldings(own=own, published=published),
+            cashflows=[BondCashEvent.model_validate(row) for row in self.cashflows],
+        )
+
+    def view_auctions(self) -> BondAuctionsView:
+        """Calendar, advertised sizes (cr face), and any cleared results."""
+        calendar: list[BondAuctionSlot] = []
+        results: list[BondAuctionResultView] = []
+        for aid in sorted(self.auctions):
+            book = self.auctions[aid]
+            status: Literal["announced", "open", "cleared"]
+            status = "cleared" if book.result is not None else "open"
+            calendar.append(
+                BondAuctionSlot(
+                    auction_id=book.auction_id,
+                    month=book.month,
+                    instrument=book.instrument,
+                    announce_tick=book.announce_tick,
+                    auction_tick=book.auction_tick,
+                    size=book.size,
+                    y_fair=book.y_fair,
+                    status=status,
+                )
+            )
+            if book.result is not None:
+                fill = {_public_agent(k): float(v) for k, v in book.result.agent_fill.items()}
+                results.append(
+                    BondAuctionResultView(
+                        auction_id=book.auction_id,
+                        stop_out=float(book.result.stop_out),
+                        size=float(book.result.size),
+                        filled=float(book.result.filled),
+                        npc_fill=float(book.result.npc_fill),
+                        agent_fill=fill,
+                        bid_to_cover=float(book.result.bid_to_cover),
+                        tail=float(book.result.tail),
+                        winners=sorted(fill),
+                    )
+                )
+        return BondAuctionsView(calendar=calendar, sizes=dict(self.sizes), results=results)
+
+    def _ensure_entities(self, ledger: Ledger) -> None:
+        for name in (_ISSUER, _NPC_ENTITY, "BANKSYS"):
+            ledger.register_entity(name)
+        for inst in BUCKET_ORDER:
+            ledger.register_instrument(inst, financial=True)
+
+    def _clear(self, book: _AuctionBook, ledger: Ledger, tick: int) -> None:
+        result = clear_uniform(
+            book.size,
+            tuple(book.bids),
+            y_fair=book.y_fair,
+            q0=book.q0,
+            secondary_yield=book.y_fair,
+        )
+        settle_auction(
+            ledger,
+            result,
+            instrument=book.instrument,
+            tick=tick,
+            npc_entity=_NPC_ENTITY,
+            price=1.0,
+        )
+        book.result = result
+        assert_consistent(ledger)
+
+    def _pay_coupons(self, ledger: Ledger, tick: int) -> None:
+        for entity in ledger.entities.names:
+            if entity == _ISSUER:
+                continue
+            for inst in GOVT_BUCKETS:
+                face = self._face(ledger, entity, inst)
+                if face <= 1e-15:
+                    continue
+                coupon, redeem, face_next = post_coupon_and_redeem(
+                    ledger,
+                    tick=tick,
+                    holder=entity,
+                    issuer=self.issuer.get(inst, _ISSUER),
+                    instrument=inst,
+                    face=face,
+                    kappa_annual=self.kappa[inst],
+                    delta_annual=self.decay[inst],
+                )
+                self.cashflows.append(
+                    {
+                        "tick": tick,
+                        "agent_id": _public_agent(entity),
+                        "instrument": inst,
+                        "coupon": float(coupon),
+                        "redemption": float(redeem),
+                        "face_next": float(face_next),
+                    }
+                )
+        assert_consistent(ledger)
+
+    @staticmethod
+    def _face(ledger: Ledger, entity: str, inst: str) -> float:
+        if entity not in ledger.entities or inst not in ledger.instruments:
+            return 0.0
+        return float(ledger.position(entity, inst))
+
+
 @dataclass
 class _FirmRec:
     firm_id: str
@@ -209,6 +440,7 @@ class _WorldRest:
     fills: list[Fill] = field(default_factory=list)
     idempotency: dict[str, OrderAck] = field(default_factory=dict)
     firms: dict[str, _FirmRec] = field(default_factory=dict)
+    bond_desk: BondDesk | None = None
 
 
 @dataclass
@@ -255,6 +487,13 @@ def _world_rest(state: RestState, world_id: str) -> _WorldRest:
     if rec is None or world_id not in state.manager._worlds:
         _raise(404, "not_found", f"unknown world {world_id!r}")
     return rec
+
+
+def _bond_desk(state: RestState, world_id: str) -> BondDesk:
+    rec = _world_rest(state, world_id)
+    if rec.bond_desk is None:
+        rec.bond_desk = BondDesk.from_world(state.manager.world(world_id))
+    return rec.bond_desk
 
 
 def _session(state: RestState, world_id: str, authorization: str | None) -> Session:
@@ -339,9 +578,9 @@ def world_router() -> APIRouter:
             status = state.manager.create_world(spec, state.config_dir)
         except ConfigError as exc:
             _raise(400, "config_error", str(exc))
-        state.worlds[status.world_id] = _WorldRest(
-            admin_token=world_admin_token(status.world_id, status.seed)
-        )
+        rec = _WorldRest(admin_token=world_admin_token(status.world_id, status.seed))
+        rec.bond_desk = BondDesk.from_world(state.manager.world(status.world_id))
+        state.worlds[status.world_id] = rec
         return status
 
     @router.get("/worlds/{wid}", response_model=WorldStatus)
@@ -387,6 +626,7 @@ def world_router() -> APIRouter:
         rest.orders.clear()
         rest.fills.clear()
         rest.idempotency.clear()
+        rest.bond_desk = BondDesk.from_world(handle.world)
         return state.manager.status(wid)
 
     @router.post("/worlds/{wid}/step", response_model=WorldStatus)
@@ -399,7 +639,9 @@ def world_router() -> APIRouter:
         state = _rest_state(request)
         _session(state, wid, authorization)
         n = 1 if body is None else body.n
-        return state.manager.step(wid, n)
+        status = state.manager.step(wid, n)
+        _bond_desk(state, wid).on_advance(state.manager.ledger(wid), status.tick)
+        return status
 
     return router
 
@@ -700,8 +942,8 @@ def bonds_router() -> APIRouter:
         authorization: Annotated[str | None, Header()] = None,
     ) -> BondsView:
         state = _rest_state(request)
-        _session(state, wid, authorization)
-        return BondsView()
+        session = _session(state, wid, authorization)
+        return _bond_desk(state, wid).view_bonds(state.manager.ledger(wid), session.entity)
 
     @router.get("/{wid}/bonds/auctions", response_model=BondAuctionsView)
     def bond_auctions(
@@ -711,7 +953,34 @@ def bonds_router() -> APIRouter:
     ) -> BondAuctionsView:
         state = _rest_state(request)
         _session(state, wid, authorization)
-        return BondAuctionsView()
+        return _bond_desk(state, wid).view_auctions()
+
+    @router.post("/{wid}/bonds/auctions/{aid}/bids", response_model=BondBidAck)
+    def bond_bid(
+        request: Request,
+        wid: str,
+        aid: str,
+        body: BondBidRequest,
+        authorization: Annotated[str | None, Header()] = None,
+    ) -> BondBidAck:
+        state = _rest_state(request)
+        session = _session(state, wid, authorization)
+        desk = _bond_desk(state, wid)
+        try:
+            book = desk.add_bid(aid, session.entity, body.yield_annual, body.qty)
+        except KeyError:
+            _raise(404, "not_found", f"unknown auction {aid!r}")
+        except StateError as exc:
+            _raise(409, "conflict", str(exc))
+        except ValueError as exc:
+            _raise(422, "validation_error", str(exc))
+        return BondBidAck(
+            auction_id=book.auction_id,
+            agent_id=session.agent_id,
+            yield_annual=body.yield_annual,
+            qty=body.qty,
+            accepted=True,
+        )
 
     return router
 

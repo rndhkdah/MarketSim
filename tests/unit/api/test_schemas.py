@@ -115,7 +115,7 @@ def test_json_round_trip(cls: type, payload: dict) -> None:
 
 def test_card_models_are_in_v1_document() -> None:
     doc = api_json_schema()
-    assert doc["version"] == "v1"
+    assert doc["version"] == API_SCHEMA_VERSION
     assert set(CARD_MODELS)  # non-empty
     assert {cls.__name__ for cls in CARD_MODELS} <= set(doc["models"])
 
@@ -226,4 +226,4 @@ def test_golden_schema_stable() -> None:
         "API JSON schema changed; bump API_SCHEMA_VERSION and replace "
         f"{GOLDEN.name} (do not edit the frozen v1 snapshot in place)"
     )
-    assert frozen["version"] == "v1"
+    assert frozen["version"] == API_SCHEMA_VERSION
