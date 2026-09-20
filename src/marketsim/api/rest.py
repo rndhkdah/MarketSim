@@ -38,7 +38,7 @@ from marketsim.api.schemas import (
     WorldSpec,
     WorldStatus,
 )
-from marketsim.api.sessions import AuthError, Session, WorldManager, issue_token
+from marketsim.api.sessions import AuthError, ForbiddenError, Session, WorldManager, issue_token
 from marketsim.core.errors import ConfigError, MarketsimError, StateError
 from marketsim.firms.accounts import AGENT_PREFIX, agent_entity
 from marketsim.ledger.journal import Ledger
@@ -50,7 +50,12 @@ from marketsim.pricing.bond_buckets import (
     BondBooks,
     post_coupon_and_redeem,
 )
-from marketsim.real.policy.debt_management import autopilot_calendar, split_issuance
+from marketsim.real.policy.debt_management import (
+    autopilot_calendar,
+    dmo_state,
+    financing_need,
+    split_issuance,
+)
 from marketsim.scenarios.randomise import sanitise_observe
 
 # Page size (unitless count). T7.04 cannot add yaml / config.py keys.
@@ -145,19 +150,22 @@ class FirmFinancialsView(ApiModel):
 
 
 class GovernmentState(ApiModel):
-    """GET …/government/state. Stub until T7.16; money fields would be cr."""
+    """GET …/government/state. Money fields are cr; ``debt_gdp`` is a fraction."""
 
     budget: dict[str, Any] = Field(default_factory=dict)
     debt: dict[str, Any] = Field(default_factory=dict)
     issuance_plan: dict[str, Any] = Field(default_factory=dict)
+    control: Literal["autopilot", "scripted", "agent"] = "autopilot"
+    effective: dict[str, Any] = Field(default_factory=dict)
 
 
 class CenbankState(ApiModel):
-    """GET …/cenbank/state. Stub until T7.16. ``rate`` is an annual decimal."""
+    """GET …/cenbank/state. ``rate`` / ``pi_star`` are annual decimals."""
 
     rate: float | None = None
     pi_star: float | None = None
     effective: dict[str, Any] = Field(default_factory=dict)
+    control: Literal["autopilot", "scripted", "agent"] = "autopilot"
 
 
 class PolicyDecisionRequest(ApiModel):
@@ -189,10 +197,11 @@ class PolicyDecisionRequest(ApiModel):
 
 
 class PolicyDecisionAck(ApiModel):
-    """Echo of accepted levers. Values keep the units of each lever."""
+    """Echo of accepted (clipped) levers. Values keep the units of each lever."""
 
     authority: Literal["GOVT", "CENBANK"]
     levers: dict[str, Any] = Field(default_factory=dict)
+    clips: list[dict[str, Any]] = Field(default_factory=list)
 
 
 # §6.11 / T6.26: issue need and NPC Q0 so a competitive bid can win or lose
@@ -568,6 +577,46 @@ def _levers(body: PolicyDecisionRequest) -> dict[str, Any]:
     return {k: v for k, v in body.model_dump().items() if v is not None}
 
 
+def _real_economy(world: Any) -> Any | None:
+    for mod in world.modules:
+        if getattr(mod, "name", None) == "real_economy":
+            return mod
+    return None
+
+
+def _government_view(state: RestState, wid: str) -> GovernmentState:
+    world = state.manager.world(wid)
+    desk = state.manager.policy_desk(wid)
+    eco = _real_economy(world)
+    agg = getattr(eco, "last_agg", None) if eco is not None else None
+    balance = float(getattr(agg, "govt_balance", 0.0) or 0.0) if agg is not None else 0.0
+    debt_gdp = float(getattr(agg, "debt_gdp", 0.0) or 0.0) if agg is not None else 0.0
+    stock = float(getattr(eco, "b", 0.0) or 0.0) if eco is not None else 0.0
+    need = financing_need(deficit=max(-balance, 0.0), redemptions=0.0)
+    return GovernmentState(
+        budget={"balance": balance},
+        debt={"level": stock, "debt_gdp": debt_gdp},
+        issuance_plan=dmo_state(need, bonds=world.cfg.bonds),
+        control=desk.govt.control,  # type: ignore[arg-type]
+        effective=dict(desk.govt.effective),
+    )
+
+
+def _cenbank_view(state: RestState, wid: str) -> CenbankState:
+    world = state.manager.world(wid)
+    desk = state.manager.policy_desk(wid)
+    eco = _real_economy(world)
+    cb = getattr(eco, "cb", None) if eco is not None else None
+    rate = float(cb.r) if cb is not None else None
+    pi_star = float(cb.pi_star) if cb is not None else None
+    return CenbankState(
+        rate=rate,
+        pi_star=pi_star,
+        effective=dict(desk.cenbank.effective),
+        control=desk.cenbank.control,  # type: ignore[arg-type]
+    )
+
+
 def world_router() -> APIRouter:
     router = APIRouter(prefix="/v1", tags=["world"])
 
@@ -660,6 +709,8 @@ def agents_router() -> APIRouter:
         _session(state, wid, authorization)
         try:
             rec = state.manager.register_agent(wid, registration)
+        except ForbiddenError as exc:
+            _raise(403, "forbidden", str(exc))
         except ConfigError as exc:
             _raise(400, "config_error", str(exc))
         limits = rec["limits"]
@@ -672,6 +723,25 @@ def agents_router() -> APIRouter:
                 max_open_orders=int(limits.max_open_orders),
             ),
         )
+
+    @router.delete("/{wid}/agents/{aid}", response_model=ErrorModel)
+    def unregister_agent(
+        request: Request,
+        wid: str,
+        aid: str,
+        authorization: Annotated[str | None, Header()] = None,
+    ) -> JSONResponse:
+        state = _rest_state(request)
+        session = _session(state, wid, authorization)
+        if session.role not in {"admin", "policymaker"} and session.agent_id != aid:
+            _raise(403, "forbidden", "cannot deregister another agent")
+        if session.role == "policymaker" and session.agent_id != aid:
+            _raise(403, "forbidden", "policymaker can only deregister itself")
+        try:
+            state.manager.unregister_agent(wid, aid)
+        except ConfigError as exc:
+            _raise(404, "not_found", str(exc))
+        return _error_json(200, ErrorModel(code="deleted", message=f"agent {aid} deleted"))
 
     return router
 
@@ -713,6 +783,8 @@ def orders_router() -> APIRouter:
             return rest.idempotency[cache_key]
         try:
             state.manager.submit_order(wid, session.token, order)
+        except ForbiddenError as exc:
+            _raise(403, "forbidden", str(exc))
         except AuthError as exc:
             _raise(401, "unauthorized", str(exc))
         oid = rest.next_order_id
@@ -996,7 +1068,7 @@ def policy_router() -> APIRouter:
     ) -> GovernmentState:
         state = _rest_state(request)
         _session(state, wid, authorization)
-        return GovernmentState()
+        return _government_view(state, wid)
 
     @router.post("/{wid}/government/decisions", response_model=PolicyDecisionAck)
     def government_decisions(
@@ -1008,7 +1080,11 @@ def policy_router() -> APIRouter:
         state = _rest_state(request)
         session = _session(state, wid, authorization)
         _require_policymaker(session, "GOVT")
-        return PolicyDecisionAck(authority="GOVT", levers=_levers(body))
+        try:
+            applied, clips = state.manager.submit_policy(wid, session.token, "GOVT", _levers(body))
+        except ForbiddenError as exc:
+            _raise(403, "forbidden", str(exc))
+        return PolicyDecisionAck(authority="GOVT", levers=applied, clips=clips)
 
     @router.get("/{wid}/cenbank/state", response_model=CenbankState)
     def cenbank_state(
@@ -1018,7 +1094,7 @@ def policy_router() -> APIRouter:
     ) -> CenbankState:
         state = _rest_state(request)
         _session(state, wid, authorization)
-        return CenbankState()
+        return _cenbank_view(state, wid)
 
     @router.post("/{wid}/cenbank/decisions", response_model=PolicyDecisionAck)
     def cenbank_decisions(
@@ -1030,7 +1106,11 @@ def policy_router() -> APIRouter:
         state = _rest_state(request)
         session = _session(state, wid, authorization)
         _require_policymaker(session, "CENBANK")
-        return PolicyDecisionAck(authority="CENBANK", levers=_levers(body))
+        try:
+            applied, clips = state.manager.submit_policy(wid, session.token, "CENBANK", _levers(body))
+        except ForbiddenError as exc:
+            _raise(403, "forbidden", str(exc))
+        return PolicyDecisionAck(authority="CENBANK", levers=applied, clips=clips)
 
     return router
 
@@ -1064,6 +1144,10 @@ def create_app(
     @app.exception_handler(AuthError)
     async def _auth_error(_request: Request, exc: AuthError) -> JSONResponse:
         return _error_json(401, ErrorModel(code="unauthorized", message=str(exc)))
+
+    @app.exception_handler(ForbiddenError)
+    async def _forbidden(_request: Request, exc: ForbiddenError) -> JSONResponse:
+        return _error_json(403, ErrorModel(code="forbidden", message=str(exc)))
 
     @app.exception_handler(ConfigError)
     async def _config_error(_request: Request, exc: ConfigError) -> JSONResponse:
