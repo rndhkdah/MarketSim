@@ -175,7 +175,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T7.05 — WebSocket streams · M · deps: T7.04 — 2026-09-20, resume no gaps/dupes; own fills; coalesce ticks
 - [x] T7.06 — Lockstep barrier and real-time pacing · M · deps: T7.02 — 2026-09-20, (agent,seq) apply; timeout empty; late→next tick; gate 2
 - [ ] T7.07 — Python SDK (HTTP / WS) · M · deps: T7.04, T7.05
-- [ ] T7.08 — Gymnasium single-agent environment · M · deps: T7.03
+- [x] T7.08 — Gymnasium single-agent environment · M · deps: T7.03 — 2026-09-20, Dict orders+firm+mask; env_checker; seed-deterministic; masked levers ignored
 - [ ] T7.09 — PettingZoo parallel environment · M · deps: T7.08
 - [ ] T7.10 — Replay, export, save / load · M · deps: T7.06
 - [ ] T7.11 — Scenario packs, curricula, evaluation sets · M · deps: T4.09, T7.08
