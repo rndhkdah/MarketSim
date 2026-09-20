@@ -293,9 +293,9 @@ Reproduced target (numpy 2.4 / scipy 1.17 sandbox):
      cost-push I response wrong, record it; do not invent a new elasticity.
 - not claimed: a live BEA download in CI (script stays local-xlsx); moment match
   on the *current* seed (the proposed set is not loaded); human acceptance.
-- consequences: T8.04 stays **unticked**. T8.05 / T8.11 / T9.01 may use the
-  *method* (directions, optional KR overlay, FX scaffolding) against the seed
-  economy. Applying the table is a human commit.
+- consequences: T8.04 stays **unticked**. T8.05 / T8.11 may use the
+  *method* (directions, optional KR overlay) against the seed
+  economy. Applying the table is a human commit. T9.01 is deferred (ADR-017).
 
 ## ADR-016 — skip T9.05 Rust core
 
@@ -307,5 +307,18 @@ Reproduced target (numpy 2.4 / scipy 1.17 sandbox):
 - decision: **Do not start a Rust CLOB/monthly-step port.** Revisit only if a
   later profile shows a hot path below those floors on the intended hardware.
 - consequences: T9.05 is ticked skipped. Python interfaces stay the ABI.
+
+## ADR-017 — defer T9.01 multi-country/FX and T9.03 cluster eval
+
+- date: 2026-09-20
+- status: accepted (human: remove from v1)
+- context: T9.01 (second economy + FX instrument) and T9.03 (process-pool
+  `batch_eval`) were started on this branch. The human asked to drop
+  multi-country / FX for now and to remove both cards from the v1 path.
+- decision: **Do not ship T9.01 or T9.03.** Delete `countries.py`, `fx.py`,
+  `sdk/cluster.py` and their tests. T7.12 `VectorEnv` stays (in-process
+  parallel worlds). A later card may reintroduce FX or a cluster runner.
+- consequences: PROGRESS T9.01 / T9.03 stay unchecked and marked deferred.
+  One-country, one-currency remains the v1 scope.
 
 
