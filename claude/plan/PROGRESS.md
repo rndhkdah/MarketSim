@@ -142,24 +142,24 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T6.09 — Background order flow · M · deps: T6.08 — 2026-09-20, Σ AR(1) sign memory; E[|q|]≈ADV; no MM posts
 - [x] T6.10 — CLOB · L · deps: T6.01 — 2026-09-20, price-time; stop/IOC/GTC/DAY; STP newest; call auction; halt band
 - [x] T6.11 — CLOB liquidity: thin engine quote + queue-reactive-lite · M · deps: T6.10, T6.09 — 2026-09-20, thin quote V·(1±w); 10y book never empty
-- [ ] T6.12 — Settlement, fees, taxes · S · deps: T6.08, T6.10
+- [x] T6.12 — Settlement, fees, taxes · S · deps: T6.08, T6.10 — 2026-09-20, cash-for-asset Tx; fees/tax; NPC div; VM nets 0
 - [ ] T6.13 — Margin, shorting, forced liquidation · M · deps: T6.12
 - [ ] T6.14 — Cap tables and corporate actions · M · deps: T5.02, T6.12
 - [ ] T6.15 — Listing and IPO auction · S · deps: T6.14, T6.10
 - [ ] T6.16 — Control transfer and the takeover test · M · deps: T6.15, T5.06
 - [x] T6.17 — Agent-firm valuation and thin quote feed · S · deps: T6.04, T5.13 — 2026-09-20, published-only V; thin quote ±w
-- [ ] T6.18 — Commodities · S · deps: T6.08
+- [x] T6.18 — Commodities · S · deps: T6.08 — 2026-09-20, OIL=ENERGY+carry; 3× cost-push uncapped
 - [ ] T6.19 — Feedback edges 4 → 1/2 · M · deps: T6.06, T2.24
 - [ ] T6.20 — Surveillance and limits · M · deps: T6.12
 - [x] T6.21 — Tier-1 / Tier-2 statistics and the regime flip · M · deps: T6.09, T6.06, T6.07 — 2026-09-20, gates 2–4; δ∈[0.4,0.7]; demand corr<−0.15
-- [ ] T6.22 — Domain randomisation and hidden state · S · deps: T6.06
+- [x] T6.22 — Domain randomisation and hidden state · S · deps: T6.06 — 2026-09-20, stream randomise; observe() whitelist
 - [ ] T6.23 — Market performance · S · deps: T6.21
 - [x] T6.24 — Bond buckets: instruments, arithmetic, par ↔ market switch (D12) · M · deps: T6.01, T2.16 — 2026-09-20, P=(κ+δ)/(y+δ); GB_BOND 7.07y; par bitwise; reval ≠ income
 - [x] T6.25 — Bucket fair yields and term premium · M · deps: T6.03, T6.24 — 2026-09-20, ω-weighted path; tp debt/QE/FTQ; guidance×credibility; gate 10
 - [x] T6.26 — Debt-management office and auctions · M · deps: T6.25, T2.28 — 2026-09-20, uniform-price; gate 12; 20/40/40; buybacks
 - [ ] T6.27 — Secondary bond market and NPC holders · M · deps: T6.24, T6.08, T6.09
 - [ ] T6.28 — Central-bank operations: QE, QT, open-market operations · M · deps: T6.27, T2.29
-- [ ] T6.29 — Corporate bond pool · M · deps: T6.24, T2.30, T5.10
+- [x] T6.29 — Corporate bond pool · M · deps: T6.24, T2.30, T5.10 — 2026-09-20, y_match+s_t; NAV write-down; same terms all firms
 - [ ] T6.30 — Financial-sector bond holdings and mark-to-market · S · deps: T6.27
 - [ ] T6.31 — Bond-market validation report · S · deps: T6.26, T6.28, T6.29, T6.30
 - [x] T6.32 — Policy surprises and announcement effects · S · deps: T6.25, T2.32 — 2026-09-20, anticipated flat; surprise hike front>bond; R²<0.2
