@@ -23,6 +23,43 @@ def borrowing_rate(policy_rate: float, spread: float) -> float:
     return float(policy_rate) + float(spread)
 
 
+def pool_funding_rate(y_match: float, spread: float) -> float:
+    """Fixed pool rate ``y_match + s_t`` (§6.11 / D14). Annual decimal; no name term."""
+    return float(y_match) + float(spread)
+
+
+@dataclass(frozen=True)
+class FundingMenu:
+    """Same menu for every firm: floating bank loan or fixed pool (§6.11).
+
+    Rates and ``spread`` / ``y_match`` are annual decimals.
+    """
+
+    bank_rate: float
+    pool_rate: float
+    spread: float
+    y_match: float
+
+
+def funding_menu(*, policy_rate: float, y_match: float, spread: float) -> FundingMenu:
+    """Bank ``r + s_t`` and pool ``y_match + s_t``. Rating / sector / region do not enter."""
+    s = float(spread)
+    ym = float(y_match)
+    return FundingMenu(
+        bank_rate=borrowing_rate(policy_rate, s),
+        pool_rate=pool_funding_rate(ym, s),
+        spread=s,
+        y_match=ym,
+    )
+
+
+def funding_split(need: float, pool_share: float) -> tuple[float, float]:
+    """``(pool, bank)`` faces (cr). ``pool_share`` is NPC ``corp_funding_mix`` or an agent's choice."""
+    need_ = float(need)
+    share = float(pool_share)
+    return need_ * share, need_ * (1.0 - share)
+
+
 def credit_limit(
     *,
     ebitda_12m: float,
