@@ -111,8 +111,8 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T5.02 — Firm accounts on the ledger · M · deps: T5.01, T2.03 — 2026-09-20, FIRM:/AGENT: + equity; 24m A=L+E SFC
 - [x] T5.03 — Founding and entry · S · deps: T5.02 — 2026-09-20, NPC purchase conserves K; greenfield after build_lag_q
 - [x] T5.04 — Cell aggregation with firms (incl. zero-NPC cells) · M · deps: T5.03 — 2026-09-20, aggregates = sums; 120m zero-NPC NaN-free
-- [ ] T5.05 — Heterogeneous-seller goods market · M · deps: T5.04
-- [ ] T5.06 — Decision levers and validation · M · deps: T5.04
+- [x] T5.05 — Heterogeneous-seller goods market · M · deps: T5.04 — 2026-09-20, equal-p ~ K; 5% cut gradual; spill conserves D
+- [x] T5.06 — Decision levers and validation · M · deps: T5.04 — 2026-09-20, clip list; partial autopilot; foreign operator rejected
 - [ ] T5.07 — Autopilot · M · deps: T5.06
 - [ ] T5.08 — Labour market with matching · M · deps: T5.06
 - [ ] T5.09 — Procurement and shortage allocation · M · deps: T5.05
