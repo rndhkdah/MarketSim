@@ -150,7 +150,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T6.17 — Agent-firm valuation and thin quote feed · S · deps: T6.04, T5.13 — 2026-09-20, published-only V; thin quote ±w
 - [x] T6.18 — Commodities · S · deps: T6.08 — 2026-09-20, OIL=ENERGY+carry; 3× cost-push uncapped
 - [ ] T6.19 — Feedback edges 4 → 1/2 · M · deps: T6.06, T2.24
-- [ ] T6.20 — Surveillance and limits · M · deps: T6.12
+- [x] T6.20 — Surveillance and limits · M · deps: T6.12 — 2026-09-20, wash/circular/pump flags; honest MM clean
 - [x] T6.21 — Tier-1 / Tier-2 statistics and the regime flip · M · deps: T6.09, T6.06, T6.07 — 2026-09-20, gates 2–4; δ∈[0.4,0.7]; demand corr<−0.15
 - [x] T6.22 — Domain randomisation and hidden state · S · deps: T6.06 — 2026-09-20, stream randomise; observe() whitelist
 - [x] T6.23 — Market performance · S · deps: T6.21 — 2026-09-20, 25 names 15.1k ticks/s; hash-stable
