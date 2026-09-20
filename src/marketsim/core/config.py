@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 from marketsim.core.errors import ConfigError
 from marketsim.firms.firm import FirmsFile
+from marketsim.market.instruments import MarketsFile
 from marketsim.regions.geometry import RegionsConfig, build_geometry
 
 ERLANG_RE = re.compile(r"^erlang\((\d+)\)$")
@@ -651,6 +652,7 @@ class Config(FrozenModel):
     policy: PolicyFile | None = None
     regions: RegionsConfig | None = None
     firms: FirmsFile | None = None
+    markets: MarketsFile | None = None
 
     @property
     def codes(self) -> tuple[str, ...]:
@@ -729,7 +731,7 @@ def _validate_codes(cfg: Config) -> None:
 
 
 def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None) -> Config:
-    """Load `sectors.yaml`, `edges.yaml`, `world.yaml`; optional dynamics/policy/regions/firms."""
+    """Load `sectors.yaml`, `edges.yaml`, `world.yaml`; optional dynamics/policy/regions/firms/markets."""
     root = Path(config_dir).resolve()
     if not root.is_dir():
         raise ConfigError(f"config dir not found: {root}")
@@ -749,6 +751,9 @@ def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None)
     firms_path = root / "firms.yaml"
     firms_raw = _read_yaml(firms_path) if firms_path.exists() else None
 
+    markets_path = root / "markets.yaml"
+    markets_raw = _read_yaml(markets_path) if markets_path.exists() else None
+
     bundle = {
         "sectors": sectors_raw,
         "edges": edges_raw,
@@ -757,6 +762,7 @@ def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None)
         "policy": policy_raw,
         "regions": regions_raw,
         "firms": firms_raw,
+        "markets": markets_raw,
     }
     # overrides use dotted paths from the bundle root, e.g. world.seed or dynamics.prices.kappa_util
     if overrides:
@@ -775,6 +781,7 @@ def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None)
             RegionsConfig.model_validate(bundle["regions"]) if bundle["regions"] is not None else None
         )
         firms = FirmsFile.model_validate(bundle["firms"]) if bundle["firms"] is not None else None
+        markets = MarketsFile.model_validate(bundle["markets"]) if bundle["markets"] is not None else None
     except Exception as exc:  # pydantic ValidationError
         raise ConfigError(str(exc)) from exc
 
@@ -787,6 +794,7 @@ def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None)
         policy=policy,
         regions=regions,
         firms=firms,
+        markets=markets,
     )
     _validate_codes(cfg)
     return cfg
