@@ -160,7 +160,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T6.27 — Secondary bond market and NPC holders · M · deps: T6.24, T6.08, T6.09 — 2026-09-20, engine MM; ADV∝face; NPC share leak; ROW sell-off; gate 11 hook
 - [x] T6.28 — Central-bank operations: QE, QT, open-market operations · M · deps: T6.27, T2.29 — 2026-09-20, 4 postings; gate 13–14; remit; CORP_POOL easing
 - [x] T6.29 — Corporate bond pool · M · deps: T6.24, T2.30, T5.10 — 2026-09-20, y_match+s_t; NAV write-down; same terms all firms
-- [ ] T6.30 — Financial-sector bond holdings and mark-to-market · S · deps: T6.27
+- [x] T6.30 — Financial-sector bond holdings and mark-to-market · S · deps: T6.27 — 2026-09-20, market mode off §6.3 overlays; gate 15; BANKS still +rate
 - [ ] T6.31 — Bond-market validation report · S · deps: T6.26, T6.28, T6.29, T6.30
 - [x] T6.32 — Policy surprises and announcement effects · S · deps: T6.25, T2.32 — 2026-09-20, anticipated flat; surprise hike front>bond; R²<0.2
 
