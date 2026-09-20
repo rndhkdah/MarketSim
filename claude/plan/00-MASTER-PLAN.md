@@ -224,7 +224,7 @@ financial layer immediately through news → expectations / risk appetite.
 | `markets.yaml` | T6.01 | `turnover` 0.4 %/day (`ADV = turnover × cap`); `pricing.mode` structural\|factor_lite + curve `λ=0.978`/`horizon_m=120`/`g_lr_anchor`/`τ_ee`; generated `EQ:NPC:<SECTOR>` + `IDX:<SECTOR>`; static `GB_*`/`CORP_POOL`/`CASH`/`OIL`/`METALS`/`GRAINS`; dynamic `EQ:FIRM:<id>` on CLOB; impact `δ,β,Y,τ0`, half-lives; MM `s0,k_σ,k_inv,k_skew,participation_cap`; flow AR components; CLOB tick/lot/halt/`thin_quote_*`; fees; margin 50/25 and 10/7; surveillance wash/circular/pump |
 | `world.yaml` | T0.12, T4.05 | scale, seed, mode (game/professional), run mode, enabled modules, randomisation ranges; `events.damping` / `max_depth` / `max_concurrent` / `p_sum_cap` (T4.05 chains) |
 | `policy.yaml` | T2.27, T2.32 | per-authority control mode, lever ranges and change limits, legislative / implementation lags, policy-agent reward weights; the `monetary:` block — calendar, reaction function, information set, strategy options, ELB toolkit, committee (§2.14.6) |
-| `bonds.yaml` | T6.24 | maturity buckets (decay, coupon), pricing mode (par/market), auction calendar and NPC demand, term-premium parameters, central-bank operations, corporate pool |
+| `bonds.yaml` | T6.24 | decaying-coupon buckets `GB_BILL`/`NOTE`/`BOND`/`CORP_POOL` (δ 4 / ⅓ / 0.10 / 0.20); `pricing: par\|market` (par = Phase-2 bitwise); `duration_ref_yield` 4.2 % (GB_BOND duration 7.07 y); issuance mix 20/40/40; κ fixed at SS yield so P=1 at baseline. Auction / tp / QE keys arrive with T6.25–T6.28 |
 
 ## 9. Phase map, dependencies, gates
 
