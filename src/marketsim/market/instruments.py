@@ -275,6 +275,23 @@ class SurveillanceCfg(FrozenModel):
         return _unit_interval("surveillance share", v)
 
 
+class RealEstateCfg(FrozenModel):
+    """T8.09 regional property index. ``weights`` sum to 1 (population shares)."""
+
+    prefix: str = "RE:"
+    venue: str = "engine_mm"
+    regions: tuple[str, ...] = ("CAPITAL", "INDUSTRIAL", "RESOURCE")
+    weights: tuple[float, ...] = (0.45, 0.35, 0.20)
+
+    @model_validator(mode="after")
+    def _w(self) -> RealEstateCfg:
+        if len(self.regions) != len(self.weights):
+            raise ValueError("realestate.regions and weights must have the same length")
+        if abs(sum(self.weights) - 1.0) > 1e-12:
+            raise ValueError("realestate.weights must sum to 1")
+        return self
+
+
 class MarketsFile(FrozenModel):
     """Root of `config/markets.yaml`."""
 
@@ -290,6 +307,7 @@ class MarketsFile(FrozenModel):
     fees: FeesCfg = Field(default_factory=FeesCfg)
     margin: MarginCfg = Field(default_factory=MarginCfg)
     surveillance: SurveillanceCfg = Field(default_factory=SurveillanceCfg)
+    realestate: RealEstateCfg = Field(default_factory=RealEstateCfg)
 
     @field_validator("turnover")
     @classmethod

@@ -73,3 +73,11 @@ surveillance:
   pump_volume_share: 0.50
   pump_runup: 0.20
   pump_window_d: 5
+
+# T8.09 regional property index. Weights match config/regions.yaml population_share.
+# Do not retune turnover / impact / mm above.
+realestate:
+  prefix: "RE:"
+  venue: engine_mm
+  regions: [CAPITAL, INDUSTRIAL, RESOURCE]
+  weights: [0.45, 0.35, 0.20]
