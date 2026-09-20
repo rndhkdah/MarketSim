@@ -1,12 +1,20 @@
-"""Uniform corporate rate, rating-scaled limits, tax, hard budget (T5.10 / §5.5)."""
+"""Uniform corporate rate, rating-scaled limits, tax, hard budget (T5.10 / §5.5).
+
+T8.01 adds bullet term loans, covenants, committed vs uncommitted lines, and
+ledger postings for draw / interest / principal refinance — still at the one
+common corporate rate (D14).
+"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import math
+from dataclasses import dataclass, replace
 from typing import Any
 
 from marketsim.firms.firm import FirmsFile
 from marketsim.firms.rating import limit_multiplier
+from marketsim.ledger.journal import Entry, Ledger, Tx
+from marketsim.ledger.sfc import assert_consistent
 
 SENIORITY: tuple[str, ...] = (
     "wages",
@@ -198,6 +206,13 @@ def age_term_loan(loan: TermLoan) -> TermLoan:
     if remaining < 0:
         remaining = 0
     return replace(loan, remaining_m=remaining)
+
+
+def principal_due(loan: TermLoan) -> float:
+    """Maturing face (cr) when ``remaining_m`` is 0; else 0. T8.01 principal bill."""
+    if int(loan.remaining_m) <= 0:
+        return float(loan.face)
+    return 0.0
 
 
 @dataclass(frozen=True)
@@ -502,6 +517,7 @@ def service_term_loan(
     line_drawn = 0.0
     leftover = max(capacity.total, 0.0)
     working = aged
+    bills: list[Payment]
 
     if matured:
         uncommitted_used, committed_used = allocate_draw(loan.face, capacity)
@@ -537,14 +553,8 @@ def service_term_loan(
     cash0 = _cash(ledger, firm)
     budget = scale_payments(cash0, leftover, bills)
     overdraft = _line_used(cash0, budget.cash)
-    if overdraft > POST_EPS:
-        extra_u, extra_c = allocate_draw(overdraft, capacity)
-        # Residual capacity after a roll; if the wall was not rolled, leftover == total.
-        extra_u = min(extra_u, leftover)
-        extra_c = min(extra_c, max(leftover - extra_u, 0.0))
-        drawn = extra_u + extra_c
-        if drawn + POST_EPS < overdraft:
-            drawn = min(overdraft, leftover)
+    if overdraft > POST_EPS and leftover > POST_EPS:
+        drawn = min(overdraft, leftover)
         post_loan_draw(
             ledger,
             firm=firm,
@@ -554,8 +564,6 @@ def service_term_loan(
             lender=loan.lender,
         )
         line_drawn += drawn
-        uncommitted_used += extra_u
-        committed_used += extra_c
 
     interest_paid = float(budget.paid.get("interest", 0.0))
     principal_paid = float(budget.paid.get("principal", 0.0))
@@ -581,137 +589,3 @@ def service_term_loan(
         committed_used=committed_used,
         uncommitted_used=uncommitted_used,
     )
-
-
-# Master plan §6: 12 months / year. T8.01 term-loan coupon.
-MONTHS_PER_YEAR = 12
-# T8.01 covenant ICR floor (EBIT / interest). Quantity gate, not a spread.
-ICR_COVENANT = 1.0
-
-
-@dataclass(frozen=True)
-class TermLoan:
-    """One term loan. ``face`` is cr; ``remaining_m`` is months; ``rate`` is annual decimal."""
-
-    face: float
-    remaining_m: int
-    rate: float
-    committed: bool = False
-
-
-@dataclass(frozen=True)
-class LineBook:
-    """Committed + uncommitted capacity (cr). Uncommitted scales with ``lam``."""
-
-    committed_cr: float
-    uncommitted_cr: float
-    lam: float
-
-
-def monthly_interest(loan: TermLoan) -> float:
-    """Coupon this month (cr). ``rate`` is annual; divide by ``MONTHS_PER_YEAR``."""
-    return float(loan.face) * float(loan.rate) / float(MONTHS_PER_YEAR)
-
-
-def age_loan(loan: TermLoan) -> TermLoan:
-    """Advance one month. ``remaining_m`` is months."""
-    return TermLoan(
-        face=loan.face,
-        remaining_m=max(int(loan.remaining_m) - 1, 0),
-        rate=loan.rate,
-        committed=loan.committed,
-    )
-
-
-def principal_due(loan: TermLoan) -> float:
-    """Face (cr) due when ``remaining_m`` is 0; else 0."""
-    return float(loan.face) if int(loan.remaining_m) <= 0 else 0.0
-
-
-def covenant_nd_breach(nd: float, ebitda: float, hard: float) -> bool:
-    """True when ND/EBITDA exceeds ``hard``. Quantity covenant; rate unchanged."""
-    if ebitda <= 0.0:
-        return nd > 0.0
-    return float(nd) / float(ebitda) > float(hard) + 1e-12
-
-
-def covenant_icr_breach(ebit: float, interest: float, floor: float = ICR_COVENANT) -> bool:
-    """True when EBIT / interest is below ``floor``. ``interest`` is cr / year."""
-    if interest <= 0.0:
-        return False
-    return float(ebit) / float(interest) + 1e-12 < float(floor)
-
-
-def drawable(book: LineBook) -> tuple[float, float, float]:
-    """``(committed, uncommitted, total)`` still available (cr)."""
-    committed = max(float(book.committed_cr), 0.0)
-    uncommitted = max(float(book.uncommitted_cr), 0.0) * max(float(book.lam), 0.0)
-    return committed, uncommitted, committed + uncommitted
-
-
-def refinance_wall(
-    loan: TermLoan,
-    *,
-    cash: float,
-    book: LineBook,
-    other_bills: list[Payment] | None = None,
-) -> BudgetResult:
-    """Mature the loan and try to refinance. Closed uncommitted gate → distress.
-
-    Principal is a ``principal`` bill. Drawable cash is ``cash + committed +
-    uncommitted*lam``. When ``lam = 0`` only the committed line remains.
-    """
-    due = principal_due(loan)
-    _c, _u, undrawn = drawable(book)
-    bills = list(other_bills or ())
-    if due > 0.0:
-        bills.append(Payment("principal", due))
-    return scale_payments(float(cash), undrawn, bills)
-
-
-def post_loan_draw(ledger: Any, borrower: str, amount: float, *, tick: int) -> None:
-    """Bank draws ``amount`` cr: DEP + / LOAN + on the borrower vs BANKSYS."""
-    from marketsim.ledger.journal import Entry, Ledger, Tx
-    from marketsim.ledger.sfc import assert_consistent
-
-    if amount == 0.0:
-        return
-    assert isinstance(ledger, Ledger)
-    if "BANKSYS" not in ledger.entities:
-        ledger.register_entity("BANKSYS")
-    if borrower not in ledger.entities:
-        ledger.register_entity(borrower)
-    amt = float(amount)
-    ledger.post(
-        Tx(
-            int(tick),
-            "loan_new",
-            (
-                Entry(borrower, "DEP", amt),
-                Entry(borrower, "LOAN", -amt),
-                Entry("BANKSYS", "DEP", -amt),
-                Entry("BANKSYS", "LOAN", amt),
-            ),
-            memo="term draw",
-        )
-    )
-    assert_consistent(ledger)
-
-
-def post_loan_interest(ledger: Any, borrower: str, amount: float, *, tick: int) -> None:
-    """Interest (cr) DEP borrower → BANKSYS. Tag ``interest_loans``."""
-    from marketsim.ledger.journal import Entry, Ledger, Tx
-    from marketsim.ledger.sfc import assert_consistent
-
-    if amount == 0.0:
-        return
-    assert isinstance(ledger, Ledger)
-    ledger.post(
-        Tx(
-            int(tick),
-            "interest_loans",
-            (Entry(borrower, "DEP", -float(amount)), Entry("BANKSYS", "DEP", float(amount))),
-            memo="term coupon",
-        )
-    )
-    assert_consistent(ledger)
