@@ -196,7 +196,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [ ] T8.04 — Calibration pass · L · deps: T7.14, T0.09 · **HUMAN GATE**
 - [ ] T8.05 — Historic replay comparison · M · deps: T8.04
 - [x] T8.06 — Explainability traces · L · deps: T7.04 — 2026-09-20, qty product + Δln P log-sum 1e-9; GET/POST /explain
-- [ ] T8.07 — Game layer contract · L · deps: T7.15
+- [x] T8.07 — Game layer contract · L · deps: T7.15 — 2026-09-20, pacing/slots/score/narrative; scripted player via public API
 - [ ] T8.08 — Regulator · M · deps: T7.14
 - [ ] T8.09 — Regional real-estate asset · M · deps: T7.14
 - [ ] T8.10 — Tier-3 counterfactual validation (research) · M · deps: T7.14
