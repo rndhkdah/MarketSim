@@ -6,6 +6,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from marketsim.regions.trade import ration_sources, route_with_spill
+
 
 def order_matrix(
     a: np.ndarray,
@@ -94,3 +96,20 @@ def supply_and_ration(
         dshare=dshare,
         final_sales=final_sales,
     )
+
+
+def route_regional_orders(
+    dest: np.ndarray,
+    t_shares: np.ndarray,
+    avail: np.ndarray,
+    link_cap: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Route dest demand, apply link caps with spill, then source rationing.
+
+    Returns ``(deliveries (S, src, dst), sales (R, S), source_fill (R, S))``.
+    ``Σ_dst deliveries[i, src, dst] = sales[src, i]`` (conservation).
+    """
+    attempted = route_with_spill(t_shares, dest, link_cap)
+    deliveries, fill = ration_sources(attempted, avail)
+    sales = deliveries.sum(axis=2).T
+    return deliveries, sales, fill

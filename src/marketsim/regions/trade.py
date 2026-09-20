@@ -77,3 +77,61 @@ def stacked_leontief(
 def net_exports(t_shares: np.ndarray, dest: np.ndarray, sourced: np.ndarray) -> np.ndarray:
     """``sourced − dest`` per cell (cr/month). Positive = net exporter."""
     return sourced - dest
+
+
+def flows_from_shares(t_shares: np.ndarray, dest: np.ndarray) -> np.ndarray:
+    """``F[i,src,dst] = T[i,src,dst] · dest[dst,i]`` (cr/month)."""
+    dest_a = np.asarray(dest, dtype=float)
+    return np.asarray(t_shares, dtype=float) * dest_a.T[:, None, :]
+
+
+def link_capacity(capacity_mult: np.ndarray, baseline_flow: np.ndarray) -> np.ndarray:
+    """Directed per-sector caps ``(S, R, R)``. Home flows are uncapped (``+inf``)."""
+    cap = np.asarray(capacity_mult, dtype=float)[None, :, :] * np.asarray(baseline_flow, dtype=float)
+    n_r = cap.shape[-1]
+    cap[:, np.arange(n_r), np.arange(n_r)] = np.inf
+    return cap
+
+
+def route_with_spill(
+    t_shares: np.ndarray,
+    dest: np.ndarray,
+    link_cap: np.ndarray,
+    *,
+    n_iter: int = 4,
+) -> np.ndarray:
+    """Route dest demand by ``T``, clip to link caps, spill to other sources.
+
+    Returns attempted source→dest flows ``(S, R_src, R_dst)`` cr/month, before
+    supplier rationing. Home (src = dst) is never clipped by a link.
+    """
+    t_arr = np.asarray(t_shares, dtype=float)
+    remaining_dest = np.asarray(dest, dtype=float).copy()
+    remaining_cap = np.asarray(link_cap, dtype=float).copy()
+    n_s, n_r, _ = t_arr.shape
+    remaining_cap[:, np.arange(n_r), np.arange(n_r)] = np.inf
+    delivered = np.zeros_like(t_arr)
+    for _ in range(n_iter):
+        open_link = remaining_cap > 1e-15
+        weight = np.where(open_link, t_arr, 0.0)
+        wsum = weight.sum(axis=1, keepdims=True)
+        share = np.divide(weight, wsum, out=np.zeros_like(weight), where=wsum > 0)
+        attempt = share * remaining_dest.T[:, None, :]
+        take = np.minimum(attempt, remaining_cap)
+        delivered = delivered + take
+        remaining_cap = np.maximum(remaining_cap - take, 0.0)
+        remaining_dest = np.maximum(remaining_dest - take.sum(axis=1).T, 0.0)
+    return delivered
+
+
+def ration_sources(flows: np.ndarray, avail: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Pro-rata supplier rationing across buying regions.
+
+    ``flows`` is ``(S, src, dst)``; ``avail`` is ``(R, S)``. Returns filled
+    flows and source fill rates ``(R, S)``.
+    """
+    req = np.asarray(flows, dtype=float).sum(axis=2)  # (S, src)
+    avail_si = np.asarray(avail, dtype=float).T
+    fill = np.minimum(1.0, avail_si / np.maximum(req, 1e-12))
+    filled = np.asarray(flows, dtype=float) * fill[:, :, None]
+    return filled, fill.T
