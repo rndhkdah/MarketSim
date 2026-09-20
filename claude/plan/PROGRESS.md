@@ -144,7 +144,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T6.11 — CLOB liquidity: thin engine quote + queue-reactive-lite · M · deps: T6.10, T6.09 — 2026-09-20, thin quote V·(1±w); 10y book never empty
 - [x] T6.12 — Settlement, fees, taxes · S · deps: T6.08, T6.10 — 2026-09-20, cash-for-asset Tx; fees/tax; NPC div; VM nets 0
 - [ ] T6.13 — Margin, shorting, forced liquidation · M · deps: T6.12
-- [ ] T6.14 — Cap tables and corporate actions · M · deps: T5.02, T6.12
+- [x] T6.14 — Cap tables and corporate actions · M · deps: T5.02, T6.12 — 2026-09-20, Σ longs=SO; record+2; buyback cancels; issuer −EQ
 - [ ] T6.15 — Listing and IPO auction · S · deps: T6.14, T6.10
 - [ ] T6.16 — Control transfer and the takeover test · M · deps: T6.15, T5.06
 - [x] T6.17 — Agent-firm valuation and thin quote feed · S · deps: T6.04, T5.13 — 2026-09-20, published-only V; thin quote ±w
