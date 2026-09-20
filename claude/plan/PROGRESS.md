@@ -88,7 +88,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 
 ## Phase 4 — Events (14 tasks) — `04-phase4-events.md`
 
-- [ ] T4.01 — Event schema and loader · M · deps: T2.18
+- [x] T4.01 — Event schema and loader · M · deps: T2.18 — 2026-09-20, pydantic DistSpec + extras whitelist; catalog skips `_*.yaml`
 - [ ] T4.02 — Shock-composition engine · M · deps: T4.01
 - [ ] T4.03 — `effects_extra` executor · M · deps: T4.02, T3.13
 - [ ] T4.04 — Hazard model · S · deps: T4.01
