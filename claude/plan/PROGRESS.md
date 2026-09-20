@@ -174,7 +174,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T7.04 — REST endpoints · L · deps: T7.02 — 2026-09-20, FastAPI /v1; 401/403/422; idempotent orders; observe no hidden state
 - [x] T7.05 — WebSocket streams · M · deps: T7.04 — 2026-09-20, resume no gaps/dupes; own fills; coalesce ticks
 - [x] T7.06 — Lockstep barrier and real-time pacing · M · deps: T7.02 — 2026-09-20, (agent,seq) apply; timeout empty; late→next tick; gate 2
-- [ ] T7.07 — Python SDK (HTTP / WS) · M · deps: T7.04, T7.05
+- [x] T7.07 — Python SDK (HTTP / WS) · M · deps: T7.04, T7.05 — 2026-09-20, HttpClient+AsyncHttpClient; LOCAL_METHODS; WS reconnect since
 - [x] T7.08 — Gymnasium single-agent environment · M · deps: T7.03 — 2026-09-20, Dict orders+firm+mask; env_checker; seed-deterministic; masked levers ignored
 - [ ] T7.09 — PettingZoo parallel environment · M · deps: T7.08
 - [x] T7.10 — Replay, export, save / load · M · deps: T7.06 — 2026-09-20, event-sourced ReplayLog; (agent,seq) replay; npz export schema; save/load continue
@@ -183,7 +183,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [ ] T7.13 — Throughput and profiling · S · deps: T7.12
 - [ ] T7.14 — End-to-end multi-agent training smoke run · M · deps: T7.09, T7.11
 - [ ] T7.15 — API documentation and quickstart · S · deps: T7.07
-- [ ] T7.16 — Policy-maker role and endpoints (D13) · M · deps: T7.04, T2.31
+- [x] T7.16 — Policy-maker role and endpoints (D13) · M · deps: T7.04, T2.31 — 2026-09-20, policymaker bound; clipped echo; control agent↔autopilot; PolicyEnv §7.3; gate 6
 - [x] T7.17 — Bond-market endpoints · S · deps: T7.04, T6.26 — 2026-09-20, calendar+bids; stop-out win/lose; coupons/redemptions; schema v1.1
 
 - [ ] **GATE P7** — human review against the gate in the phase file
