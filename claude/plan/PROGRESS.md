@@ -190,7 +190,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 
 ## Phase 8 — Realism and game (coarse) (12 tasks) — `08-phase8-9-realism-game-scale.md`
 
-- [ ] T8.01 — Financing depth · L · deps: T7.14
+- [x] T8.01 — Financing depth · L · deps: T7.14 — 2026-09-20, term loans + committed lines; wall distress at lam=0; extra pool tenors at r+s_t
 - [ ] T8.02 — Supply contracts · M · deps: T7.14
 - [ ] T8.03 — Quality and brand · M · deps: T7.14
 - [ ] T8.04 — Calibration pass · L · deps: T7.14, T0.09 · **HUMAN GATE**
