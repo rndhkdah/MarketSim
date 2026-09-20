@@ -58,6 +58,9 @@ PARITY = {
     "policy.monetary.calendar.rate_step": 0.0,
     "policy.monetary.calendar.deadband": 0.0,
     "policy.monetary.data.cpi_lag_m": 0,
+    "policy.monetary.data.unemployment_lag_m": 0,
+    "policy.monetary.data.gdp_lag_q": 0,
+    "policy.monetary.data.use_published_vintages": False,
     "policy.monetary.committee.dispersion_bp": 0.0,
     "policy.monetary.committee.projection_noise_bp": 0.0,
 }

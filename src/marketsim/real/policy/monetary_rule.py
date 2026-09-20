@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+import numpy as np
+
 from marketsim.core.config import Config
 
 
@@ -161,6 +163,51 @@ def elb_toolkit(
     return tuple(engaged), r, qe
 
 
+def infl_from_hist(hist: list[float], months: int) -> float:
+    """Annualised log change over ``months``. Units: annual decimal."""
+    return float((12.0 / months) * np.log(hist[-1] / hist[-1 - months]))
+
+
+def slice_lag(hist: list[float], lag_m: int, *, min_len: int = 13) -> list[float]:
+    """Drop the newest ``lag_m`` unpublished months; left-pad so π12 is defined."""
+    lag = max(0, int(lag_m))
+    if lag == 0:
+        out = list(hist)
+    elif lag >= len(hist):
+        out = [float(hist[0])] if hist else [1.0]
+    else:
+        out = list(hist)[:-lag]
+    while len(out) < min_len:
+        out.insert(0, out[0] if out else 1.0)
+    return out
+
+
+def vintage_pi_pol(
+    cpi_hist: list[float],
+    core_hist: list[float],
+    *,
+    lag_m: int,
+    core_weight: float,
+) -> float:
+    """§2.14.2 policy inflation on the published CPI vintage (lag in months)."""
+    cpi = slice_lag(cpi_hist, lag_m)
+    core = slice_lag(core_hist, lag_m)
+    headline = 0.5 * infl_from_hist(cpi, 3) + 0.5 * infl_from_hist(cpi, 12)
+    core_pi = 0.5 * infl_from_hist(core, 3) + 0.5 * infl_from_hist(core, 12)
+    w = float(core_weight)
+    return float((1.0 - w) * headline + w * core_pi)
+
+
+@dataclass
+class InformationSet:
+    """What the committee can see this meeting. Units: annual decimal / share."""
+
+    pi_pol: float
+    u: float
+    gap: float
+    source: str
+
+
 def committee_draw(seed: int, meeting_n: int, dispersion_bp: float) -> float:
     """Deterministic-per-seed draw in annual-decimal units."""
     if dispersion_bp == 0.0:
@@ -239,6 +286,13 @@ class MonetaryRule:
     shadow_rate: float = 0.0
     qe_intent: float = 0.0
     last_elb_tools: tuple[str, ...] = ()
+    cpi_lag_m: int = 1
+    unemployment_lag_m: int = 1
+    gdp_lag_q: int = 1
+    use_published_vintages: bool = True
+    _true_u: list[float] = field(default_factory=list)
+    _true_gap: list[float] = field(default_factory=list)
+    last_info: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_config(cls, cfg: Config, *, r0: float, seed: int = 0) -> MonetaryRule:
@@ -276,6 +330,10 @@ class MonetaryRule:
             phi_credit=mon.credit.phi_credit,
             guidance_cred=mon.elb.guidance_credibility,
             qe_per_gap=mon.elb.qe_per_gap_point,
+            cpi_lag_m=mon.data.cpi_lag_m,
+            unemployment_lag_m=mon.data.unemployment_lag_m,
+            gdp_lag_q=mon.data.gdp_lag_q,
+            use_published_vintages=mon.data.use_published_vintages,
         )
 
     @property
@@ -284,6 +342,36 @@ class MonetaryRule:
 
     def is_meeting(self, month_index: int) -> bool:
         return is_meeting_month(month_index, self.mpy)
+
+    def information_set(
+        self,
+        *,
+        cpi_hist: list[float],
+        core_hist: list[float],
+        u: float,
+        gap: float,
+        core_weight: float | None = None,
+    ) -> InformationSet:
+        """CPI 1m, unemployment 1m, GDP 1q when ``use_published_vintages``; else the oracle."""
+        w = self.core_weight if core_weight is None else float(core_weight)
+        self._true_u.append(float(u))
+        self._true_gap.append(float(gap))
+        if len(self._true_u) > 36:
+            self._true_u = self._true_u[-36:]
+            self._true_gap = self._true_gap[-36:]
+        if not self.use_published_vintages:
+            pi = vintage_pi_pol(cpi_hist, core_hist, lag_m=0, core_weight=w)
+            info = InformationSet(pi, float(u), float(gap), "oracle")
+            self.last_info = {"pi_pol": info.pi_pol, "u": info.u, "gap": info.gap, "source": info.source}
+            return info
+        pi = vintage_pi_pol(cpi_hist, core_hist, lag_m=self.cpi_lag_m, core_weight=w)
+        lu = int(self.unemployment_lag_m)
+        u_see = self._true_u[-1 - lu] if len(self._true_u) > lu else float(u)
+        lg = 3 * int(self.gdp_lag_q)
+        gap_see = self._true_gap[-1 - lg] if len(self._true_gap) > lg else 0.0
+        info = InformationSet(pi, float(u_see), float(gap_see), "vintage")
+        self.last_info = {"pi_pol": info.pi_pol, "u": info.u, "gap": info.gap, "source": info.source}
+        return info
 
     def in_blackout(self, month_index: int) -> bool:
         """True if a meeting is within ``blackout_days`` (converted to months)."""
@@ -413,6 +501,9 @@ class MonetaryRule:
             "shadow_rate": self.shadow_rate,
             "qe_intent": self.qe_intent,
             "last_elb_tools": list(self.last_elb_tools),
+            "true_u": list(self._true_u),
+            "true_gap": list(self._true_gap),
+            "last_info": dict(self.last_info),
         }
 
     def from_state(self, state: dict[str, Any]) -> None:
@@ -431,3 +522,6 @@ class MonetaryRule:
         self.shadow_rate = float(state.get("shadow_rate", 0.0))
         self.qe_intent = float(state.get("qe_intent", 0.0))
         self.last_elb_tools = tuple(state.get("last_elb_tools") or ())
+        self._true_u = [float(x) for x in (state.get("true_u") or [])]
+        self._true_gap = [float(x) for x in (state.get("true_gap") or [])]
+        self.last_info = dict(state.get("last_info") or {})
