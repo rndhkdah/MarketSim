@@ -1,3 +1,5 @@
+# T6.22 domain-randomisation ranges live in src/marketsim/scenarios/randomise.py
+# (WorldSettings is extra=forbid; a `randomise:` map needs a config.py field).
 scale: 1.0
 seed: 0
 mode: professional          # game | professional
