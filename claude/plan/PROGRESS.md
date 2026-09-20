@@ -151,7 +151,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [ ] T6.18 — Commodities · S · deps: T6.08
 - [ ] T6.19 — Feedback edges 4 → 1/2 · M · deps: T6.06, T2.24
 - [ ] T6.20 — Surveillance and limits · M · deps: T6.12
-- [ ] T6.21 — Tier-1 / Tier-2 statistics and the regime flip · M · deps: T6.09, T6.06, T6.07
+- [x] T6.21 — Tier-1 / Tier-2 statistics and the regime flip · M · deps: T6.09, T6.06, T6.07 — 2026-09-20, gates 2–4; δ∈[0.4,0.7]; demand corr<−0.15
 - [ ] T6.22 — Domain randomisation and hidden state · S · deps: T6.06
 - [ ] T6.23 — Market performance · S · deps: T6.21
 - [x] T6.24 — Bond buckets: instruments, arithmetic, par ↔ market switch (D12) · M · deps: T6.01, T2.16 — 2026-09-20, P=(κ+δ)/(y+δ); GB_BOND 7.07y; par bitwise; reval ≠ income
