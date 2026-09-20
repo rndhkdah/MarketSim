@@ -181,3 +181,28 @@ Reproduced target (numpy 2.4 / scipy 1.17 sandbox):
   the credit-on xfails or ask for a `phi_y_mult` ADR (pre-authorised ADR-P14 if U
   falls under a supply shock).
 
+## ADR-011 — GATE P3 review against master plan §9 / phase §3.1
+
+- date: 2026-09-20
+- status: proposed (GATE P3; higher-reasoning recommendation)
+- context: Master plan §9 Phase 3 is done when “R=1 parity; regional shocks propagate,
+  prices converge within band; basket reproduced exactly, η rank-corr ≥ 0.8; aggregate
+  baseline recorded.” Phase file §3.1 adds regional SS, entry/exit, and §2.12 at R=3
+  with `tiers_wants`.
+- decision: **Propose GATE P3 as met for the shipped mechanism, with the T3.15 caveats.**
+  Do not tick the PROGRESS checkbox as human-accepted. Evidence
+  (`claude/plan/reports/phase3-validation.md`):
+  1. R=1 parity vs Phase-2 golden to 1e-12 (T3.02).
+  2. Regional SS national totals 1e-9; RESOURCE ENERGY / CAPITAL SOFTWARE exporters (T3.03).
+  3. −10 % MATERIALS in RESOURCE and an INDUSTRIAL AUTOS strike: tradable `|ln p_r − ln p̄|`
+     inside max link cost + 0.05 after month 24 (T3.05 / gate 3).
+  4. HOUSEHOLD basket `V @ M` vs θ to 1e-9; Spearman(implied η, config η) = 0.816;
+     Engel signs (T3.11 / T3.12). mean |Δη| 0.33 is the 2026-09-20 rank-only waiver.
+  5. +10 % AUTOS demand: excess profit below θ_e within 8 years (T3.14).
+  6. Golden national series recorded for T5.16 (gate 7).
+- not claimed: live `step_month` at R=3 (QUESTIONS T3.15 — orchestrator stays R=1);
+  §2.12 monetary level window under `tiers_wants` (xfail); default `demand.mode` remains
+  `scalar_eta` so Phase 2 stays bitwise. Goods layer is out (ADR-006).
+- consequences: Phase 5 (T5.01) is unblocked. Human may reject the R=3 stepper deferral.
+
+

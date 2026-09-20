@@ -84,7 +84,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T3.15 — Regional validation and golden baseline · M · deps: T3.05, T3.12, T3.14 — 2026-09-20, gates 3/6/7; R=3 tick see QUESTIONS
 - [x] T3.16 — ADR: goods layer beneath consumer-facing sectors · S · deps: T3.15 · **HUMAN GATE** — 2026-09-20, ADR-006 proposed: no goods layer in v1
 
-- [ ] **GATE P3** — human review against the gate in the phase file
+- [ ] **GATE P3** — human review against the gate in the phase file — 2026-09-20, ADR-011 proposed (mechanism met; R=3 stepper deferred, QUESTIONS T3.15)
 
 ## Phase 4 — Events (14 tasks) — `04-phase4-events.md`
 
@@ -107,8 +107,8 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 
 ## Phase 5 — Agent-operated firms (19 tasks) — `05-phase5-firms.md`
 
-- [ ] T5.01 — `firms.yaml` and firm state · M · deps: T3.15
-- [ ] T5.02 — Firm accounts on the ledger · M · deps: T5.01, T2.03
+- [x] T5.01 — `firms.yaml` and firm state · M · deps: T3.15 — 2026-09-20, FirmsFile + Plant/Firm registry; unknown cell rejected
+- [x] T5.02 — Firm accounts on the ledger · M · deps: T5.01, T2.03 — 2026-09-20, FIRM:/AGENT: + equity; 24m A=L+E SFC
 - [ ] T5.03 — Founding and entry · S · deps: T5.02
 - [ ] T5.04 — Cell aggregation with firms (incl. zero-NPC cells) · M · deps: T5.03
 - [ ] T5.05 — Heterogeneous-seller goods market · M · deps: T5.04

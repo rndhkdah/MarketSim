@@ -1,0 +1,69 @@
+# Agent-operated firms (T5.01 / §5.2–§5.7).
+# dynamics.firms remains the Phase-2 aggregate financial block.
+
+npc_initial_share: 1.0  # dimensionless; 1 = all cell capacity stays NPC at start
+
+goods_market:
+  epsilon_s: 4.0            # demand elasticity on p_f / p_ref (§5.3)
+  availability_kappa: 1.0   # exponent on avail_f
+  tau_loyalty_m: 6          # months; share stickiness
+
+pricing:
+  step_max_month: 0.15      # log-points / month; same bound as dynamics.prices
+  floor_of_pref: 0.01       # posted-price floor as a share of p_ref
+
+production:
+  overtime_cap: 1.10        # output ≤ capacity × this (matches dynamics.production)
+
+labour:
+  hire_share_of_unemployed: 0.10  # max hires / regional U / month
+  firing_cost_months: 2           # months of wage
+  notice_m: 1                     # months
+  matching_m0: 1.0                # matching efficiency (§5.5); U=V → fill 1
+  epsilon_w: 1.0                  # wage elasticity of fills
+
+procurement:
+  input_cover_max_m: 6            # months of cover
+  premium_max: 0.5                # shortage bid-premium cap
+  beta_premium: 2.0               # exp(β · premium) allocation weight
+  rho_relationship: 1.0           # (1 + ρ · rel_12m) allocation weight
+  order_size_cap_of_cell: 1.0     # max order as a share of cell supply
+
+capex:
+  new_cell_setup_premium: 0.10    # extra cost to open a plant in a new cell
+  capacity_growth_cap_year: 0.50  # +50 % of own K / year
+  payment_erlang_k: 3             # Erlang(k) payment profile
+
+financing:
+  nd_ebitda_soft: 4.0             # leverage norm
+  nd_ebitda_hard: 6.0             # hard cap
+  credit_line_of_replacement: 0.50
+  loss_carryforward_years: 5
+  rating_multipliers:
+    AAA: 1.2
+    AA: 1.1
+    A: 1.0
+    BBB: 0.9
+    BB: 0.7
+    B: 0.5
+    CCC: 0.25
+
+treasury:
+  default_enabled: false          # trading financial instruments; off until opted in
+
+exit:
+  plant_npc_discount: 0.30        # voluntary exit: plants to NPC at this discount
+
+bankruptcy:
+  equity_negative_months: 3
+  plant_recovery: 0.70            # plants to NPC at replacement × this
+  inventory_recovery: 0.50
+  large_threshold_of_monthly_gdp: 0.01
+
+reports:
+  monthly_lag_days: 10
+  quarterly_lag_days: 21
+
+controls:
+  cell_share_cap: 1.0             # 1.0 = regulator off
+  decision_size_cap: 1.0          # per-tick decision / order size (share of cell)
