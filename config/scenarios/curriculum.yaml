@@ -1,0 +1,19 @@
+# T7.11 companion pack (CurriculumSpec). Not a ScenarioSpec.
+kind: curriculum
+id: default
+seed: 0
+lever_order: [pricing, production, labour, capex, financing]
+stages:
+  - {id: pricing, unlocked_levers: [pricing], scenario_id: eval_calm, severity: calm}
+  - {id: production, unlocked_levers: [pricing, production], scenario_id: eval_calm, severity: calm}
+  - {id: labour, unlocked_levers: [pricing, production, labour], scenario_id: eval_calm, severity: calm}
+  - {id: capex, unlocked_levers: [pricing, production, labour, capex], scenario_id: eval_calm, severity: calm}
+  - {id: financing, unlocked_levers: [pricing, production, labour, capex, financing], scenario_id: eval_calm, severity: calm}
+severity_tiers:
+  - {id: calm, scenario_ids: [eval_calm]}
+  - {id: mild, scenario_ids: [chip_script]}
+  - {id: moderate, scenario_ids: [eval_energy]}
+  - {id: severe, scenario_ids: [eval_gfc]}
+evaluation:
+  id: historic_fixed
+  scenario_ids: [eval_calm, chip_script, eval_energy, eval_covid, eval_oil, eval_gfc]

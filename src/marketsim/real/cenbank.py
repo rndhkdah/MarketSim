@@ -134,11 +134,18 @@ class CentralBank:
         """If this month is a meeting, update ``r_rule`` and ``r``. Returns True on a meeting."""
         u_now = self.u_star if u is None else float(u)
         if self.framework is not None:
+            info = self.framework.information_set(
+                cpi_hist=self.cpi_hist,
+                core_hist=self.core_hist,
+                u=u_now,
+                gap=gap,
+                core_weight=self.framework.core_weight,
+            )
             self.framework.update_rstar(g_obs)
             self.framework.update_strategy(
-                pi_pol=self.pi_pol(),
+                pi_pol=info.pi_pol,
                 pi_star=self.pi_star,
-                u=u_now,
+                u=info.u,
                 spread=spread,
                 s0=s0,
                 gate=gate,
@@ -223,13 +230,14 @@ class CentralBank:
     ) -> None:
         assert self.framework is not None
         fw = self.framework
+        info = fw.last_info
         r_rule, r_ann, payload = fw.decide(
             r_n=self.r_n,
             pi_star=self.pi_star,
-            pi_pol=self.pi_pol(),
-            u=u,
+            pi_pol=float(info.get("pi_pol", self.pi_pol())),
+            u=float(info.get("u", u)),
             u_star=self.u_star,
-            gap=gap,
+            gap=float(info.get("gap", gap)),
             r_rule=self.r_rule,
             makeup=fw.last_makeup if makeup is None else makeup,
             fci_tighten=fw.last_fci if fci is None else fci,

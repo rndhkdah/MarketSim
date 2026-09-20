@@ -1,0 +1,53 @@
+# Regional geometry (T3.01 / §3.2). Omitted location_quotient entries = 1.0.
+
+regions:
+  - {code: CAPITAL, population_share: 0.45, wage_level: 1.10}
+  - {code: INDUSTRIAL, population_share: 0.35, wage_level: 1.00}
+  - {code: RESOURCE, population_share: 0.20, wage_level: 0.92}
+
+location_quotient:
+  CAPITAL: {SOFTWARE: 1.6, BANKS: 1.6, INSURANCE: 1.5, BIZSVC: 1.4, TELECOM: 1.3, REALESTATE: 1.3}
+  INDUSTRIAL: {AUTOS: 1.7, CAPGOODS: 1.6, SEMIS: 1.5, TRANSPORT: 1.4, STAPLES: 1.2, MATERIALS: 1.1}
+  RESOURCE: {ENERGY: 2.4, AGRIFOOD: 2.0, MATERIALS: 1.6, UTILITIES: 1.3}
+
+tradability:
+  ENERGY: 0.9
+  UTILITIES: 0.3
+  MATERIALS: 0.9
+  AGRIFOOD: 0.8
+  SEMIS: 1.0
+  CAPGOODS: 0.9
+  CONSTRUCT: 0.1
+  TRANSPORT: 0.5
+  AUTOS: 0.9
+  DISCRET: 0.2
+  STAPLES: 0.8
+  HEALTH: 0.15
+  SOFTWARE: 0.9
+  TELECOM: 0.5
+  BIZSVC: 0.5
+  BANKS: 0.6
+  INSURANCE: 0.7
+  REALESTATE: 0.0
+
+armington_sigma:
+  default: 2.0
+  ENERGY: 4.0
+  MATERIALS: 3.0
+  AGRIFOOD: 3.0
+  SEMIS: 3.0
+
+links:
+  - {a: CAPITAL, b: INDUSTRIAL, cost: 0.04, capacity_mult: 2.0}
+  - {a: INDUSTRIAL, b: RESOURCE, cost: 0.06, capacity_mult: 2.0}
+  - {a: CAPITAL, b: RESOURCE, cost: 0.09, capacity_mult: 1.5}
+
+trade:
+  tau_share_m: 6
+  home_bias: 1.5
+  gravity_theta: 8.0
+  availability_kappa: 1.0
+
+migration:
+  enabled: true
+  rate_per_pp_per_year: 0.001

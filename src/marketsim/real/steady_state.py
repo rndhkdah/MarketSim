@@ -2,12 +2,21 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 
 from marketsim.core.config import Config
 from marketsim.layer1.io import IOTable
+from marketsim.regions.geometry import Geometry, RegionsConfig, RegionSpec, build_geometry
+
+
+def national_geometry(sector_codes: tuple[str, ...]) -> Geometry:
+    """Single-region geometry used for Phase-2 / R = 1 parity."""
+    return build_geometry(
+        RegionsConfig(regions=[RegionSpec(code="NATIONAL", population_share=1.0, wage_level=1.0)]),
+        sector_codes,
+    )
 
 
 @dataclass
@@ -37,6 +46,8 @@ class RealBaseline:
     S_in0: np.ndarray
     n0: np.ndarray
     LF: float
+    lf_r: np.ndarray
+    wage_level: np.ndarray
     cover: np.ndarray
     leak: np.ndarray
     tau_ob: np.ndarray
@@ -56,6 +67,8 @@ class RealBaseline:
     stor_in: np.ndarray
     crit: np.ndarray
     mu: np.ndarray
+    T0: np.ndarray = field(default_factory=lambda: np.zeros((0, 0, 0)))
+    geometry: Geometry | None = None
 
     def flat(self, arr: np.ndarray) -> np.ndarray:
         """R=1 helper: drop the region axis."""
@@ -189,6 +202,8 @@ def compute_real_baseline(
         S_in0=s_in0[None, ...],
         n0=r1(n0),
         LF=float(lf),
+        lf_r=np.asarray([lf], dtype=float),
+        wage_level=np.ones(r_dim, dtype=float),
         cover=r1(cover),
         leak=r1(leak),
         tau_ob=r1(tau_ob),
@@ -208,6 +223,91 @@ def compute_real_baseline(
         stor_in=stor_in,
         crit=crit,
         mu=r1(mu),
+        T0=np.ones((s, r_dim, r_dim)),
+        geometry=national_geometry(codes),
+    )
+
+
+def compute_regional_real_baseline(
+    io: IOTable,
+    cfg: Config,
+    geom: Geometry,
+    *,
+    scale: float | None = None,
+) -> RealBaseline:
+    """Regional real seed (§3.2): T0, stacked Leontief, income fixed point, wage offset."""
+    from marketsim.regions.trade import baseline_trade_shares, stacked_leontief
+
+    assert cfg.dynamics is not None
+    nat = compute_real_baseline(io, cfg, scale=scale)
+    t0 = baseline_trade_shares(geom)
+    n_r, n_s = geom.n_regions, nat.S
+    c0 = nat.flat(nat.C0)
+    i_fd = nat.flat(nat.I_fd)
+    g0 = nat.flat(nat.G0)
+    x_fd = nat.flat(nat.X0)
+    k_nat = nat.flat(nat.K0)
+    leak = nat.flat(nat.leak)
+    cover = nat.flat(nat.cover)
+    lam = 1.0 + leak * cover
+    ell_s = nat.flat(nat.ell)
+    pop = geom.population_share
+    cap = geom.capacity_share
+    k_wts = (cap * k_nat[None, :]).sum(axis=1)
+    k_wts = k_wts / k_wts.sum()
+
+    y = pop.copy()
+    x_rs = np.zeros((n_r, n_s))
+    c_rs = i_rs = g_rs = x_rs_fd = d_rs = x_rs
+    for _ in range(64):
+        c_rs = y[:, None] * c0[None, :]
+        g_rs = pop[:, None] * g0[None, :]
+        i_rs = k_wts[:, None] * i_fd[None, :]
+        x_rs_fd = cap * x_fd[None, :]
+        d_rs = c_rs + i_rs + g_rs + x_rs_fd
+        x_rs = stacked_leontief(io.A, t0, lam, d_rs)
+        wages = (ell_s[None, :] * x_rs).sum(axis=1)
+        y_new = wages / max(float(wages.sum()), 1e-15)
+        if float(np.max(np.abs(y_new - y))) < 1e-12:
+            y = y_new
+            break
+        y = y_new
+    else:
+        raise RuntimeError("regional income fixed point did not converge")
+
+    s0 = x_rs / lam
+    ustar = _vec(cfg, "util_target")
+    k0 = x_rs / ustar
+    ell_rs = ell_s[None, :] / geom.wage_level[:, None]
+    n0 = ell_rs * x_rs
+    is_stock, is_order, _ = mode_masks(cfg)
+    tau_ob = nat.flat(nat.tau_ob)
+    inv0 = cover * s0
+    backlog0 = np.where(is_order, (tau_ob - 1.0) * x_rs, 0.0)
+    dyn = cfg.dynamics
+    s_in0 = np.where(nat.stor_in, dyn.production.input_cover_m * io.A * x_rs[:, None, :], 0.0)
+    lf_r = n0.sum(axis=1) / (1.0 - dyn.labour.u_star)
+    return replace(
+        nat,
+        R=n_r,
+        x0=x_rs,
+        s0=s0,
+        ell=ell_rs,
+        K0=k0,
+        inv0=inv0,
+        backlog0=backlog0,
+        S_in0=s_in0,
+        n0=n0,
+        LF=float(lf_r.sum()),
+        lf_r=lf_r,
+        wage_level=np.asarray(geom.wage_level, dtype=float).copy(),
+        d0=d_rs,
+        C0=c_rs,
+        I_fd=i_rs,
+        G0=g_rs,
+        X0=x_rs_fd,
+        T0=t0,
+        geometry=geom,
     )
 
 

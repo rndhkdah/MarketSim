@@ -1,0 +1,22 @@
+id: energy_subsidy
+category: policy
+hazard:
+  base_rate_per_year: 0.03
+composition:
+- shock: fiscal
+  magnitude:
+    dist: uniform
+    min: 0.01
+    max: 0.03
+    sign: 1.0
+    verify: false
+  persistence_q: 2
+news:
+  headline: Energy subsidy authorised
+  publication_lag_days: 1
+  noise: 0.2
+effects_extra: []
+followups: []
+targets:
+  regions: all
+cooldown_days: 252

@@ -1,0 +1,30 @@
+id: thailand_floods_2011
+category: disaster
+hazard:
+  base_rate_per_year: 0.03
+composition:
+- shock: supply
+  magnitude:
+    dist: uniform
+    min: 0.25
+    max: 0.3
+    sign: -1
+    verify: false
+  persistence_q: 2
+  targets:
+    sectors:
+    - SEMIS
+news:
+  headline: Floods knock out semiconductor assembly
+  publication_lag_days: 1
+  noise: 0.2
+historic_reference:
+  episode: 2011 Thailand floods
+  source: "iSuppli / TrendFocus: global HDD shipments ≈−29% in 2011Q4 vs 2011Q3"
+  calibrated_params:
+    verify: false
+effects_extra: []
+followups: []
+targets:
+  regions: all
+cooldown_days: 252

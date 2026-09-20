@@ -1,0 +1,47 @@
+id: energy_inflation_2022
+category: energy
+hazard:
+  base_rate_per_year: 0.03
+cooldown_days: 756
+composition:
+- shock: cost_push
+  magnitude:
+    dist: uniform
+    min: 0.5
+    max: 0.9
+    sign: 1.0
+    verify: false
+  persistence_q: 6
+  targets:
+    sectors:
+    - ENERGY
+- shock: cost_push
+  magnitude:
+    dist: uniform
+    min: 0.15
+    max: 0.25
+    sign: 1.0
+    verify: false
+  persistence_q: 4
+  targets:
+    sectors:
+    - AGRIFOOD
+followups:
+- event_id: energy_monetary_tightening
+  probability: 0.8
+  delay:
+    dist: uniform
+    low_days: 21
+    high_days: 84
+news:
+  headline: Energy and food prices surge
+  publication_lag_days: 0
+  noise: 0.15
+historic_reference:
+  episode: 2022 energy inflation
+  source: "BLS CPI-U 9.1% y/y Jun 2022; FOMC target 0–25bp (Mar 2022) to 525bp (May 2023)"
+  calibrated_params:
+    verify: false
+effects_extra: []
+targets:
+  regions: all

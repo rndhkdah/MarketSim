@@ -1,0 +1,28 @@
+id: covid_fiscal_stimulus
+category: policy
+hazard:
+  base_rate_per_year: 0.0
+composition:
+- shock: fiscal
+  magnitude:
+    dist: uniform
+    min: 0.04
+    max: 0.08
+    sign: 1.0
+    verify: false
+  persistence_q: 4
+followups:
+- event_id: cost_push_inflation
+  probability: 0.5
+  delay:
+    dist: uniform
+    low_days: 63
+    high_days: 168
+news:
+  headline: Lockdown-era fiscal stimulus
+  publication_lag_days: 0
+  noise: 0.2
+effects_extra: []
+targets:
+  regions: all
+cooldown_days: 252

@@ -81,17 +81,17 @@ paths; dose-response monotonicity). Write up what can and cannot be claimed — 
 
 ## 8.4 Task cards — Phase 9
 
-### T9.01 — Multi-country and FX
+### T9.01 — Multi-country and FX — **deferred (ADR-017)**
 **Depends:** T8.04 · **Size:** L · **Files:** `src/marketsim/regions/countries.py`, `src/marketsim/market/fx.py`
-**Build:** second economy, FX market, bilateral trade replacing part of ROW; FX in the ledger as an instrument.
+**Build:** second economy, FX market, bilateral trade replacing part of ROW; FX in the ledger as an instrument. **Out of v1.**
 
 ### T9.02 — Storage backend
 **Depends:** T7.10 · **Size:** L · **Files:** `src/marketsim/storage/*`
 **Build:** event log and snapshots to parquet / a database; world registry. State has been serialisable since T0.11.
 
-### T9.03 — Parallel worlds at scale
+### T9.03 — Parallel worlds at scale — **deferred (ADR-017)**
 **Depends:** T7.12 · **Size:** M · **Files:** `src/marketsim/sdk/cluster.py`
-**Build:** process pool / cluster execution, batch evaluation service.
+**Build:** process pool / cluster execution, batch evaluation service. **Out of v1.** T7.12 `VectorEnv` remains.
 
 ### T9.04 — M&A depth
 **Depends:** T6.16 · **Size:** L · **Files:** `src/marketsim/equity/mna.py`

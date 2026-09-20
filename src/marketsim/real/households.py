@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from marketsim.core.config import Config
-from marketsim.demand.system import ScalarEtaDemand
+from marketsim.demand.system import DemandSystem, ScalarEtaDemand, TiersWantsDemand
 from marketsim.ledger.opening import opening_wealth
 from marketsim.real.steady_state import FinancialBaseline, RealBaseline
 
@@ -20,20 +20,34 @@ def smooth_nominal(current: float, observed: float, tau: float, g: float) -> flo
     return current * g + (observed - current * g) / tau
 
 
-def household_basket(real: RealBaseline, cfg: Config, fin: FinancialBaseline) -> ScalarEtaDemand:
-    """Baseline θ is the HOUSEHOLD final-demand mix (sums to 1)."""
+def household_basket(real: RealBaseline, cfg: Config, fin: FinancialBaseline) -> DemandSystem:
+    """Baseline θ is the HOUSEHOLD final-demand mix (sums to 1).
+
+    ``demand_mode: scalar_eta`` (default) keeps the Phase-2 system. ``tiers_wants``
+    is the T3.12 composition layer; the macro C function is unchanged.
+    """
     c0 = real.flat(real.C0)
     theta = c0 / c0.sum()
     eta = np.array([cfg.sectors.params(c).eta for c in real.codes], dtype=float)
     eps = np.array([cfg.sectors.params(c).eps_own for c in real.codes], dtype=float)
     semi = np.array([cfg.sectors.params(c).dem_rate_semi for c in real.codes], dtype=float)
     assert cfg.dynamics is not None
+    zeta = cfg.dynamics.households.rate_budget_passthrough
+    mode = cfg.dynamics.households.demand_mode
+    if mode == "tiers_wants":
+        return TiersWantsDemand.from_config(
+            cfg,
+            theta=theta,
+            eps=eps,
+            dem_rate_semi=semi,
+            vat=fin.vat,
+        )
     return ScalarEtaDemand(
         theta=theta,
         eta=eta,
         eps=eps,
         dem_rate_semi=semi,
-        zeta=cfg.dynamics.households.rate_budget_passthrough,
+        zeta=zeta,
         vat=fin.vat,
     )
 
@@ -46,3 +60,27 @@ def income_index(yd_e: float, pc: float, yd0: float) -> float:
 def wealth_from_ledger(ledger, hh: str = "HH:0") -> float:
     """Consumption-relevant W from the opening / running ledger."""
     return opening_wealth(ledger, hh)
+
+
+def split_regional(national: float, weights: np.ndarray) -> np.ndarray:
+    """Split a national scalar across regions. ``weights`` sum to 1; units follow ``national``."""
+    w = np.asarray(weights, dtype=float)
+    return float(national) * w
+
+
+def regional_incomes(yd: np.ndarray, wealth: np.ndarray) -> tuple[float, float]:
+    """National totals of per-region ``YD`` and ``W`` (cr)."""
+    return float(np.asarray(yd, dtype=float).sum()), float(np.asarray(wealth, dtype=float).sum())
+
+
+def household_entity(region: int) -> str:
+    """Ledger name ``HH:<r>``."""
+    return f"HH:{int(region)}"
+
+
+def regional_disposable(
+    pretax_r: np.ndarray,
+    tau_y: float,
+) -> np.ndarray:
+    """Per-region disposable income ``(1 − τ_y)·pretax_r`` (cr/month)."""
+    return (1.0 - float(tau_y)) * np.asarray(pretax_r, dtype=float)

@@ -1,0 +1,51 @@
+id: gfc_2008
+category: financial
+hazard:
+  base_rate_per_year: 0.012
+cooldown_days: 2520
+composition:
+- shock: risk_appetite
+  magnitude:
+    dist: uniform
+    min: 0.03
+    max: 0.05
+    sign: 1.0
+    verify: false
+  persistence_q: 8
+effects_extra:
+- variable: collateral_value
+  shape: step
+  magnitude:
+    dist: uniform
+    min: -0.3
+    max: -0.25
+    sign: 1.0
+    verify: false
+  duration: 252
+- variable: bank_equity
+  shape: pulse
+  magnitude:
+    dist: uniform
+    min: 0.3
+    max: 0.5
+    sign: 1.0
+    verify: false
+  duration: 1
+followups:
+- event_id: gfc_fiscal_stimulus
+  probability: 0.8
+  delay:
+    dist: uniform
+    low_days: 21
+    high_days: 84
+news:
+  headline: Collateral and bank equity crater
+  publication_lag_days: 0
+  noise: 0.15
+historic_reference:
+  episode: 2008 GFC
+  source: "FRED CSUSHPINSA peak-trough ≈−27% (2006–2012); FRED SP500 Oct-2007–Mar-2009 ≈−57%"
+  calibrated_params:
+    verify: false
+targets:
+  regions: all

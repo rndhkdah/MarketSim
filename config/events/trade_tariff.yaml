@@ -1,0 +1,23 @@
+id: trade_tariff
+category: policy
+hazard:
+  base_rate_per_year: 0.05
+effects_extra:
+- variable: import_price[MATERIALS]
+  shape: step
+  magnitude:
+    dist: uniform
+    min: 0.05
+    max: 0.15
+    sign: 1.0
+    verify: false
+  duration: 252
+news:
+  headline: Tariff raised on imported materials
+  publication_lag_days: 0
+  noise: 0.2
+followups: []
+targets:
+  regions: all
+cooldown_days: 252
+composition: []

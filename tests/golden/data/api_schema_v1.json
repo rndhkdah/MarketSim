@@ -1,0 +1,2287 @@
+{
+  "models": {
+    "AgentRegistration": {
+      "additionalProperties": false,
+      "description": "POST /agents. ``starting_capital`` is cr; policymaker binds one authority.",
+      "properties": {
+        "agent_id": {
+          "title": "Agent Id",
+          "type": "string"
+        },
+        "authority": {
+          "anyOf": [
+            {
+              "enum": [
+                "GOVT",
+                "CENBANK"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Authority"
+        },
+        "role": {
+          "default": "agent",
+          "enum": [
+            "admin",
+            "agent",
+            "observer",
+            "policymaker"
+          ],
+          "title": "Role",
+          "type": "string"
+        },
+        "starting_capital": {
+          "default": 0.0,
+          "title": "Starting Capital",
+          "type": "number"
+        }
+      },
+      "required": [
+        "agent_id"
+      ],
+      "title": "AgentRegistration",
+      "type": "object"
+    },
+    "CellQty": {
+      "additionalProperties": false,
+      "description": "One (region, sector) quantity. Units are those of the parent field.",
+      "properties": {
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "sector": {
+          "title": "Sector",
+          "type": "string"
+        },
+        "value": {
+          "title": "Value",
+          "type": "number"
+        }
+      },
+      "required": [
+        "region",
+        "sector",
+        "value"
+      ],
+      "title": "CellQty",
+      "type": "object"
+    },
+    "CompetitorPrice": {
+      "additionalProperties": false,
+      "description": "One seller's posted price. ``posted_price`` is an index (1.0 at baseline).",
+      "properties": {
+        "posted_price": {
+          "title": "Posted Price",
+          "type": "number"
+        },
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "sector": {
+          "title": "Sector",
+          "type": "string"
+        },
+        "seller_id": {
+          "title": "Seller Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "seller_id",
+        "region",
+        "sector",
+        "posted_price"
+      ],
+      "title": "CompetitorPrice",
+      "type": "object"
+    },
+    "CorporateAction": {
+      "additionalProperties": false,
+      "description": "Issue, buyback, or dividend. ``shares`` are units; ``amount`` is cr.",
+      "properties": {
+        "amount": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Amount"
+        },
+        "firm_id": {
+          "title": "Firm Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "issue",
+            "buyback",
+            "dividend"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "shares": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shares"
+        }
+      },
+      "required": [
+        "firm_id",
+        "kind"
+      ],
+      "title": "CorporateAction",
+      "type": "object"
+    },
+    "ErrorModel": {
+      "additionalProperties": false,
+      "description": "API error body: ``{code, message, details}``.",
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "details": {
+          "additionalProperties": true,
+          "title": "Details",
+          "type": "object"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "title": "ErrorModel",
+      "type": "object"
+    },
+    "Fill": {
+      "additionalProperties": false,
+      "description": "One match. ``price`` is cr / share; ``qty`` is shares; ``notional`` is cr.",
+      "properties": {
+        "maker": {
+          "title": "Maker",
+          "type": "string"
+        },
+        "maker_order_id": {
+          "title": "Maker Order Id",
+          "type": "integer"
+        },
+        "notional": {
+          "title": "Notional",
+          "type": "number"
+        },
+        "price": {
+          "title": "Price",
+          "type": "number"
+        },
+        "qty": {
+          "title": "Qty",
+          "type": "integer"
+        },
+        "symbol": {
+          "title": "Symbol",
+          "type": "string"
+        },
+        "taker": {
+          "title": "Taker",
+          "type": "string"
+        },
+        "taker_order_id": {
+          "title": "Taker Order Id",
+          "type": "integer"
+        },
+        "tick": {
+          "title": "Tick",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "symbol",
+        "price",
+        "qty",
+        "maker",
+        "taker",
+        "maker_order_id",
+        "taker_order_id",
+        "notional",
+        "tick"
+      ],
+      "title": "Fill",
+      "type": "object"
+    },
+    "FirmDecision": {
+      "$defs": {
+        "CellQty": {
+          "additionalProperties": false,
+          "description": "One (region, sector) quantity. Units are those of the parent field.",
+          "properties": {
+            "region": {
+              "title": "Region",
+              "type": "string"
+            },
+            "sector": {
+              "title": "Sector",
+              "type": "string"
+            },
+            "value": {
+              "title": "Value",
+              "type": "number"
+            }
+          },
+          "required": [
+            "region",
+            "sector",
+            "value"
+          ],
+          "title": "CellQty",
+          "type": "object"
+        },
+        "NewPlant": {
+          "additionalProperties": false,
+          "description": "Greenfield / new-cell plant. ``capacity`` is real units / month.",
+          "properties": {
+            "capacity": {
+              "title": "Capacity",
+              "type": "number"
+            },
+            "region": {
+              "title": "Region",
+              "type": "string"
+            },
+            "sector": {
+              "title": "Sector",
+              "type": "string"
+            }
+          },
+          "required": [
+            "region",
+            "sector",
+            "capacity"
+          ],
+          "title": "NewPlant",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Operator levers. Omitted fields stay on autopilot (T5.06 / \u00a75.4).",
+      "properties": {
+        "borrow": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Borrow"
+        },
+        "dividend": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dividend"
+        },
+        "expand_capacity": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/CellQty"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expand Capacity"
+        },
+        "firm_id": {
+          "title": "Firm Id",
+          "type": "string"
+        },
+        "input_cover_m": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Input Cover M"
+        },
+        "layoffs": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Layoffs"
+        },
+        "liquidate": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Liquidate"
+        },
+        "new_plant": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NewPlant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "operator": {
+          "title": "Operator",
+          "type": "string"
+        },
+        "order_mult": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Order Mult"
+        },
+        "posted_price": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/CellQty"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Posted Price"
+        },
+        "repay": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Repay"
+        },
+        "rnd_spend": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rnd Spend"
+        },
+        "shortage_premium": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shortage Premium"
+        },
+        "target_output": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/CellQty"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Target Output"
+        },
+        "treasury_enabled": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Treasury Enabled"
+        },
+        "vacancies": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vacancies"
+        },
+        "wage_offer": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Wage Offer"
+        }
+      },
+      "required": [
+        "firm_id",
+        "operator"
+      ],
+      "title": "FirmDecision",
+      "type": "object"
+    },
+    "FoundFirmRequest": {
+      "additionalProperties": false,
+      "description": "POST /firms. ``capital`` is cr; optional plant ``capacity`` is units / month.",
+      "properties": {
+        "capacity": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Capacity"
+        },
+        "capital": {
+          "title": "Capital",
+          "type": "number"
+        },
+        "firm_id": {
+          "title": "Firm Id",
+          "type": "string"
+        },
+        "greenfield": {
+          "default": false,
+          "title": "Greenfield",
+          "type": "boolean"
+        },
+        "operator": {
+          "title": "Operator",
+          "type": "string"
+        },
+        "region": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Region"
+        },
+        "sector": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sector"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        }
+      },
+      "required": [
+        "firm_id",
+        "operator",
+        "capital"
+      ],
+      "title": "FoundFirmRequest",
+      "type": "object"
+    },
+    "GoodsView": {
+      "$defs": {
+        "CellQty": {
+          "additionalProperties": false,
+          "description": "One (region, sector) quantity. Units are those of the parent field.",
+          "properties": {
+            "region": {
+              "title": "Region",
+              "type": "string"
+            },
+            "sector": {
+              "title": "Sector",
+              "type": "string"
+            },
+            "value": {
+              "title": "Value",
+              "type": "number"
+            }
+          },
+          "required": [
+            "region",
+            "sector",
+            "value"
+          ],
+          "title": "CellQty",
+          "type": "object"
+        },
+        "CompetitorPrice": {
+          "additionalProperties": false,
+          "description": "One seller's posted price. ``posted_price`` is an index (1.0 at baseline).",
+          "properties": {
+            "posted_price": {
+              "title": "Posted Price",
+              "type": "number"
+            },
+            "region": {
+              "title": "Region",
+              "type": "string"
+            },
+            "sector": {
+              "title": "Sector",
+              "type": "string"
+            },
+            "seller_id": {
+              "title": "Seller Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "seller_id",
+            "region",
+            "sector",
+            "posted_price"
+          ],
+          "title": "CompetitorPrice",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "GET /goods. Prices are indices; ``demand`` is units / month.",
+      "properties": {
+        "competitor_prices": {
+          "items": {
+            "$ref": "#/$defs/CompetitorPrice"
+          },
+          "title": "Competitor Prices",
+          "type": "array"
+        },
+        "demand": {
+          "items": {
+            "$ref": "#/$defs/CellQty"
+          },
+          "title": "Demand",
+          "type": "array"
+        },
+        "reference_prices": {
+          "items": {
+            "$ref": "#/$defs/CellQty"
+          },
+          "title": "Reference Prices",
+          "type": "array"
+        }
+      },
+      "title": "GoodsView",
+      "type": "object"
+    },
+    "LabourView": {
+      "additionalProperties": false,
+      "description": "GET /labour/{region}. Headcount is persons; ``wage_bar`` is cr / person / month.",
+      "properties": {
+        "labour_force": {
+          "default": 0.0,
+          "title": "Labour Force",
+          "type": "number"
+        },
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "unemployed": {
+          "default": 0.0,
+          "title": "Unemployed",
+          "type": "number"
+        },
+        "vacancies": {
+          "default": 0.0,
+          "title": "Vacancies",
+          "type": "number"
+        },
+        "wage_bar": {
+          "default": 0.0,
+          "title": "Wage Bar",
+          "type": "number"
+        }
+      },
+      "required": [
+        "region"
+      ],
+      "title": "LabourView",
+      "type": "object"
+    },
+    "ListingRequest": {
+      "additionalProperties": false,
+      "description": "POST /firms/{fid}/listing. ``shares`` are units; ``reserve_price`` is cr / share.",
+      "properties": {
+        "firm_id": {
+          "title": "Firm Id",
+          "type": "string"
+        },
+        "kind": {
+          "default": "primary",
+          "enum": [
+            "primary",
+            "secondary"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "reserve_price": {
+          "title": "Reserve Price",
+          "type": "number"
+        },
+        "shares": {
+          "title": "Shares",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "firm_id",
+        "shares",
+        "reserve_price"
+      ],
+      "title": "ListingRequest",
+      "type": "object"
+    },
+    "NewPlant": {
+      "additionalProperties": false,
+      "description": "Greenfield / new-cell plant. ``capacity`` is real units / month.",
+      "properties": {
+        "capacity": {
+          "title": "Capacity",
+          "type": "number"
+        },
+        "region": {
+          "title": "Region",
+          "type": "string"
+        },
+        "sector": {
+          "title": "Sector",
+          "type": "string"
+        }
+      },
+      "required": [
+        "region",
+        "sector",
+        "capacity"
+      ],
+      "title": "NewPlant",
+      "type": "object"
+    },
+    "NewsItem": {
+      "additionalProperties": false,
+      "description": "Published headline. ``tick`` is days; ``severity_hint`` is a noisy ordinal 0\u20133.\n\nMagnitudes are never a field \u2014 they stay on the internal event spec.",
+      "properties": {
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "headline": {
+          "title": "Headline",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "is_rumour": {
+          "default": false,
+          "title": "Is Rumour",
+          "type": "boolean"
+        },
+        "regions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Regions",
+          "type": "array"
+        },
+        "sectors": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sectors",
+          "type": "array"
+        },
+        "severity_hint": {
+          "title": "Severity Hint",
+          "type": "integer"
+        },
+        "tick": {
+          "title": "Tick",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "tick",
+        "category",
+        "headline",
+        "severity_hint"
+      ],
+      "title": "NewsItem",
+      "type": "object"
+    },
+    "Observation": {
+      "$defs": {
+        "CellQty": {
+          "additionalProperties": false,
+          "description": "One (region, sector) quantity. Units are those of the parent field.",
+          "properties": {
+            "region": {
+              "title": "Region",
+              "type": "string"
+            },
+            "sector": {
+              "title": "Sector",
+              "type": "string"
+            },
+            "value": {
+              "title": "Value",
+              "type": "number"
+            }
+          },
+          "required": [
+            "region",
+            "sector",
+            "value"
+          ],
+          "title": "CellQty",
+          "type": "object"
+        },
+        "CompetitorPrice": {
+          "additionalProperties": false,
+          "description": "One seller's posted price. ``posted_price`` is an index (1.0 at baseline).",
+          "properties": {
+            "posted_price": {
+              "title": "Posted Price",
+              "type": "number"
+            },
+            "region": {
+              "title": "Region",
+              "type": "string"
+            },
+            "sector": {
+              "title": "Sector",
+              "type": "string"
+            },
+            "seller_id": {
+              "title": "Seller Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "seller_id",
+            "region",
+            "sector",
+            "posted_price"
+          ],
+          "title": "CompetitorPrice",
+          "type": "object"
+        },
+        "Fill": {
+          "additionalProperties": false,
+          "description": "One match. ``price`` is cr / share; ``qty`` is shares; ``notional`` is cr.",
+          "properties": {
+            "maker": {
+              "title": "Maker",
+              "type": "string"
+            },
+            "maker_order_id": {
+              "title": "Maker Order Id",
+              "type": "integer"
+            },
+            "notional": {
+              "title": "Notional",
+              "type": "number"
+            },
+            "price": {
+              "title": "Price",
+              "type": "number"
+            },
+            "qty": {
+              "title": "Qty",
+              "type": "integer"
+            },
+            "symbol": {
+              "title": "Symbol",
+              "type": "string"
+            },
+            "taker": {
+              "title": "Taker",
+              "type": "string"
+            },
+            "taker_order_id": {
+              "title": "Taker Order Id",
+              "type": "integer"
+            },
+            "tick": {
+              "title": "Tick",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "symbol",
+            "price",
+            "qty",
+            "maker",
+            "taker",
+            "maker_order_id",
+            "taker_order_id",
+            "notional",
+            "tick"
+          ],
+          "title": "Fill",
+          "type": "object"
+        },
+        "GoodsView": {
+          "additionalProperties": false,
+          "description": "GET /goods. Prices are indices; ``demand`` is units / month.",
+          "properties": {
+            "competitor_prices": {
+              "items": {
+                "$ref": "#/$defs/CompetitorPrice"
+              },
+              "title": "Competitor Prices",
+              "type": "array"
+            },
+            "demand": {
+              "items": {
+                "$ref": "#/$defs/CellQty"
+              },
+              "title": "Demand",
+              "type": "array"
+            },
+            "reference_prices": {
+              "items": {
+                "$ref": "#/$defs/CellQty"
+              },
+              "title": "Reference Prices",
+              "type": "array"
+            }
+          },
+          "title": "GoodsView",
+          "type": "object"
+        },
+        "LabourView": {
+          "additionalProperties": false,
+          "description": "GET /labour/{region}. Headcount is persons; ``wage_bar`` is cr / person / month.",
+          "properties": {
+            "labour_force": {
+              "default": 0.0,
+              "title": "Labour Force",
+              "type": "number"
+            },
+            "region": {
+              "title": "Region",
+              "type": "string"
+            },
+            "unemployed": {
+              "default": 0.0,
+              "title": "Unemployed",
+              "type": "number"
+            },
+            "vacancies": {
+              "default": 0.0,
+              "title": "Vacancies",
+              "type": "number"
+            },
+            "wage_bar": {
+              "default": 0.0,
+              "title": "Wage Bar",
+              "type": "number"
+            }
+          },
+          "required": [
+            "region"
+          ],
+          "title": "LabourView",
+          "type": "object"
+        },
+        "NewsItem": {
+          "additionalProperties": false,
+          "description": "Published headline. ``tick`` is days; ``severity_hint`` is a noisy ordinal 0\u20133.\n\nMagnitudes are never a field \u2014 they stay on the internal event spec.",
+          "properties": {
+            "category": {
+              "title": "Category",
+              "type": "string"
+            },
+            "headline": {
+              "title": "Headline",
+              "type": "string"
+            },
+            "id": {
+              "title": "Id",
+              "type": "string"
+            },
+            "is_rumour": {
+              "default": false,
+              "title": "Is Rumour",
+              "type": "boolean"
+            },
+            "regions": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Regions",
+              "type": "array"
+            },
+            "sectors": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Sectors",
+              "type": "array"
+            },
+            "severity_hint": {
+              "title": "Severity Hint",
+              "type": "integer"
+            },
+            "tick": {
+              "title": "Tick",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "id",
+            "tick",
+            "category",
+            "headline",
+            "severity_hint"
+          ],
+          "title": "NewsItem",
+          "type": "object"
+        },
+        "OpenOrder": {
+          "additionalProperties": false,
+          "description": "Own live order as published on observe(). ``qty`` / ``remaining`` are shares.",
+          "properties": {
+            "order_id": {
+              "title": "Order Id",
+              "type": "integer"
+            },
+            "order_type": {
+              "default": "limit",
+              "enum": [
+                "market",
+                "limit",
+                "stop"
+              ],
+              "title": "Order Type",
+              "type": "string"
+            },
+            "price": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Price"
+            },
+            "qty": {
+              "title": "Qty",
+              "type": "integer"
+            },
+            "remaining": {
+              "title": "Remaining",
+              "type": "integer"
+            },
+            "side": {
+              "enum": [
+                "buy",
+                "sell"
+              ],
+              "title": "Side",
+              "type": "string"
+            },
+            "status": {
+              "enum": [
+                "resting",
+                "partial",
+                "filled",
+                "cancelled",
+                "rejected",
+                "expired"
+              ],
+              "title": "Status",
+              "type": "string"
+            },
+            "symbol": {
+              "title": "Symbol",
+              "type": "string"
+            }
+          },
+          "required": [
+            "order_id",
+            "symbol",
+            "side",
+            "qty",
+            "remaining",
+            "status"
+          ],
+          "title": "OpenOrder",
+          "type": "object"
+        },
+        "PortfolioPosition": {
+          "additionalProperties": false,
+          "description": "One holding. ``qty`` is shares or face; ``market_value`` is cr.",
+          "properties": {
+            "instrument": {
+              "title": "Instrument",
+              "type": "string"
+            },
+            "market_value": {
+              "default": 0.0,
+              "title": "Market Value",
+              "type": "number"
+            },
+            "qty": {
+              "title": "Qty",
+              "type": "number"
+            }
+          },
+          "required": [
+            "instrument",
+            "qty"
+          ],
+          "title": "PortfolioPosition",
+          "type": "object"
+        },
+        "PortfolioView": {
+          "additionalProperties": false,
+          "description": "Own book. Cash and ``net_worth`` are cr.",
+          "properties": {
+            "cash": {
+              "default": 0.0,
+              "title": "Cash",
+              "type": "number"
+            },
+            "net_worth": {
+              "default": 0.0,
+              "title": "Net Worth",
+              "type": "number"
+            },
+            "positions": {
+              "items": {
+                "$ref": "#/$defs/PortfolioPosition"
+              },
+              "title": "Positions",
+              "type": "array"
+            }
+          },
+          "title": "PortfolioView",
+          "type": "object"
+        },
+        "Report": {
+          "additionalProperties": false,
+          "description": "Lagged (or live, if operator) firm books. ``tick`` is the publication day.",
+          "properties": {
+            "books": {
+              "anyOf": [
+                {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Books"
+            },
+            "firm_id": {
+              "title": "Firm Id",
+              "type": "string"
+            },
+            "live": {
+              "title": "Live",
+              "type": "boolean"
+            },
+            "tick": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Tick"
+            }
+          },
+          "required": [
+            "firm_id",
+            "live"
+          ],
+          "title": "Report",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "GET /observe. Published fields only \u2014 no \u03be, arb capital, or unpublished vintages.",
+      "properties": {
+        "agent_id": {
+          "title": "Agent Id",
+          "type": "string"
+        },
+        "bonds": {
+          "additionalProperties": true,
+          "title": "Bonds",
+          "type": "object"
+        },
+        "fills": {
+          "items": {
+            "$ref": "#/$defs/Fill"
+          },
+          "title": "Fills",
+          "type": "array"
+        },
+        "firm_decisions": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Firm Decisions"
+        },
+        "goods": {
+          "$ref": "#/$defs/GoodsView"
+        },
+        "labour": {
+          "items": {
+            "$ref": "#/$defs/LabourView"
+          },
+          "title": "Labour",
+          "type": "array"
+        },
+        "last_decision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Last Decision"
+        },
+        "markets": {
+          "additionalProperties": true,
+          "title": "Markets",
+          "type": "object"
+        },
+        "news": {
+          "items": {
+            "$ref": "#/$defs/NewsItem"
+          },
+          "title": "News",
+          "type": "array"
+        },
+        "orders": {
+          "items": {
+            "$ref": "#/$defs/OpenOrder"
+          },
+          "title": "Orders",
+          "type": "array"
+        },
+        "portfolio": {
+          "$ref": "#/$defs/PortfolioView"
+        },
+        "prices": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Prices",
+          "type": "object"
+        },
+        "quotes": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Quotes",
+          "type": "object"
+        },
+        "regions": {
+          "additionalProperties": true,
+          "title": "Regions",
+          "type": "object"
+        },
+        "releases": {
+          "additionalProperties": true,
+          "title": "Releases",
+          "type": "object"
+        },
+        "reports": {
+          "items": {
+            "$ref": "#/$defs/Report"
+          },
+          "title": "Reports",
+          "type": "array"
+        },
+        "tick": {
+          "title": "Tick",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "tick",
+        "agent_id"
+      ],
+      "title": "Observation",
+      "type": "object"
+    },
+    "OpenOrder": {
+      "additionalProperties": false,
+      "description": "Own live order as published on observe(). ``qty`` / ``remaining`` are shares.",
+      "properties": {
+        "order_id": {
+          "title": "Order Id",
+          "type": "integer"
+        },
+        "order_type": {
+          "default": "limit",
+          "enum": [
+            "market",
+            "limit",
+            "stop"
+          ],
+          "title": "Order Type",
+          "type": "string"
+        },
+        "price": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Price"
+        },
+        "qty": {
+          "title": "Qty",
+          "type": "integer"
+        },
+        "remaining": {
+          "title": "Remaining",
+          "type": "integer"
+        },
+        "side": {
+          "enum": [
+            "buy",
+            "sell"
+          ],
+          "title": "Side",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "resting",
+            "partial",
+            "filled",
+            "cancelled",
+            "rejected",
+            "expired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "symbol": {
+          "title": "Symbol",
+          "type": "string"
+        }
+      },
+      "required": [
+        "order_id",
+        "symbol",
+        "side",
+        "qty",
+        "remaining",
+        "status"
+      ],
+      "title": "OpenOrder",
+      "type": "object"
+    },
+    "OrderAck": {
+      "$defs": {
+        "Fill": {
+          "additionalProperties": false,
+          "description": "One match. ``price`` is cr / share; ``qty`` is shares; ``notional`` is cr.",
+          "properties": {
+            "maker": {
+              "title": "Maker",
+              "type": "string"
+            },
+            "maker_order_id": {
+              "title": "Maker Order Id",
+              "type": "integer"
+            },
+            "notional": {
+              "title": "Notional",
+              "type": "number"
+            },
+            "price": {
+              "title": "Price",
+              "type": "number"
+            },
+            "qty": {
+              "title": "Qty",
+              "type": "integer"
+            },
+            "symbol": {
+              "title": "Symbol",
+              "type": "string"
+            },
+            "taker": {
+              "title": "Taker",
+              "type": "string"
+            },
+            "taker_order_id": {
+              "title": "Taker Order Id",
+              "type": "integer"
+            },
+            "tick": {
+              "title": "Tick",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "symbol",
+            "price",
+            "qty",
+            "maker",
+            "taker",
+            "maker_order_id",
+            "taker_order_id",
+            "notional",
+            "tick"
+          ],
+          "title": "Fill",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Accept / reject. ``remaining`` is unfilled shares (0 if dead).",
+      "properties": {
+        "fills": {
+          "items": {
+            "$ref": "#/$defs/Fill"
+          },
+          "title": "Fills",
+          "type": "array"
+        },
+        "idempotency_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Idempotency Key"
+        },
+        "order_id": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Order Id"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "remaining": {
+          "title": "Remaining",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "resting",
+            "partial",
+            "filled",
+            "cancelled",
+            "rejected",
+            "expired"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "remaining"
+      ],
+      "title": "OrderAck",
+      "type": "object"
+    },
+    "OrderRequest": {
+      "additionalProperties": false,
+      "description": "Submit one order. ``qty`` is shares; ``price`` / ``stop_price`` are cr / share.",
+      "properties": {
+        "agent_id": {
+          "title": "Agent Id",
+          "type": "string"
+        },
+        "idempotency_key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Idempotency Key"
+        },
+        "order_type": {
+          "default": "limit",
+          "enum": [
+            "market",
+            "limit",
+            "stop"
+          ],
+          "title": "Order Type",
+          "type": "string"
+        },
+        "price": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Price"
+        },
+        "qty": {
+          "title": "Qty",
+          "type": "integer"
+        },
+        "sequence": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sequence"
+        },
+        "side": {
+          "enum": [
+            "buy",
+            "sell"
+          ],
+          "title": "Side",
+          "type": "string"
+        },
+        "stop_price": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stop Price"
+        },
+        "symbol": {
+          "title": "Symbol",
+          "type": "string"
+        },
+        "tif": {
+          "default": "gtc",
+          "enum": [
+            "ioc",
+            "gtc",
+            "day"
+          ],
+          "title": "Tif",
+          "type": "string"
+        }
+      },
+      "required": [
+        "agent_id",
+        "side",
+        "qty",
+        "symbol"
+      ],
+      "title": "OrderRequest",
+      "type": "object"
+    },
+    "PortfolioPosition": {
+      "additionalProperties": false,
+      "description": "One holding. ``qty`` is shares or face; ``market_value`` is cr.",
+      "properties": {
+        "instrument": {
+          "title": "Instrument",
+          "type": "string"
+        },
+        "market_value": {
+          "default": 0.0,
+          "title": "Market Value",
+          "type": "number"
+        },
+        "qty": {
+          "title": "Qty",
+          "type": "number"
+        }
+      },
+      "required": [
+        "instrument",
+        "qty"
+      ],
+      "title": "PortfolioPosition",
+      "type": "object"
+    },
+    "PortfolioView": {
+      "$defs": {
+        "PortfolioPosition": {
+          "additionalProperties": false,
+          "description": "One holding. ``qty`` is shares or face; ``market_value`` is cr.",
+          "properties": {
+            "instrument": {
+              "title": "Instrument",
+              "type": "string"
+            },
+            "market_value": {
+              "default": 0.0,
+              "title": "Market Value",
+              "type": "number"
+            },
+            "qty": {
+              "title": "Qty",
+              "type": "number"
+            }
+          },
+          "required": [
+            "instrument",
+            "qty"
+          ],
+          "title": "PortfolioPosition",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Own book. Cash and ``net_worth`` are cr.",
+      "properties": {
+        "cash": {
+          "default": 0.0,
+          "title": "Cash",
+          "type": "number"
+        },
+        "net_worth": {
+          "default": 0.0,
+          "title": "Net Worth",
+          "type": "number"
+        },
+        "positions": {
+          "items": {
+            "$ref": "#/$defs/PortfolioPosition"
+          },
+          "title": "Positions",
+          "type": "array"
+        }
+      },
+      "title": "PortfolioView",
+      "type": "object"
+    },
+    "Report": {
+      "additionalProperties": false,
+      "description": "Lagged (or live, if operator) firm books. ``tick`` is the publication day.",
+      "properties": {
+        "books": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Books"
+        },
+        "firm_id": {
+          "title": "Firm Id",
+          "type": "string"
+        },
+        "live": {
+          "title": "Live",
+          "type": "boolean"
+        },
+        "tick": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tick"
+        }
+      },
+      "required": [
+        "firm_id",
+        "live"
+      ],
+      "title": "Report",
+      "type": "object"
+    },
+    "SubmitPayload": {
+      "$defs": {
+        "CellQty": {
+          "additionalProperties": false,
+          "description": "One (region, sector) quantity. Units are those of the parent field.",
+          "properties": {
+            "region": {
+              "title": "Region",
+              "type": "string"
+            },
+            "sector": {
+              "title": "Sector",
+              "type": "string"
+            },
+            "value": {
+              "title": "Value",
+              "type": "number"
+            }
+          },
+          "required": [
+            "region",
+            "sector",
+            "value"
+          ],
+          "title": "CellQty",
+          "type": "object"
+        },
+        "FirmDecision": {
+          "additionalProperties": false,
+          "description": "Operator levers. Omitted fields stay on autopilot (T5.06 / \u00a75.4).",
+          "properties": {
+            "borrow": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Borrow"
+            },
+            "dividend": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Dividend"
+            },
+            "expand_capacity": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/$defs/CellQty"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Expand Capacity"
+            },
+            "firm_id": {
+              "title": "Firm Id",
+              "type": "string"
+            },
+            "input_cover_m": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Input Cover M"
+            },
+            "layoffs": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Layoffs"
+            },
+            "liquidate": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Liquidate"
+            },
+            "new_plant": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/NewPlant"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "operator": {
+              "title": "Operator",
+              "type": "string"
+            },
+            "order_mult": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Order Mult"
+            },
+            "posted_price": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/$defs/CellQty"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Posted Price"
+            },
+            "repay": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Repay"
+            },
+            "rnd_spend": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Rnd Spend"
+            },
+            "shortage_premium": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Shortage Premium"
+            },
+            "target_output": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/$defs/CellQty"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Target Output"
+            },
+            "treasury_enabled": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Treasury Enabled"
+            },
+            "vacancies": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Vacancies"
+            },
+            "wage_offer": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Wage Offer"
+            }
+          },
+          "required": [
+            "firm_id",
+            "operator"
+          ],
+          "title": "FirmDecision",
+          "type": "object"
+        },
+        "NewPlant": {
+          "additionalProperties": false,
+          "description": "Greenfield / new-cell plant. ``capacity`` is real units / month.",
+          "properties": {
+            "capacity": {
+              "title": "Capacity",
+              "type": "number"
+            },
+            "region": {
+              "title": "Region",
+              "type": "string"
+            },
+            "sector": {
+              "title": "Sector",
+              "type": "string"
+            }
+          },
+          "required": [
+            "region",
+            "sector",
+            "capacity"
+          ],
+          "title": "NewPlant",
+          "type": "object"
+        },
+        "OrderRequest": {
+          "additionalProperties": false,
+          "description": "Submit one order. ``qty`` is shares; ``price`` / ``stop_price`` are cr / share.",
+          "properties": {
+            "agent_id": {
+              "title": "Agent Id",
+              "type": "string"
+            },
+            "idempotency_key": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Idempotency Key"
+            },
+            "order_type": {
+              "default": "limit",
+              "enum": [
+                "market",
+                "limit",
+                "stop"
+              ],
+              "title": "Order Type",
+              "type": "string"
+            },
+            "price": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Price"
+            },
+            "qty": {
+              "title": "Qty",
+              "type": "integer"
+            },
+            "sequence": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Sequence"
+            },
+            "side": {
+              "enum": [
+                "buy",
+                "sell"
+              ],
+              "title": "Side",
+              "type": "string"
+            },
+            "stop_price": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null,
+              "title": "Stop Price"
+            },
+            "symbol": {
+              "title": "Symbol",
+              "type": "string"
+            },
+            "tif": {
+              "default": "gtc",
+              "enum": [
+                "ioc",
+                "gtc",
+                "day"
+              ],
+              "title": "Tif",
+              "type": "string"
+            }
+          },
+          "required": [
+            "agent_id",
+            "side",
+            "qty",
+            "symbol"
+          ],
+          "title": "OrderRequest",
+          "type": "object"
+        }
+      },
+      "additionalProperties": false,
+      "description": "One agent's submit body. Empty lists are a valid lockstep no-op.",
+      "properties": {
+        "client_seq": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Client Seq"
+        },
+        "decisions": {
+          "items": {
+            "$ref": "#/$defs/FirmDecision"
+          },
+          "title": "Decisions",
+          "type": "array"
+        },
+        "orders": {
+          "items": {
+            "$ref": "#/$defs/OrderRequest"
+          },
+          "title": "Orders",
+          "type": "array"
+        }
+      },
+      "title": "SubmitPayload",
+      "type": "object"
+    },
+    "WorldSpec": {
+      "additionalProperties": false,
+      "description": "POST /v1/worlds. ``overrides`` are dotted config paths (T0.03).",
+      "properties": {
+        "mode": {
+          "default": "professional",
+          "enum": [
+            "game",
+            "professional"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "overrides": {
+          "additionalProperties": true,
+          "title": "Overrides",
+          "type": "object"
+        },
+        "run_mode": {
+          "default": "lockstep",
+          "enum": [
+            "lockstep",
+            "realtime"
+          ],
+          "title": "Run Mode",
+          "type": "string"
+        },
+        "scenario": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scenario"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seed"
+      ],
+      "title": "WorldSpec",
+      "type": "object"
+    },
+    "WorldStatus": {
+      "additionalProperties": false,
+      "description": "GET /v1/worlds/{wid}. ``tick`` is simulated days.",
+      "properties": {
+        "mode": {
+          "enum": [
+            "game",
+            "professional"
+          ],
+          "title": "Mode",
+          "type": "string"
+        },
+        "n_agents": {
+          "default": 0,
+          "title": "N Agents",
+          "type": "integer"
+        },
+        "run_mode": {
+          "enum": [
+            "lockstep",
+            "realtime"
+          ],
+          "title": "Run Mode",
+          "type": "string"
+        },
+        "seed": {
+          "title": "Seed",
+          "type": "integer"
+        },
+        "state_hash": {
+          "title": "State Hash",
+          "type": "string"
+        },
+        "status": {
+          "default": "created",
+          "enum": [
+            "created",
+            "running",
+            "paused",
+            "stopped"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "tick": {
+          "title": "Tick",
+          "type": "integer"
+        },
+        "world_id": {
+          "title": "World Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "world_id",
+        "tick",
+        "seed",
+        "mode",
+        "run_mode",
+        "state_hash"
+      ],
+      "title": "WorldStatus",
+      "type": "object"
+    }
+  },
+  "title": "marketsim API",
+  "version": "v1"
+}

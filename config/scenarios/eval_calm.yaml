@@ -1,0 +1,5 @@
+# Fixed evaluation: no scripted shocks, hazards off.
+id: eval_calm
+seed: 1
+hazards: false
+events: []

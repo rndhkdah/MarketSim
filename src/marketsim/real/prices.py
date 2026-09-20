@@ -13,14 +13,22 @@ from marketsim.real.steady_state import RealBaseline
 def unit_cost(
     a: np.ndarray,
     p: np.ndarray,
-    w: float,
+    w: float | np.ndarray,
     ell: np.ndarray,
     m: np.ndarray,
     p_imp: float,
     z_sup: np.ndarray,
 ) -> np.ndarray:
-    """Nuclear unit cost ``nuc_j`` (price index per unit output)."""
-    return a.T @ p + w * ell * np.exp(-z_sup) + m * p_imp
+    """Nuclear unit cost ``nuc_j`` (price index per unit output).
+
+    National: ``p`` is ``(S,)``. Regional own-price: ``p`` is ``(R, S)`` and
+    ``w`` is ``(R, 1)`` or ``(R,)`` — intermediates still use the same A.
+    """
+    p_arr = np.asarray(p, dtype=float)
+    if p_arr.ndim == 1:
+        return a.T @ p_arr + w * ell * np.exp(-z_sup) + m * p_imp
+    # (R, S): ``p`` is the delivered input price P_in[d, i] (T3.05).
+    return p_arr @ a + np.asarray(w, dtype=float)[..., None] * ell * np.exp(-z_sup) + m * p_imp
 
 
 def tightness(

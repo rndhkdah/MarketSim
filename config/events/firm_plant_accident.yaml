@@ -1,0 +1,14 @@
+id: firm_plant_accident
+category: firm
+hazard:
+  base_rate_per_year: 0.04
+composition:
+- shock: supply
+  magnitude: {dist: uniform, min: 0.05, max: 0.15, sign: -1, verify: false}
+  persistence_q: 2
+  targets: {sectors: [AUTOS]}
+targets: {regions: all, firms: []}
+effects_extra: []
+followups: []
+news: {headline: Accident idles an auto plant, publication_lag_days: 0, noise: 0.2}
+cooldown_days: 252

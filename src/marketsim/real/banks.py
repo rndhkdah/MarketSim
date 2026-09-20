@@ -108,6 +108,11 @@ def deposit_rate(r: float, margin: float) -> float:
     return max(r - margin, 0.0)
 
 
+def bond_mtm_pnl(face: float, duration_y: float, dy: float) -> float:
+    """Mark change (cr) ≈ −face · D · Δy at P=1. face cr; duration years; dy annual decimal."""
+    return -float(face) * float(duration_y) * float(dy)
+
+
 def steady_bank_profit(cfg: Config, io: IOTable, *, r: float) -> float:
     """Closed-form monthly bank profit at a given policy rate (SS ICR, write-offs)."""
     from marketsim.real.steady_state import compute_financial_baseline, compute_real_baseline

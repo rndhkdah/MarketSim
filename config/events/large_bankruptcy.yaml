@@ -1,0 +1,23 @@
+id: large_bankruptcy
+category: firm
+hazard:
+  base_rate_per_year: 0.04
+effects_extra:
+- variable: bank_equity
+  shape: pulse
+  magnitude:
+    dist: uniform
+    min: 0.02
+    max: 0.08
+    sign: 1.0
+    verify: false
+  duration: 1
+news:
+  headline: Large bankruptcy writes down bank equity
+  publication_lag_days: 0
+  noise: 0.2
+followups: []
+targets:
+  regions: all
+cooldown_days: 252
+composition: []

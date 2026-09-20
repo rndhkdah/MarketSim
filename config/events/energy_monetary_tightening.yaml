@@ -1,0 +1,28 @@
+id: energy_monetary_tightening
+category: policy
+hazard:
+  base_rate_per_year: 0.0
+composition:
+- shock: monetary
+  magnitude:
+    dist: uniform
+    min: 0.03
+    max: 0.06
+    sign: 1.0
+    verify: false
+  persistence_q: 4
+followups:
+- event_id: energy_subsidy
+  probability: 0.5
+  delay:
+    dist: uniform
+    low_days: 10
+    high_days: 40
+news:
+  headline: Policy rate lifted against energy inflation
+  publication_lag_days: 0
+  noise: 0.2
+effects_extra: []
+targets:
+  regions: all
+cooldown_days: 252

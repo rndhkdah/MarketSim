@@ -1,0 +1,60 @@
+id: dotcom_2000
+category: technology
+hazard:
+  base_rate_per_year: 0.02
+cooldown_days: 1260
+composition:
+- shock: risk_appetite
+  magnitude:
+    dist: uniform
+    min: 0.015
+    max: 0.03
+    sign: 1.0
+    verify: false
+  persistence_q: 8
+effects_extra:
+- variable: capex_preference[SOFTWARE]
+  shape: step
+  magnitude:
+    dist: uniform
+    min: -0.35
+    max: -0.25
+    sign: 1
+    verify: false
+  duration: 252
+- variable: capex_preference[TELECOM]
+  shape: step
+  magnitude:
+    dist: fixed
+    value: -0.3
+    sign: 1.0
+    verify: false
+  duration: 252
+- variable: capex_preference[SEMIS]
+  shape: step
+  magnitude:
+    dist: fixed
+    value: -0.3
+    sign: 1.0
+    verify: false
+  duration: 252
+- variable: sentiment
+  shape: step
+  magnitude:
+    dist: fixed
+    value: -0.4
+    sign: 1.0
+    verify: false
+  duration: 168
+news:
+  headline: Tech capex and risk appetite collapse
+  publication_lag_days: 0
+  noise: 0.2
+historic_reference:
+  episode: 2000 dot-com bust
+  source: "FRED NASDAQCOM Mar-2000 peak to Oct-2002 trough ≈−78%"
+  calibrated_params:
+    verify: false
+followups: []
+targets:
+  regions: all

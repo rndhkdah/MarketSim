@@ -11,6 +11,10 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from marketsim.core.errors import ConfigError
+from marketsim.firms.firm import FirmsFile
+from marketsim.market.instruments import MarketsFile
+from marketsim.pricing.bond_buckets import BondsFile
+from marketsim.regions.geometry import RegionsConfig, build_geometry
 
 ERLANG_RE = re.compile(r"^erlang\((\d+)\)$")
 
@@ -181,6 +185,37 @@ class EdgesConfig(FrozenModel):
     shocks: dict[str, ShockSpec]
 
 
+class EventsCfg(FrozenModel):
+    """Scripted-chain bounds (§4.2). ``damping`` is dimensionless; depth is hops."""
+
+    damping: float = 0.7
+    max_depth: int = 3
+    max_concurrent: int = 4
+    p_sum_cap: float = 0.9
+    rumour_rate: float = 0.0
+
+    @field_validator("damping")
+    @classmethod
+    def _damp(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("events.damping must be in [0, 1]")
+        return v
+
+    @field_validator("max_depth")
+    @classmethod
+    def _depth(cls, v: int) -> int:
+        if not 1 <= v <= 4:
+            raise ValueError("events.max_depth must be in 1..4 (§4.2)")
+        return v
+
+    @field_validator("max_concurrent")
+    @classmethod
+    def _conc(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("events.max_concurrent must be >= 1")
+        return v
+
+
 class WorldSettings(FrozenModel):
     scale: float = 1.0
     seed: int = 0
@@ -188,6 +223,7 @@ class WorldSettings(FrozenModel):
     run_mode: Literal["lockstep", "realtime"] = "lockstep"
     io_source: Literal["seed", "bea"] = "seed"
     modules: list[str] = Field(default_factory=list)
+    events: EventsCfg = Field(default_factory=EventsCfg)
 
 
 class ErlangLag(FrozenModel):
@@ -330,6 +366,7 @@ class HouseholdsCfg(FrozenModel):
     tau_income_m: float
     rate_budget_passthrough: float
     rate_lag: ErlangLag
+    demand_mode: Literal["scalar_eta", "tiers_wants"] = "scalar_eta"
 
     @field_validator("alpha1", "rate_budget_passthrough")
     @classmethod
@@ -442,6 +479,24 @@ class DynamicsShocksCfg(FrozenModel):
     cost_push_targets: dict[str, float]
 
 
+class EntryExitCfg(FrozenModel):
+    """NPC entry / exit on excess profit (§3.5). Rates are per year."""
+
+    enabled: bool = True
+    theta_entry: float = 0.15
+    kappa_entry: float = 0.10
+    theta_exit: float = 0.25
+    kappa_exit: float = 0.05
+    tau_excess_m: float = 12.0
+
+    @field_validator("theta_entry", "kappa_entry", "theta_exit", "kappa_exit", "tau_excess_m")
+    @classmethod
+    def _pos(cls, v: float) -> float:
+        if v < 0:
+            raise ValueError("entry/exit parameters must be >= 0")
+        return v
+
+
 class DynamicsConfig(FrozenModel):
     expectations: ExpectationsCfg
     production: DynamicsProduction
@@ -457,6 +512,7 @@ class DynamicsConfig(FrozenModel):
     banks: BanksCfg
     credit: DynamicsCreditCfg
     shocks: DynamicsShocksCfg
+    entry_exit: EntryExitCfg = Field(default_factory=EntryExitCfg)
 
     @field_validator("production")
     @classmethod
@@ -595,6 +651,10 @@ class Config(FrozenModel):
     world: WorldSettings
     dynamics: DynamicsConfig | None = None
     policy: PolicyFile | None = None
+    regions: RegionsConfig | None = None
+    firms: FirmsFile | None = None
+    markets: MarketsFile | None = None
+    bonds: BondsFile | None = None
 
     @property
     def codes(self) -> tuple[str, ...]:
@@ -668,10 +728,12 @@ def _validate_codes(cfg: Config) -> None:
     for e in edges:
         if e.src not in allowed or e.dst not in allowed:
             raise ConfigError(f"edge endpoint not recognised: {e.src} -> {e.dst}")
+    if cfg.regions is not None:
+        build_geometry(cfg.regions, cfg.codes)
 
 
 def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None) -> Config:
-    """Load `sectors.yaml`, `edges.yaml`, `world.yaml`, optional `dynamics.yaml`."""
+    """Load `sectors.yaml`, `edges.yaml`, `world.yaml`; optional dynamics/policy/regions/firms/markets/bonds."""
     root = Path(config_dir).resolve()
     if not root.is_dir():
         raise ConfigError(f"config dir not found: {root}")
@@ -685,12 +747,28 @@ def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None)
     pol_path = root / "policy.yaml"
     policy_raw = _read_yaml(pol_path) if pol_path.exists() else None
 
+    reg_path = root / "regions.yaml"
+    regions_raw = _read_yaml(reg_path) if reg_path.exists() else None
+
+    firms_path = root / "firms.yaml"
+    firms_raw = _read_yaml(firms_path) if firms_path.exists() else None
+
+    markets_path = root / "markets.yaml"
+    markets_raw = _read_yaml(markets_path) if markets_path.exists() else None
+
+    bonds_path = root / "bonds.yaml"
+    bonds_raw = _read_yaml(bonds_path) if bonds_path.exists() else None
+
     bundle = {
         "sectors": sectors_raw,
         "edges": edges_raw,
         "world": world_raw,
         "dynamics": dynamics_raw,
         "policy": policy_raw,
+        "regions": regions_raw,
+        "firms": firms_raw,
+        "markets": markets_raw,
+        "bonds": bonds_raw,
     }
     # overrides use dotted paths from the bundle root, e.g. world.seed or dynamics.prices.kappa_util
     if overrides:
@@ -705,10 +783,27 @@ def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None)
             DynamicsConfig.model_validate(bundle["dynamics"]) if bundle["dynamics"] is not None else None
         )
         policy = PolicyFile.model_validate(bundle["policy"]) if bundle["policy"] is not None else None
+        regions = (
+            RegionsConfig.model_validate(bundle["regions"]) if bundle["regions"] is not None else None
+        )
+        firms = FirmsFile.model_validate(bundle["firms"]) if bundle["firms"] is not None else None
+        markets = MarketsFile.model_validate(bundle["markets"]) if bundle["markets"] is not None else None
+        bonds = BondsFile.model_validate(bundle["bonds"]) if bundle["bonds"] is not None else None
     except Exception as exc:  # pydantic ValidationError
         raise ConfigError(str(exc)) from exc
 
-    cfg = Config(config_dir=root, sectors=sectors, edges=edges, world=world, dynamics=dynamics, policy=policy)
+    cfg = Config(
+        config_dir=root,
+        sectors=sectors,
+        edges=edges,
+        world=world,
+        dynamics=dynamics,
+        policy=policy,
+        regions=regions,
+        firms=firms,
+        markets=markets,
+        bonds=bonds,
+    )
     _validate_codes(cfg)
     return cfg
 

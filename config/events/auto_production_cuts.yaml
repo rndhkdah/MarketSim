@@ -1,0 +1,25 @@
+id: auto_production_cuts
+category: supply_chain
+hazard:
+  base_rate_per_year: 0.0
+composition:
+- shock: supply
+  magnitude:
+    dist: uniform
+    min: 0.05
+    max: 0.15
+    sign: -1
+    verify: false
+  persistence_q: 3
+  targets:
+    sectors:
+    - AUTOS
+news:
+  headline: Automakers cut production on missing chips
+  publication_lag_days: 2
+  noise: 0.2
+effects_extra: []
+followups: []
+targets:
+  regions: all
+cooldown_days: 252

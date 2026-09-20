@@ -52,15 +52,25 @@ def input_cap(
     stor_in: np.ndarray,
     crit: np.ndarray,
 ) -> np.ndarray:
-    """Storable-critical input cap: ``min_i S_in[i,j] / a_ij`` (cr/month)."""
+    """Storable-critical input cap: ``min_i S_in[i,j] / a_ij`` (cr/month).
+
+    Accepts ``S_in`` as ``(S, S)`` or ``(R, S, S)`` (buyer region leading).
+    """
     with np.errstate(divide="ignore", invalid="ignore"):
         ratio = np.where(stor_in & crit, s_in / np.where(a > 0, a, 1.0), np.inf)
-    return ratio.min(axis=0)
+    return ratio.min(axis=-2)
 
 
 def flow_crit_fill(fill_prev: np.ndarray, stor_in: np.ndarray, crit: np.ndarray) -> np.ndarray:
-    """Last-period fill of flow-critical inputs (dimensionless)."""
-    return np.where((~stor_in) & crit, fill_prev[:, None], 1.0).min(axis=0)
+    """Last-period fill of flow-critical inputs (dimensionless).
+
+    ``fill_prev`` is ``(S,)`` or ``(R, S)``.
+    """
+    fill = np.asarray(fill_prev, dtype=float)
+    if fill.ndim == 1:
+        return np.where((~stor_in) & crit, fill[:, None], 1.0).min(axis=0)
+    # (R, S_i) → (R, S_i, S_j) then min over supplier
+    return np.where((~stor_in) & crit, fill[..., None], 1.0).min(axis=-2)
 
 
 def goods_output(

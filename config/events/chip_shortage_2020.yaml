@@ -1,0 +1,42 @@
+id: chip_shortage_2020
+category: supply_chain
+hazard:
+  base_rate_per_year: 0.06
+  multipliers:
+  - feature: utilisation_gap
+    sector: SEMIS
+    coef: 8.0
+cooldown_days: 756
+composition:
+- shock: supply
+  magnitude:
+    dist: lognormal
+    median: 0.08
+    sigma: 0.4
+    sign: -1
+    min: 0.02
+    max: 0.3
+    verify: false
+  persistence_q: 6
+  targets:
+    sectors:
+    - SEMIS
+followups:
+- event_id: auto_production_cuts
+  probability: 0.5
+  delay:
+    dist: uniform
+    low_days: 40
+    high_days: 120
+news:
+  headline: Chip lead times stretch as fabs run flat out
+  publication_lag_days: 0
+  noise: 0.3
+historic_reference:
+  episode: 2020–23 chip shortage
+  source: "Susquehanna / industry lead-time surveys: semiconductor lead times peaked ≈26 weeks (2021–22)"
+  calibrated_params:
+    verify: false
+effects_extra: []
+targets:
+  regions: all

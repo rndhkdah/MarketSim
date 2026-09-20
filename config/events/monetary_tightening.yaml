@@ -1,0 +1,22 @@
+id: monetary_tightening
+category: policy
+hazard:
+  base_rate_per_year: 0.06
+composition:
+- shock: monetary
+  magnitude:
+    dist: uniform
+    min: 0.01
+    max: 0.03
+    sign: 1.0
+    verify: false
+  persistence_q: 3
+news:
+  headline: Policy rate raised
+  publication_lag_days: 0
+  noise: 0.2
+effects_extra: []
+followups: []
+targets:
+  regions: all
+cooldown_days: 252

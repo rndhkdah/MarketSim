@@ -1,0 +1,83 @@
+# Tradable-instrument registry and market-microstructure parameters (T6.01 / §6.2–§6.10).
+# ADV_j = turnover × cap_j (cr/day). Later cards read these blocks; do not retune without an ADR.
+
+turnover: 0.004              # 1/day; 0.4 % of cap (§6.2)
+
+pricing:
+  mode: structural           # structural | factor_lite (§6.3)
+  lambda_m: 0.978            # monthly decay of the expected policy path to neutral
+  horizon_m: 120             # months in the 10-year average
+  g_lr_anchor: 0.1           # g_lr,j = this × published growth
+  tau_ee_m: 12.0             # months; drift-compensated EMA of published profit
+
+npc_equity:
+  prefix: "EQ:NPC:"          # + sector code in io_table.json order
+  venue: engine_mm
+
+# Static named instruments. EQ:NPC:* and IDX:<SECTOR> are generated from CODES.
+static:
+  - {symbol: GB_BILL, kind: govt_bond, venue: auction_mm, tradable: true}
+  - {symbol: GB_NOTE, kind: govt_bond, venue: auction_mm, tradable: true}
+  - {symbol: GB_BOND, kind: govt_bond, venue: auction_mm, tradable: true}
+  - {symbol: CORP_POOL, kind: corp_pool, venue: auction_mm, tradable: true}
+  - {symbol: CASH, kind: cash, venue: none, tradable: false}
+  - {symbol: OIL, kind: commodity, venue: engine_mm, tradable: true, sector: ENERGY}
+  - {symbol: METALS, kind: commodity, venue: engine_mm, tradable: true, sector: MATERIALS}
+  - {symbol: GRAINS, kind: commodity, venue: engine_mm, tradable: true, sector: AGRIFOOD}
+
+indices:
+  market: IDX:MARKET
+  bond: IDX:BOND
+  sector_prefix: "IDX:"      # + sector code; published, non-tradable
+
+impact:
+  delta: 0.5                 # §6.4 ΔI ∝ (|q|/ADV)^δ
+  beta: 0.5                  # power-law decay exponent
+  Y: 0.8                     # impact scale
+  tau0_d: 1.0                # days; G(τ) = (1 + τ/τ0)^(−β)
+  half_lives_d: [1, 5, 20, 60, 250]
+
+mm:
+  s0: 0.0005                 # half-spread floor (dimensionless)
+  k_sigma: 0.5               # spread loading on σ_j
+  k_inv: 0.2                 # spread loading on |inv|/cap
+  k_skew: 0.1                # mid skew on inv/cap
+  participation_cap: 0.25    # fill budget / ADV / tick (§6.5)
+
+flow:
+  n_components: 3            # sum of AR(1)s for sign memory (§6.5)
+  persistences: [0.50, 0.90, 0.99]
+  mean_reversion: 0.10       # reaction of background flow to ξ
+  momentum: 0.10
+
+clob:
+  tick: 0.01                 # price increment
+  lot: 1                     # minimum size (shares)
+  halt_band: 0.20            # ± daily band → halt → auction (§6.6)
+  thin_quote_w: 0.03         # engine quote at V·(1 ± w)
+  thin_quote_size: 0.002     # quote size as a share of float
+
+fees:
+  commission: 0.0            # share of notional
+  transaction_tax: 0.0       # share of notional; to GOVT (§6.10)
+
+margin:
+  equity_initial: 0.50
+  equity_maintenance: 0.25
+  commodity_initial: 0.10
+  commodity_maintenance: 0.07
+
+surveillance:
+  wash_window_ticks: 1
+  circular_n: 3
+  pump_volume_share: 0.50
+  pump_runup: 0.20
+  pump_window_d: 5
+
+# T8.09 regional property index. Weights match config/regions.yaml population_share.
+# Do not retune turnover / impact / mm above.
+realestate:
+  prefix: "RE:"
+  venue: engine_mm
+  regions: [CAPITAL, INDUSTRIAL, RESOURCE]
+  weights: [0.45, 0.35, 0.20]

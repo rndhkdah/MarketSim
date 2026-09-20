@@ -1,0 +1,22 @@
+id: confidence_drop
+category: financial
+hazard:
+  base_rate_per_year: 0.08
+composition:
+- shock: risk_appetite
+  magnitude:
+    dist: uniform
+    min: 0.01
+    max: 0.03
+    sign: 1.0
+    verify: false
+  persistence_q: 3
+news:
+  headline: Household and market confidence drops
+  publication_lag_days: 0
+  noise: 0.3
+effects_extra: []
+followups: []
+targets:
+  regions: all
+cooldown_days: 252

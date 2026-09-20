@@ -1,0 +1,27 @@
+# Decaying-coupon bond buckets (T6.24 / §6.11, D12).
+# κ is fixed at the opening steady-state yield so P = 1 at baseline.
+# duration_ref_yield is only the table check (GB_BOND duration 7.07 y at 4.2 %).
+
+pricing: par                 # par | market; par must stay Phase-2 bitwise
+
+duration_ref_yield: 0.042    # annual decimal; §6.11 duration table
+
+buckets:
+  GB_BILL:
+    issuer: GOVT
+    decay: 4.0               # 1/year; average life 3 months
+  GB_NOTE:
+    issuer: GOVT
+    decay: 0.3333333333333333  # 1/3 per year; average life 3 years
+  GB_BOND:
+    issuer: GOVT
+    decay: 0.10              # 1/year; average life 10 years
+  CORP_POOL:
+    issuer: CORPPOOL
+    decay: 0.20              # 1/year; average life 5 years
+
+# Opening / DMO issuance split (§6.11). Must match ledger.yaml government_mix.
+issuance_mix:
+  GB_BILL: 0.20
+  GB_NOTE: 0.40
+  GB_BOND: 0.40

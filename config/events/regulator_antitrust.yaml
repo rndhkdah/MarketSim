@@ -1,0 +1,19 @@
+# T8.08 antitrust narrative. Fine cash is a ledger posting (controls.fine_govt),
+# not a new primitive. Composition uses only the 7 primitives.
+id: regulator_antitrust
+category: policy
+hazard:
+  base_rate_per_year: 0.02
+cooldown_days: 504
+composition:
+  - shock: risk_appetite
+    magnitude: {dist: fixed, value: 0.05, sign: -1, min: 0.01, max: 0.10}
+    persistence_q: 2
+    targets: {sectors: all}
+targets: {regions: all}
+effects_extra: []
+followups: []
+news:
+  headline: Antitrust inquiry weighs on risk appetite
+  publication_lag_days: 5
+  noise: 0.3
