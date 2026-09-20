@@ -141,7 +141,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T6.08 — Engine market maker · M · deps: T6.07 — 2026-09-20, next-tick fills; spread/inv/skew; Venue=CLOB
 - [x] T6.09 — Background order flow · M · deps: T6.08 — 2026-09-20, Σ AR(1) sign memory; E[|q|]≈ADV; no MM posts
 - [x] T6.10 — CLOB · L · deps: T6.01 — 2026-09-20, price-time; stop/IOC/GTC/DAY; STP newest; call auction; halt band
-- [ ] T6.11 — CLOB liquidity: thin engine quote + queue-reactive-lite · M · deps: T6.10, T6.09
+- [x] T6.11 — CLOB liquidity: thin engine quote + queue-reactive-lite · M · deps: T6.10, T6.09 — 2026-09-20, thin quote V·(1±w); 10y book never empty
 - [ ] T6.12 — Settlement, fees, taxes · S · deps: T6.08, T6.10
 - [ ] T6.13 — Margin, shorting, forced liquidation · M · deps: T6.12
 - [ ] T6.14 — Cap tables and corporate actions · M · deps: T5.02, T6.12
