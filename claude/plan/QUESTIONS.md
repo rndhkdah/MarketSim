@@ -103,4 +103,11 @@ Format: `## <task ID> — <one-line question>` · what blocks · option A · opt
 - option B: Regionalise `step_month` now so firms enter R4–R8 (large, out of file list).
 - recommendation: A. Same reason as QUESTIONS T3.15.
 
+## T6.19 — World IRF hook for feedback switches is outside the card Files list
+
+- what blocks: Gate 7 wants the §2.12 suite with each of (a) Δerp/Q, (b) wealth→C, (c) ICR→hiring on, and all three together (`slow`). The card Files list is only `real/feedbacks.py` and `tests/validation/test_feedback_stability.py`. Live wiring needs `dynamics.yaml` / `Config` switches and `economy.py` (households, capex, labour).
+- option A: Keep the three maps in `feedbacks.py` (implemented; leak + clip). Defer the World hook until a card that lists `economy.py` + config.
+- option B: Edit `economy.py` / `config.py` now (out of Files) so `run_irf` can flip the switches.
+- recommendation: A until the human authorises the extra files. T6.19 stays unticked.
+
 
