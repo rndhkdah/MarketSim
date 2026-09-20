@@ -4,9 +4,8 @@
 engine MM. Marks are ``P = P_fair · exp(ξ)`` with ``ξ`` from the §6.4 impact
 kernel. ADV is proportional to outstanding face.
 
-T6.12 settlement is a separate card (``settlement.py`` is out of this
-Files list). Agent fills and NPC transfers update the in-memory holder
-book only (mark-only).
+T6.12 settlement is not landed. Agent fills and NPC transfers update the
+in-memory holder book only (mark-only); they are not posted on the ledger.
 """
 
 from __future__ import annotations
@@ -248,11 +247,43 @@ class BondSecondaryMarket:
         self.mm.set_mark(symbol, cap=self.face[symbol], adv=self.adv(symbol))
 
     def set_fair_yield(self, symbol: str, y: float) -> None:
-        """Set the bucket fair yield (annual decimal). Mark updates on the next ``step``."""
+        """Set the bucket fair yield (annual decimal). Call ``publish_marks`` to refresh ``P``."""
         self._check(symbol)
         if y < 0.0:
             raise ValueError("fair yield must be >= 0 (annual decimal)")
         self.fair_yield[symbol] = float(y)
+
+    def publish_marks(self) -> None:
+        """``P = P_fair · exp(ξ)`` and push the mid to the engine MM (§6.11)."""
+        self._sync_marks()
+
+    def official_flow(
+        self,
+        src: str,
+        dst: str,
+        symbol: str,
+        face: float,
+        *,
+        signed_notional: float,
+    ) -> None:
+        """Move ``face`` units ``src`` → ``dst`` and hit ξ with ``signed_notional`` (cr).
+
+        T6.28 QE / QT / OMO use this instead of the participation-capped MM match
+        so a purchase of ``x`` is the four §6.11 postings plus one kernel step.
+        Holder books stay mark-only (T6.12 settlement is a separate card).
+        """
+        self._check(symbol)
+        qty = float(face)
+        if qty <= 0.0:
+            raise ValueError("official flow face must be > 0 (units)")
+        if src == dst:
+            raise ValueError("official flow src and dst must differ")
+        self._ensure_holder(src)
+        self._ensure_holder(dst)
+        self.holdings[src][symbol] -= qty
+        self.holdings[dst][symbol] += qty
+        self.kernels[symbol].step(float(signed_notional), self.adv(symbol), self.sigma[symbol])
+        self._sync_marks()
 
     def apply_row_selloff(self, fraction: float) -> None:
         """§6.11 foreign sell-off: ROW sells ``fraction`` of each government bucket.

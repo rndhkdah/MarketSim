@@ -158,7 +158,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T6.25 — Bucket fair yields and term premium · M · deps: T6.03, T6.24 — 2026-09-20, ω-weighted path; tp debt/QE/FTQ; guidance×credibility; gate 10
 - [x] T6.26 — Debt-management office and auctions · M · deps: T6.25, T2.28 — 2026-09-20, uniform-price; gate 12; 20/40/40; buybacks
 - [x] T6.27 — Secondary bond market and NPC holders · M · deps: T6.24, T6.08, T6.09 — 2026-09-20, engine MM; ADV∝face; NPC share leak; ROW sell-off; gate 11 hook
-- [ ] T6.28 — Central-bank operations: QE, QT, open-market operations · M · deps: T6.27, T2.29
+- [x] T6.28 — Central-bank operations: QE, QT, open-market operations · M · deps: T6.27, T2.29 — 2026-09-20, 4 postings; gate 13–14; remit; CORP_POOL easing
 - [x] T6.29 — Corporate bond pool · M · deps: T6.24, T2.30, T5.10 — 2026-09-20, y_match+s_t; NAV write-down; same terms all firms
 - [ ] T6.30 — Financial-sector bond holdings and mark-to-market · S · deps: T6.27
 - [ ] T6.31 — Bond-market validation report · S · deps: T6.26, T6.28, T6.29, T6.30
