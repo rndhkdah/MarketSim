@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 
 from marketsim.core.config import Config
-from marketsim.demand.system import ScalarEtaDemand
+from marketsim.demand.system import DemandSystem, ScalarEtaDemand, TiersWantsDemand
 from marketsim.ledger.opening import opening_wealth
 from marketsim.real.steady_state import FinancialBaseline, RealBaseline
 
@@ -20,20 +20,34 @@ def smooth_nominal(current: float, observed: float, tau: float, g: float) -> flo
     return current * g + (observed - current * g) / tau
 
 
-def household_basket(real: RealBaseline, cfg: Config, fin: FinancialBaseline) -> ScalarEtaDemand:
-    """Baseline θ is the HOUSEHOLD final-demand mix (sums to 1)."""
+def household_basket(real: RealBaseline, cfg: Config, fin: FinancialBaseline) -> DemandSystem:
+    """Baseline θ is the HOUSEHOLD final-demand mix (sums to 1).
+
+    ``demand_mode: scalar_eta`` (default) keeps the Phase-2 system. ``tiers_wants``
+    is the T3.12 composition layer; the macro C function is unchanged.
+    """
     c0 = real.flat(real.C0)
     theta = c0 / c0.sum()
     eta = np.array([cfg.sectors.params(c).eta for c in real.codes], dtype=float)
     eps = np.array([cfg.sectors.params(c).eps_own for c in real.codes], dtype=float)
     semi = np.array([cfg.sectors.params(c).dem_rate_semi for c in real.codes], dtype=float)
     assert cfg.dynamics is not None
+    zeta = cfg.dynamics.households.rate_budget_passthrough
+    mode = cfg.dynamics.households.demand_mode
+    if mode == "tiers_wants":
+        return TiersWantsDemand.from_config(
+            cfg,
+            theta=theta,
+            eps=eps,
+            dem_rate_semi=semi,
+            vat=fin.vat,
+        )
     return ScalarEtaDemand(
         theta=theta,
         eta=eta,
         eps=eps,
         dem_rate_semi=semi,
-        zeta=cfg.dynamics.households.rate_budget_passthrough,
+        zeta=zeta,
         vat=fin.vat,
     )
 

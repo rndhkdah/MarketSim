@@ -78,7 +78,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T3.09 — Want layer and within-want allocation · M · deps: T3.08 — 2026-09-20, two-shape + SEMIS in HOUSEHOLD_GOODS
 - [x] T3.10 — Need shapes and budget scaling · S · deps: T3.08 — 2026-09-20, five shapes; survival first
 - [x] T3.11 — Calibrator · M · deps: T3.09, T3.10 — 2026-09-20, RAS IPF + frozen-M LS; Spearman 0.816; basket 1e-15
-- [ ] T3.12 — Swap in `TiersWantsDemand` · M · deps: T3.11, T3.07
+- [x] T3.12 — Swap in `TiersWantsDemand` · M · deps: T3.11, T3.07 — 2026-09-20, demand_mode default scalar_eta; §3.4; see QUESTIONS
 - [ ] T3.13 — Want shifters (interface for events) · S · deps: T3.12
 - [x] T3.14 — NPC entry / exit · M · deps: T3.02 — 2026-09-20, §3.5; gate 5 AUTOS 8y; SS bitwise
 - [ ] T3.15 — Regional validation and golden baseline · M · deps: T3.05, T3.12, T3.14

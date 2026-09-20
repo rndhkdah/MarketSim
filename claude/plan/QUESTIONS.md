@@ -60,3 +60,18 @@ Format: `## <task ID> — <one-line question>` · what blocks · option A · opt
 - option A: Keep D15 defaults; xfail those two price rows; report in T2.35.
 - option B: Human accepts a config / ADR change (φ_u 0, more core weight, or keep the quarterly skeleton as the default autopilot).
 - recommendation: A. Steady state stays exact; other §2.12 signs and the monetary timing block still pass.
+
+## T3.12 — ±5 % income L2-within-20 % vs rank-only η
+
+- what blocks: T3.12 wants the tiers×wants composition response to ±5 % income within 20 % of scalar-η. T3.11 (2026-09-20) is rank-only Spearman ≥ 0.7; committed mean |Δη| = 0.33. Measured: cosine(Δs_tw, Δs_se) ≈ 0.91, L2 relative residual ≈ 0.49, ||Δs_tw||/||Δs_se|| ≈ 0.63. Hitting 20 % L2 needs η magnitudes, which that decision waived.
+- option A: Keep rank-only; test cosine ≥ 0.8 and matching STAPLES/DISCRET signs (implemented).
+- option B: Re-open T3.11 to fit η magnitudes (risks Spearman / basket / two-shape).
+- recommendation: A. Do not retune `edges.yaml` / `sectors.yaml`.
+
+## T3.12 — BASIC_GOODS vanish on the top 5 deciles
+
+- what blocks: §3.4 wants BASIC_GOODS **absolute** real spend to fall for the top 5 deciles as mean y rises 50 %. Fitted `y_pk` ≈ 1.80 (upper bound) so only the top 2 deciles are past the vanish peak on that experiment. National BASIC want share does fall.
+- option A: Treat "past the peak" (top 2 with this fit) plus national share-down as the mechanism test (implemented).
+- option B: Add an Engel residual and re-run T3.11 so all five rich deciles are past `y_pk`.
+- recommendation: A until a magnitude re-fit is authorised. Survival-first + scale-to-1 is required for the HOUSEHOLD basket (actual-budget V is 60 % FOOD vs a 20 % STAPLES+AGRIFOOD θ, RAS-infeasible).
+

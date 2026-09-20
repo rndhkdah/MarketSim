@@ -73,6 +73,7 @@ households:
   tau_income_m: 12
   rate_budget_passthrough: 0.5
   rate_lag: {k: 2, mean_m: 6}
+  demand_mode: scalar_eta          # scalar_eta | tiers_wants (T3.12)
 
 labour:
   tau_hire_m: 3

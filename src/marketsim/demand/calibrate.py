@@ -12,13 +12,7 @@ from scipy.optimize import least_squares
 from scipy.stats import spearmanr
 
 from marketsim.core.config import Config
-from marketsim.demand.packages import (
-    SHAPE_KEYS,
-    BuyPackagesConfig,
-    default_params,
-    evaluate_shape,
-    scale_budget_matrix,
-)
+from marketsim.demand.packages import SHAPE_KEYS, PackageSet, default_params, want_shares
 from marketsim.demand.tiers import SIGMA, Tiers, build_tiers
 from marketsim.demand.wants import WantLayer, load_wants
 from marketsim.layer1.build_io import CODES
@@ -39,15 +33,6 @@ BOUNDS = {
     "y_th": (0.08, 1.70),
     "gamma": (1.3, 2.0),
 }
-
-
-@dataclass
-class PackageSet:
-    """Per-want shape parameters aligned with a ``WantLayer``."""
-
-    names: tuple[str, ...]
-    shapes: tuple[str, ...]
-    params: tuple[dict[str, float], ...]
 
 
 @dataclass
@@ -128,41 +113,6 @@ def _bounds(packages: PackageSet) -> tuple[np.ndarray, np.ndarray]:
             lo.append(a)
             hi.append(b)
     return np.array(lo), np.array(hi)
-
-
-def want_values(y: np.ndarray, packages: PackageSet) -> np.ndarray:
-    """Package values ``(K, Q)`` at real incomes ``y`` (index)."""
-    yy = np.asarray(y, dtype=float)
-    out = np.zeros((yy.size, len(packages.shapes)))
-    for q, (sh, p) in enumerate(zip(packages.shapes, packages.params, strict=True)):
-        out[:, q] = evaluate_shape(sh, p, yy)
-    return np.maximum(out, 0.0)
-
-
-def want_spends(y_r: float, packages: PackageSet, tiers: Tiers) -> np.ndarray:
-    """National want spends at real income index ``y_r``.
-
-    Tier budgets scale with ``y_r`` (``b_k·y_r``) so a +1 % income bump is an
-    Engel experiment, not a pure reallocation of a fixed total. Units: share of
-    baseline consumption when ``y_r = 1`` (sums to ``y_r``).
-    """
-    yr = float(y_r)
-    yk = tiers.iota * yr
-    vals = want_values(yk, packages)
-    # Shapes are desired shares of each tier's own budget (v_max ~ 0.1, not ~ b_k).
-    # Allocating against b_k itself lets survival swallow every decile (v_max > b_k).
-    comp = scale_budget_matrix(vals, packages.shapes, np.ones(tiers.n_tiers))
-    spends = comp * (tiers.budget_share * yr)[:, None]
-    return np.maximum(spends.sum(axis=0), 0.0)
-
-
-def want_shares(y_r: float, packages: PackageSet, tiers: Tiers) -> np.ndarray:
-    """National want spend shares at real income index ``y_r`` (sums to 1)."""
-    v = want_spends(y_r, packages, tiers)
-    tot = float(v.sum())
-    if tot <= 0:
-        return np.ones_like(v) / v.size
-    return v / tot
 
 
 def ras_fit(
@@ -397,17 +347,6 @@ def render_report(
         )
     lines.append("")
     return "\n".join(lines)
-
-
-def load_packages(raw: dict[str, Any], names: tuple[str, ...]) -> PackageSet:
-    """Load a generated ``buy_packages.yaml`` mapping."""
-    cfg = BuyPackagesConfig.from_raw(raw)
-    missing = [n for n in names if n not in cfg.wants]
-    if missing:
-        raise ValueError(f"buy_packages.yaml missing wants: {missing}")
-    shapes = tuple(cfg.wants[n].shape for n in names)
-    params = tuple(cfg.wants[n].params() for n in names)
-    return PackageSet(names, shapes, params)
 
 
 def evaluate_fitted(

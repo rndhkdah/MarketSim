@@ -10,18 +10,15 @@ import yaml
 from scipy.stats import spearmanr
 
 from marketsim.demand.calibrate import (
-    PackageSet,
     calibrate,
     evaluate_fitted,
     household_basket,
     implied_etas,
-    load_packages,
     ras_fit,
     seed_params,
-    want_shares,
     write_outputs,
 )
-from marketsim.demand.packages import default_params
+from marketsim.demand.packages import PackageSet, default_params, load_packages, want_shares
 from marketsim.demand.tiers import build_tiers
 from marketsim.demand.wants import load_wants
 from marketsim.layer1.build_io import CODES

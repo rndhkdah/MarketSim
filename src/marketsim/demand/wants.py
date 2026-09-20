@@ -79,10 +79,13 @@ def allocate_within_want(
     layer: WantLayer,
     prices: np.ndarray,
     avail: np.ndarray,
+    *,
+    clip_bounds: bool = True,
 ) -> np.ndarray:
-    """``share[q,i] ∝ M[q,i]·(p_i/P_q)^{−σ_q}·avail_i^κ``, clipped and renormalised.
+    """``share[q,i] ∝ M[q,i]·(p_i/P_q)^{−σ_q}·avail_i^κ``, optionally clipped.
 
     Returns ``(Q, S)``. Rows of active wants (row-sum of M > 0) sum to 1.
+    ``clip_bounds=False`` keeps the RAS mix at unit prices (gate-4 identity).
     """
     p = np.asarray(prices, dtype=float)
     av = np.maximum(np.asarray(avail, dtype=float), 1e-12)
@@ -92,9 +95,9 @@ def allocate_within_want(
     raw = m * np.power(rel, -layer.sigma[:, None]) * np.power(av[None, :], layer.kappa)
     raw = np.where(m > 0, raw, 0.0)
     raw = np.clip(raw, 0.0, None)
-    # clip positive members into [min, max] then renormalise
     members = m > 0
-    raw = np.where(members, np.clip(raw, layer.min_share, layer.max_share), 0.0)
+    if clip_bounds:
+        raw = np.where(members, np.clip(raw, layer.min_share, layer.max_share), 0.0)
     denom = raw.sum(axis=1, keepdims=True)
     return np.divide(raw, denom, out=np.zeros_like(raw), where=denom > 0)
 

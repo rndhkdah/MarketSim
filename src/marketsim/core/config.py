@@ -331,6 +331,7 @@ class HouseholdsCfg(FrozenModel):
     tau_income_m: float
     rate_budget_passthrough: float
     rate_lag: ErlangLag
+    demand_mode: Literal["scalar_eta", "tiers_wants"] = "scalar_eta"
 
     @field_validator("alpha1", "rate_budget_passthrough")
     @classmethod
