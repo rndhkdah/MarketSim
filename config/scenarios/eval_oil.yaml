@@ -1,0 +1,6 @@
+# Historic eval: shipped oil_embargo_1973 at month-end day 21.
+id: eval_oil
+seed: 5
+hazards: false
+events:
+  - {event_id: oil_embargo_1973, tick: 21}

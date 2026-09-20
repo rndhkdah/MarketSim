@@ -1,0 +1,6 @@
+# Moderate-severity eval: shipped energy_inflation_2022 at month-end day 21.
+id: eval_energy
+seed: 2
+hazards: false
+events:
+  - {event_id: energy_inflation_2022, tick: 21}

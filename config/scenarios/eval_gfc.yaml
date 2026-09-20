@@ -1,0 +1,6 @@
+# Severe-severity eval: shipped gfc_2008 at month-end day 21.
+id: eval_gfc
+seed: 3
+hazards: false
+events:
+  - {event_id: gfc_2008, tick: 21}
