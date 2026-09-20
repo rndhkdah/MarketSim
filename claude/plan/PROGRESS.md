@@ -92,8 +92,8 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T4.02 — Shock-composition engine · M · deps: T4.01 — 2026-09-20, truncated DistSpec → ShockBus; SEMIS mask isolated
 - [x] T4.03 — `effects_extra` executor · M · deps: T4.02, T3.13 — 2026-09-20, shapes revert; bank_equity/vat SFC
 - [x] T4.04 — Hazard model · S · deps: T4.01 — 2026-09-20, h=base/252·Πclip(exp); 2000y rate ±10%; cooldown
-- [ ] T4.05 — Scheduler and chains · M · deps: T4.02, T4.04, T0.10
-- [ ] T4.06 — News feed · S · deps: T4.05
+- [x] T4.05 — Scheduler and chains · M · deps: T4.02, T4.04, T0.10 — 2026-09-20, DAG check; depth/concurrency caps; gate 4 RNG
+- [x] T4.06 — News feed · S · deps: T4.05 — 2026-09-20, no magnitudes; lag; noise≈misclass; rumours debug-only
 - [x] T4.07 — Data release calendar · M · deps: T2.17, T0.10 — 2026-09-20, CPI d10 / U d5 / GDP q+rev; observe vintages only
 - [ ] T4.08 — Historic templates and generic events · M · deps: T4.03
 - [ ] T4.09 — Scenario runner · S · deps: T4.05

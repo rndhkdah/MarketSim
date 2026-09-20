@@ -189,6 +189,7 @@ class EventsCfg(FrozenModel):
     max_depth: int = 3
     max_concurrent: int = 4
     p_sum_cap: float = 0.9
+    rumour_rate: float = 0.0
 
     @field_validator("damping")
     @classmethod

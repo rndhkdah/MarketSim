@@ -9,3 +9,4 @@ events:
   max_depth: 3
   max_concurrent: 4
   p_sum_cap: 0.9
+  rumour_rate: 0.0

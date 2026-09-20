@@ -13,6 +13,7 @@ from marketsim.events.chains import check_subcritical
 from marketsim.events.compose import apply_composition, sample_dist
 from marketsim.events.effects import ExtraEffects
 from marketsim.events.hazard import should_fire
+from marketsim.events.news import NewsFeed
 from marketsim.events.schema import EventSpec, load_catalog
 from marketsim.real.shocks import ShockBus
 
@@ -43,6 +44,7 @@ class Events:
     last_fire_id: dict[str, int] = field(default_factory=dict)
     last_fire_cat: dict[str, int] = field(default_factory=dict)
     extras: ExtraEffects = field(default_factory=ExtraEffects)
+    news: NewsFeed = field(default_factory=NewsFeed)
     _bus: ShockBus | None = None
 
     @classmethod
@@ -55,6 +57,7 @@ class Events:
             damping=ev_cfg.damping,
             max_depth=ev_cfg.max_depth,
             max_concurrent=ev_cfg.max_concurrent,
+            news=NewsFeed(rumour_rate=ev_cfg.rumour_rate),
         )
 
     def concurrent(self, tick: int) -> int:
@@ -95,6 +98,7 @@ class Events:
         self.history.append(CascadeNode(int(tick), spec.id, parent, int(depth), spec.category))
         self.last_fire_id[spec.id] = int(tick)
         self.last_fire_cat[spec.category] = int(tick)
+        self.news.enqueue(spec, tick, rng)
         return True
 
     def schedule_followups(
@@ -132,14 +136,22 @@ class Events:
         self.last_fire_id.clear()
         self.last_fire_cat.clear()
         self.extras = ExtraEffects()
+        self.news = NewsFeed(rumour_rate=self.news.rumour_rate)
         self._bus = ShockBus.from_config(cfg, cfg.codes)
         ctx.world.rng.stream("events")
 
     def on_phase(self, ctx: Any, phase: Phase) -> None:
+        if phase is Phase.REAL:
+            eco = _economy(ctx)
+            self.extras.apply(ctx.tick, eco)
+            return
+        if phase is Phase.PUBLISH:
+            debug = ctx.world.cfg.world.mode == "game"
+            self.news.publish_due(ctx.tick, debug=debug)
+            public = ctx.world._observations.setdefault("*", {})
+            public["news"] = self.news.public_dicts()
+            return
         if phase is not Phase.EVENTS:
-            if phase is Phase.REAL:
-                eco = _economy(ctx)
-                self.extras.apply(ctx.tick, eco)
             return
         rng = ctx.world.rng.stream("events")
         eco = _economy(ctx)
@@ -148,6 +160,7 @@ class Events:
         _y, _m, day1 = cal.ymd(ctx.tick)
         day = day1 - 1
         features = _features(eco, ctx.tick, self.last_fire_cat)
+        self.news.maybe_rumour(self.catalog, ctx.tick, rng)
         for payload in ctx.due:
             if not isinstance(payload, dict) or payload.get("kind") != "followup":
                 continue
@@ -182,6 +195,7 @@ class Events:
             "last_fire_id": dict(self.last_fire_id),
             "last_fire_cat": dict(self.last_fire_cat),
             "extras": self.extras.to_state(),
+            "news": self.news.to_state(),
         }
 
     def from_state(self, state: dict[str, Any]) -> None:
@@ -190,6 +204,8 @@ class Events:
         self.last_fire_cat = {k: int(v) for k, v in state.get("last_fire_cat", {}).items()}
         if "extras" in state:
             self.extras.from_state(state["extras"])
+        if "news" in state:
+            self.news.from_state(state["news"])
 
 
 def _economy(ctx: Any) -> Any | None:
