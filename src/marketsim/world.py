@@ -147,3 +147,31 @@ class RandomWalkModule:
 
     def from_state(self, state: dict[str, Any]) -> None:
         self.x = float(state["x"])
+
+
+class FirmAgentModule:
+    """In-process ``World.submit(agent, FirmDecision)`` sink (T5.18)."""
+
+    name = "firm_agent"
+
+    def __init__(self) -> None:
+        self.applied: list[tuple[str, Any]] = []
+
+    def reset(self, ctx: TickContext) -> None:
+        del ctx
+        self.applied = []
+
+    def on_phase(self, ctx: TickContext, phase: Phase) -> None:
+        if phase is Phase.INGEST:
+            for agent_id, acts in sorted(ctx.world._inbox.items()):
+                for act in acts:
+                    self.applied.append((agent_id, act))
+                    ctx.world._observations.setdefault(agent_id, {})["last_decision"] = getattr(act, "firm_id", None)
+        if phase is Phase.PUBLISH:
+            ctx.world._observations.setdefault("*", {})["firm_decisions"] = len(self.applied)
+
+    def to_state(self) -> dict[str, Any]:
+        return {"n": len(self.applied)}
+
+    def from_state(self, state: dict[str, Any]) -> None:
+        del state
