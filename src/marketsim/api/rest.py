@@ -1,4 +1,4 @@
-"""REST surface for worlds, agents, observe, orders, firms, and policy (T7.04 / §7.2)."""
+"""REST surface for worlds, agents, observe, orders, firms, policy, and explain (T7.04 / T8.06)."""
 
 from __future__ import annotations
 
@@ -40,6 +40,15 @@ from marketsim.api.schemas import (
 )
 from marketsim.api.sessions import AuthError, ForbiddenError, Session, WorldManager, issue_token
 from marketsim.core.errors import ConfigError, MarketsimError, StateError
+from marketsim.explain.traces import (
+    TRACE_ATOL,
+    asset_return_trace,
+    check_demand_change,
+    demand_change,
+    demand_identity_gap,
+    demand_trace,
+    return_identity_gap,
+)
 from marketsim.firms.accounts import AGENT_PREFIX, agent_entity
 from marketsim.ledger.journal import Ledger
 from marketsim.ledger.sfc import assert_consistent
@@ -202,6 +211,115 @@ class PolicyDecisionAck(ApiModel):
     authority: Literal["GOVT", "CENBANK"]
     levers: dict[str, Any] = Field(default_factory=dict)
     clips: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class DemandFactors(ApiModel):
+    """POST …/explain/demand. ``baseline`` is units / month; others dimensionless."""
+
+    baseline: float = 1.0
+    income: float = 1.0
+    relative_price: float = 1.0
+    rate: float = 1.0
+    typed_edge: float = 1.0
+    want_shifter: float = 1.0
+    events: float = 1.0
+    own_price: float = 1.0
+    availability: float = 1.0
+    stickiness: float = 1.0
+    rationing: float = 1.0
+
+
+class DemandChangeRequest(ApiModel):
+    """POST …/explain/demand/change. Both sides use ``DemandFactors`` units."""
+
+    before: DemandFactors
+    after: DemandFactors
+
+
+class DemandTraceView(ApiModel):
+    """Demand identity. ``qty`` / ``baseline`` are units / month; residual ≤ 1e-9."""
+
+    baseline: float
+    income: float
+    relative_price: float
+    rate: float
+    typed_edge: float
+    want_shifter: float
+    events: float
+    cell_demand: float
+    own_price: float
+    availability: float
+    stickiness: float
+    share: float
+    rationing: float
+    qty: float
+    residual: float
+    identity_ok: bool
+
+
+class DemandChangeView(ApiModel):
+    """Log-change of demand factors. ``dlog_*`` are log-points; residual ≤ 1e-9."""
+
+    baseline: float
+    income: float
+    relative_price: float
+    rate: float
+    typed_edge: float
+    want_shifter: float
+    events: float
+    own_price: float
+    availability: float
+    stickiness: float
+    rationing: float
+    dlog_cell: float
+    dlog_share: float
+    dlog_qty: float
+    residual: float
+    identity_ok: bool
+
+
+class ReturnFactors(ApiModel):
+    """POST …/explain/return. ``ee`` is cr / year; ``duration`` years; ρ, g annual."""
+
+    ee0: float = 1.0
+    ee1: float = 1.0
+    pe0_0: float = 1.0
+    pe0_1: float = 1.0
+    duration: float = 0.0
+    rho0: float = 0.0
+    rho1: float = 0.0
+    g0: float = 0.0
+    g1: float = 0.0
+    impact0: float = 0.0
+    impact1: float = 0.0
+    sentiment0: float = 0.0
+    sentiment1: float = 0.0
+    noise0: float = 0.0
+    noise1: float = 0.0
+
+
+class ReturnTraceView(ApiModel):
+    """Asset log-return identity. Every field except flags is a log-point."""
+
+    earnings: float
+    pe0: float
+    discount: float
+    growth: float
+    dln_v: float
+    impact: float
+    sentiment: float
+    noise: float
+    dxi: float
+    dln_p: float
+    residual: float
+    identity_ok: bool
+
+
+class ExplainBundle(ApiModel):
+    """GET …/explain. Default identities (all factors 1 / Δ = 0)."""
+
+    demand: DemandTraceView
+    asset_return: ReturnTraceView
 
 
 # §6.11 / T6.26: issue need and NPC Q0 so a competitive bid can win or lose
@@ -1115,6 +1233,210 @@ def policy_router() -> APIRouter:
     return router
 
 
+def _demand_view(factors: DemandFactors) -> DemandTraceView:
+    """Build the product identity. ``qty`` is units / month."""
+    trace = demand_trace(
+        baseline=factors.baseline,
+        income=factors.income,
+        relative_price=factors.relative_price,
+        rate=factors.rate,
+        typed_edge=factors.typed_edge,
+        want_shifter=factors.want_shifter,
+        events=factors.events,
+        own_price=factors.own_price,
+        availability=factors.availability,
+        stickiness=factors.stickiness,
+        rationing=factors.rationing,
+    )
+    gap = demand_identity_gap(trace)
+    return DemandTraceView(
+        **trace.to_state(),
+        residual=gap,
+        identity_ok=gap <= TRACE_ATOL,
+    )
+
+
+def _return_view(factors: ReturnFactors) -> ReturnTraceView:
+    """Build the log-return identity. Fields are log-points except flags."""
+    if factors.ee0 <= 0.0 or factors.ee1 <= 0.0 or factors.pe0_0 <= 0.0 or factors.pe0_1 <= 0.0:
+        _raise(422, "validation_error", "earnings and PE0 levels must be > 0")
+    trace = asset_return_trace(
+        ee0=factors.ee0,
+        ee1=factors.ee1,
+        pe0_0=factors.pe0_0,
+        pe0_1=factors.pe0_1,
+        duration=factors.duration,
+        rho0=factors.rho0,
+        rho1=factors.rho1,
+        g0=factors.g0,
+        g1=factors.g1,
+        impact0=factors.impact0,
+        impact1=factors.impact1,
+        sentiment0=factors.sentiment0,
+        sentiment1=factors.sentiment1,
+        noise0=factors.noise0,
+        noise1=factors.noise1,
+    )
+    gap = return_identity_gap(trace)
+    return ReturnTraceView(
+        **trace.to_state(),
+        residual=gap,
+        identity_ok=gap <= TRACE_ATOL,
+    )
+
+
+def explain_router() -> APIRouter:
+    """GET/POST …/explain — exact demand and asset-return identities (T8.06)."""
+    router = APIRouter(prefix="/v1/worlds", tags=["explain"])
+
+    @router.get("/{wid}/explain/demand", response_model=DemandTraceView)
+    def get_demand(
+        request: Request,
+        wid: str,
+        authorization: Annotated[str | None, Header()] = None,
+        baseline: float = 1.0,
+        income: float = 1.0,
+        relative_price: float = 1.0,
+        rate: float = 1.0,
+        typed_edge: float = 1.0,
+        want_shifter: float = 1.0,
+        events: float = 1.0,
+        own_price: float = 1.0,
+        availability: float = 1.0,
+        stickiness: float = 1.0,
+        rationing: float = 1.0,
+    ) -> DemandTraceView:
+        state = _rest_state(request)
+        _session(state, wid, authorization)
+        return _demand_view(
+            DemandFactors(
+                baseline=baseline,
+                income=income,
+                relative_price=relative_price,
+                rate=rate,
+                typed_edge=typed_edge,
+                want_shifter=want_shifter,
+                events=events,
+                own_price=own_price,
+                availability=availability,
+                stickiness=stickiness,
+                rationing=rationing,
+            )
+        )
+
+    @router.post("/{wid}/explain/demand", response_model=DemandTraceView)
+    def post_demand(
+        request: Request,
+        wid: str,
+        body: DemandFactors,
+        authorization: Annotated[str | None, Header()] = None,
+    ) -> DemandTraceView:
+        state = _rest_state(request)
+        _session(state, wid, authorization)
+        return _demand_view(body)
+
+    @router.post("/{wid}/explain/demand/change", response_model=DemandChangeView)
+    def post_demand_change(
+        request: Request,
+        wid: str,
+        body: DemandChangeRequest,
+        authorization: Annotated[str | None, Header()] = None,
+    ) -> DemandChangeView:
+        state = _rest_state(request)
+        _session(state, wid, authorization)
+        before = demand_trace(**body.before.model_dump())
+        after = demand_trace(**body.after.model_dump())
+        parts = demand_change(before, after)
+        try:
+            check_demand_change(before, after)
+            gap = 0.0
+        except AssertionError:
+            keys = (
+                "baseline",
+                "income",
+                "relative_price",
+                "rate",
+                "typed_edge",
+                "want_shifter",
+                "events",
+                "own_price",
+                "availability",
+                "stickiness",
+                "rationing",
+            )
+            gap = abs(sum(parts[k] for k in keys) - parts["dlog_qty"])
+        return DemandChangeView(**parts, residual=gap, identity_ok=gap <= TRACE_ATOL)
+
+    @router.get("/{wid}/explain/return", response_model=ReturnTraceView)
+    def get_return(
+        request: Request,
+        wid: str,
+        authorization: Annotated[str | None, Header()] = None,
+        ee0: float = 1.0,
+        ee1: float = 1.0,
+        pe0_0: float = 1.0,
+        pe0_1: float = 1.0,
+        duration: float = 0.0,
+        rho0: float = 0.0,
+        rho1: float = 0.0,
+        g0: float = 0.0,
+        g1: float = 0.0,
+        impact0: float = 0.0,
+        impact1: float = 0.0,
+        sentiment0: float = 0.0,
+        sentiment1: float = 0.0,
+        noise0: float = 0.0,
+        noise1: float = 0.0,
+    ) -> ReturnTraceView:
+        state = _rest_state(request)
+        _session(state, wid, authorization)
+        return _return_view(
+            ReturnFactors(
+                ee0=ee0,
+                ee1=ee1,
+                pe0_0=pe0_0,
+                pe0_1=pe0_1,
+                duration=duration,
+                rho0=rho0,
+                rho1=rho1,
+                g0=g0,
+                g1=g1,
+                impact0=impact0,
+                impact1=impact1,
+                sentiment0=sentiment0,
+                sentiment1=sentiment1,
+                noise0=noise0,
+                noise1=noise1,
+            )
+        )
+
+    @router.post("/{wid}/explain/return", response_model=ReturnTraceView)
+    def post_return(
+        request: Request,
+        wid: str,
+        body: ReturnFactors,
+        authorization: Annotated[str | None, Header()] = None,
+    ) -> ReturnTraceView:
+        state = _rest_state(request)
+        _session(state, wid, authorization)
+        return _return_view(body)
+
+    @router.get("/{wid}/explain", response_model=ExplainBundle)
+    def get_explain(
+        request: Request,
+        wid: str,
+        authorization: Annotated[str | None, Header()] = None,
+    ) -> ExplainBundle:
+        state = _rest_state(request)
+        _session(state, wid, authorization)
+        return ExplainBundle(
+            demand=_demand_view(DemandFactors()),
+            asset_return=_return_view(ReturnFactors()),
+        )
+
+    return router
+
+
 def create_app(
     manager: WorldManager | None = None,
     config_dir: str | Path | None = None,
@@ -1134,6 +1456,7 @@ def create_app(
         goods_router,
         bonds_router,
         policy_router,
+        explain_router,
     ):
         app.include_router(factory())
 
