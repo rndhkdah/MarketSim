@@ -81,7 +81,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T3.12 — Swap in `TiersWantsDemand` · M · deps: T3.11, T3.07 — 2026-09-20, demand_mode default scalar_eta; §3.4; see QUESTIONS
 - [x] T3.13 — Want shifters (interface for events) · S · deps: T3.12 — 2026-09-20, want_shift[r,q] AR; ShockBus kind=want
 - [x] T3.14 — NPC entry / exit · M · deps: T3.02 — 2026-09-20, §3.5; gate 5 AUTOS 8y; SS bitwise
-- [ ] T3.15 — Regional validation and golden baseline · M · deps: T3.05, T3.12, T3.14
+- [x] T3.15 — Regional validation and golden baseline · M · deps: T3.05, T3.12, T3.14 — 2026-09-20, gates 3/6/7; R=3 tick see QUESTIONS
 - [ ] T3.16 — ADR: goods layer beneath consumer-facing sectors · S · deps: T3.15 · **HUMAN GATE**
 
 - [ ] **GATE P3** — human review against the gate in the phase file

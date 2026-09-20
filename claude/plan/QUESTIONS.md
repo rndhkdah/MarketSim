@@ -75,3 +75,18 @@ Format: `## <task ID> — <one-line question>` · what blocks · option A · opt
 - option B: Add an Engel residual and re-run T3.11 so all five rich deciles are past `y_pk`.
 - recommendation: A until a magnitude re-fit is authorised. Survival-first + scale-to-1 is required for the HOUSEHOLD basket (actual-budget V is 60 % FOOD vs a 20 % STAPLES+AGRIFOOD θ, RAS-infeasible).
 
+## T3.15 — R = 3 live monthly stepper
+
+- what blocks: Gate 6 asks to rerun §2.12 at R = 3. `RealEconomy.step_month` is the R = 1 orchestrator (`compute_real_baseline` always sets `R = 1`). Regional SS, Armington and the gate-3 price path exist (T3.03–T3.05) but orders, labour, the ledger and demand.allocate are national.
+- option A: Keep the live tick at R = 1; run gate-3 disasters on the trade/price layer and §2.12 with `tiers_wants` at R = 1 (implemented). Wire the R = 3 tick under a later card.
+- option B: Regionalise `step_month` now (large, not in the T3.15 file list).
+- recommendation: A. Do not invent a second orchestrator without a card.
+
+## T3.15 — monetary level window under `tiers_wants`
+
+- what blocks: Passthrough monetary +100 bp still has `gap[0..36] < 0`, but `lvl[17..36]` is slightly positive (~+0.07 pp) with `demand.mode: tiers_wants` (scalar-η is negative). Composition is more rate-sensitive (AUTOS/DISCRET) so the CPI window flips. Retuning `edges.yaml` / `sectors.yaml` needs an ADR.
+- option A: xfail the level window; keep the gap sign (implemented).
+- option B: Human accepts a config / ADR change.
+- recommendation: A.
+
+
