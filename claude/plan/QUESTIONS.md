@@ -96,4 +96,11 @@ Format: `## <task ID> — <one-line question>` · what blocks · option A · opt
 - option B: Rewrite `config/events/*.yaml` now so medians match the IRF-safe band (changes the shipped historic table before the calibration card).
 - recommendation: A. T4.13 is the magnitude card; do not retune `edges.yaml` / `sectors.yaml`.
 
+## T5.16 — hybrid World stepper vs cell-level identity
+
+- what blocks: Gate 1 wants a 10-year GDP path after splitting every NPC cell into N autopilot firms. `RealEconomy.step_month` is still the NPC-only orchestrator; wiring firms into orders/prices/labour is a new monthly kernel (not in the T5.16 file list).
+- option A: Assert the linear identity — N equal autopilot firms with `(se,inv,k,backlog)/N` reproduce the NPC plan to 1e-9 (implemented). Leave the live hybrid tick for a later card.
+- option B: Regionalise `step_month` now so firms enter R4–R8 (large, out of file list).
+- recommendation: A. Same reason as QUESTIONS T3.15.
+
 
