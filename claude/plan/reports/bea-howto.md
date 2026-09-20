@@ -24,7 +24,8 @@ concordance — final-demand vectors stay seeded until T8.04.
 
 The seed `final_demand` vectors and `fd_weights` (0.62 / 0.19 / 0.13 / 0.06) are
 **not** replaced by this script. PCE / investment / government / export
-concordance is T8.04.
+concordance lives in `scripts/fetch_bea_io.py` and `reports/calibration.md`
+(T8.04 / ADR-015). Proposed weights are not written into the seed table.
 
 ## Without network
 

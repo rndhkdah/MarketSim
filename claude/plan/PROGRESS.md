@@ -193,7 +193,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T8.01 — Financing depth · L · deps: T7.14 — 2026-09-20, term loans + committed lines; wall distress at lam=0; extra pool tenors at r+s_t
 - [x] T8.02 — Supply contracts · M · deps: T7.14 — 2026-09-20, forwards served first in shortage; contract_settle SFC tag
 - [x] T8.03 — Quality and brand · M · deps: T7.14 — 2026-09-20, share ∝ Q^φ; equal Q ⇒ hybrid≈aggregate; leak+clip quality law
-- [ ] T8.04 — Calibration pass · L · deps: T7.14, T0.09 · **HUMAN GATE**
+- [ ] T8.04 — Calibration pass · L · deps: T7.14, T0.09 · **HUMAN GATE** — 2026-09-20, report+scripts proposed (ADR-015); not applied; not human-accepted
 - [ ] T8.05 — Historic replay comparison · M · deps: T8.04
 - [x] T8.06 — Explainability traces · L · deps: T7.04 — 2026-09-20, qty product + Δln P log-sum 1e-9; GET/POST /explain
 - [x] T8.07 — Game layer contract · L · deps: T7.15 — 2026-09-20, pacing/slots/score/narrative; scripted player via public API
