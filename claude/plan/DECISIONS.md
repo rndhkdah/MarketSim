@@ -151,3 +151,33 @@ Reproduced target (numpy 2.4 / scipy 1.17 sandbox):
 - consequences: Phase 5 (T5.01) is unblocked on mechanism. Human may reject the storm omission or the 12-month
   oil/energy prefix.
 
+## ADR-009 — T2.26 CES on intermediates stays off
+
+- date: 2026-09-20
+- status: proposed (T2.26 HUMAN GATE; higher-reasoning recommendation)
+- context: T2.26 is optional. Default production is Leontief (`A` fixed). CES would be
+  `a_ij,t = a_ij·(p_i/p̄_j)^(−σ_ij)` renormalised, σ from ENERGY↔UTILITIES and MATERIALS→CONSTRUCT
+  substitution pairs. σ = 0 must reproduce Leontief bitwise and keep §2.12 green.
+- decision: **Do not implement CES in v1.** The Leontief `A` plus typed substitution edges (T2.22)
+  already move AUTOS/UTILITIES under an ENERGY shock. Adding a second, lagged CES layer on
+  intermediates is a new mechanism without a failed test that needs it (Mizuta). `ces.py` is not
+  added. The card remains skippable; σ = 0 is the current engine.
+- consequences: T2.26 is recorded as skipped. A later accepted ADR can add `src/marketsim/real/ces.py`
+  behind a default-off config flag. No `edges.yaml` / `sectors.yaml` change.
+
+## ADR-010 — GATE P2 review (proposed)
+
+- date: 2026-09-20
+- status: proposed (GATE P2; higher-reasoning recommendation)
+- context: Master plan §9 Phase 2 requires stationarity at π\* ∈ {0, 2 %}, the seven IRF
+  signs, housing-before-capex timing, 100-year stability, monthly SFC, autopilot
+  bitwise-neutral policy, one corporate rate, and §2.14.7 monetary validation.
+- decision: **Propose GATE P2 as met for the shipped mechanism.** Do not tick the
+  PROGRESS checkbox as human-accepted. Known, already-answered xfails stay:
+  credit-on IRF windows (T2.23 A), stochastic ranking (T2.24 A), dual-mandate
+  supply price window (T2.32). CES is off (ADR-009). T2.35 report records the
+  monetary numbers (trough m14 −0.41 %, 4.65 moves/y, 30 bp).
+- consequences: Phase 3–4 already landed on this branch. Human may still reject
+  the credit-on xfails or ask for a `phi_y_mult` ADR (pre-authorised ADR-P14 if U
+  falls under a supply shock).
+
