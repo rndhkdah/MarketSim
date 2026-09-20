@@ -7,7 +7,6 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.stats import norm
 
-
 SIGMA = 0.75  # lognormal σ; Gini ≈ 0.40
 N_DECILES = 10
 BUDGET_EXP = 0.9  # b_k ∝ ι_k^0.9 (the rich save more)

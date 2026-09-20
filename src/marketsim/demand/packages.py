@@ -3,8 +3,63 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+SHAPE_KEYS = {
+    "survival": ("v_max", "y_s"),
+    "plateau": ("v_max", "y_p"),
+    "vanish": ("v_pk", "y_pk"),
+    "normal": ("b",),
+    "luxury": ("b", "y_th", "gamma"),
+}
+
+
+class FrozenModel(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+
+class PackageWantSpec(FrozenModel):
+    """One want's shape and parameters (units: budget share before scaling)."""
+
+    shape: str
+    v_max: float | None = None
+    y_s: float | None = None
+    y_p: float | None = None
+    v_pk: float | None = None
+    y_pk: float | None = None
+    b: float | None = None
+    y_th: float | None = None
+    gamma: float | None = None
+
+    @model_validator(mode="after")
+    def _shape_keys(self) -> PackageWantSpec:
+        if self.shape not in SHAPE_KEYS:
+            raise ValueError(f"unknown shape {self.shape}")
+        data = self.model_dump()
+        for k in SHAPE_KEYS[self.shape]:
+            if data.get(k) is None:
+                raise ValueError(f"{self.shape} requires {k}")
+        return self
+
+    def params(self) -> dict[str, float]:
+        """Shape-parameter dict used by ``evaluate_shape``."""
+        data = self.model_dump()
+        return {k: float(data[k]) for k in SHAPE_KEYS[self.shape]}
+
+
+class BuyPackagesConfig(FrozenModel):
+    """Pydantic model for generated ``buy_packages.yaml``."""
+
+    sigma: float
+    budget_exp: float
+    wants: dict[str, PackageWantSpec] = Field(min_length=1)
+
+    @staticmethod
+    def from_raw(raw: dict[str, Any]) -> BuyPackagesConfig:
+        return BuyPackagesConfig.model_validate(raw)
 
 
 def survival(y: np.ndarray | float, v_max: float, y_s: float) -> np.ndarray:
@@ -74,6 +129,19 @@ def default_params(shape: str) -> dict[str, float]:
     if shape == "luxury":
         return {"b": 0.06, "y_th": 0.80, "gamma": 1.5}
     raise ValueError(shape)
+
+
+def scale_budget_matrix(
+    values: np.ndarray,
+    shapes: tuple[str, ...],
+    budgets: np.ndarray,
+) -> np.ndarray:
+    """Row-wise ``scale_budget``. ``values`` is ``(K, Q)``; ``budgets`` is ``(K,)``."""
+    v = np.asarray(values, dtype=float)
+    out = np.zeros_like(v)
+    for k in range(v.shape[0]):
+        out[k] = scale_budget(v[k], shapes, float(budgets[k]))
+    return out
 
 
 def scale_budget(
