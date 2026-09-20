@@ -182,6 +182,36 @@ class EdgesConfig(FrozenModel):
     shocks: dict[str, ShockSpec]
 
 
+class EventsCfg(FrozenModel):
+    """Scripted-chain bounds (§4.2). ``damping`` is dimensionless; depth is hops."""
+
+    damping: float = 0.7
+    max_depth: int = 3
+    max_concurrent: int = 4
+    p_sum_cap: float = 0.9
+
+    @field_validator("damping")
+    @classmethod
+    def _damp(cls, v: float) -> float:
+        if not 0.0 <= v <= 1.0:
+            raise ValueError("events.damping must be in [0, 1]")
+        return v
+
+    @field_validator("max_depth")
+    @classmethod
+    def _depth(cls, v: int) -> int:
+        if not 1 <= v <= 4:
+            raise ValueError("events.max_depth must be in 1..4 (§4.2)")
+        return v
+
+    @field_validator("max_concurrent")
+    @classmethod
+    def _conc(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("events.max_concurrent must be >= 1")
+        return v
+
+
 class WorldSettings(FrozenModel):
     scale: float = 1.0
     seed: int = 0
@@ -189,6 +219,7 @@ class WorldSettings(FrozenModel):
     run_mode: Literal["lockstep", "realtime"] = "lockstep"
     io_source: Literal["seed", "bea"] = "seed"
     modules: list[str] = Field(default_factory=list)
+    events: EventsCfg = Field(default_factory=EventsCfg)
 
 
 class ErlangLag(FrozenModel):

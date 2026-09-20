@@ -222,7 +222,7 @@ financial layer immediately through news → expectations / risk appetite.
 | `events/*.yaml`, `scenarios/*.yaml` | T4.01, T4.08–T4.09 | event definitions, historic templates, scripted scenarios |
 | `firms.yaml` | T5.01 | founding, lever limits, stickiness, matching, rating table, bankruptcy, controls |
 | `markets.yaml` | T6.01 | instruments, MM, impact kernel, background flow, CLOB, fees, margin, surveillance |
-| `world.yaml` | T0.12 | scale, seed, mode (game/professional), run mode, enabled modules, randomisation ranges |
+| `world.yaml` | T0.12, T4.05 | scale, seed, mode (game/professional), run mode, enabled modules, randomisation ranges; `events.damping` / `max_depth` / `max_concurrent` / `p_sum_cap` (T4.05 chains) |
 | `policy.yaml` | T2.27, T2.32 | per-authority control mode, lever ranges and change limits, legislative / implementation lags, policy-agent reward weights; the `monetary:` block — calendar, reaction function, information set, strategy options, ELB toolkit, committee (§2.14.6) |
 | `bonds.yaml` | T6.24 | maturity buckets (decay, coupon), pricing mode (par/market), auction calendar and NPC demand, term-premium parameters, central-bank operations, corporate pool |
 

@@ -4,3 +4,8 @@ mode: professional          # game | professional
 run_mode: lockstep          # lockstep | realtime
 io_source: seed             # seed | bea
 modules: []
+events:
+  damping: 0.7
+  max_depth: 3
+  max_concurrent: 4
+  p_sum_cap: 0.9
