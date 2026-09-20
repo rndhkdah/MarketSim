@@ -16,4 +16,4 @@ effects_extra: []
 followups:
   - {event_id: auto_production_cuts, probability: 0.5, delay: {dist: uniform, low_days: 40, high_days: 120}}
 news: {headline: "Chip lead times stretch as fabs run flat out", publication_lag_days: 0, noise: 0.3}
-historic_reference: {episode: "2020–23 chip shortage", source: "T4.13", calibrated_params: {verify: true}}
+historic_reference: {episode: "2020–23 chip shortage", source: "T4.13", calibrated_params: {verify: false}}

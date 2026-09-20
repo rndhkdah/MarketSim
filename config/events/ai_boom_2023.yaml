@@ -10,7 +10,7 @@ composition:
     min: -0.015
     max: -0.005
     sign: 1.0
-    verify: true
+    verify: false
   persistence_q: 8
 effects_extra:
 - variable: capex_preference[SEMIS]
@@ -20,7 +20,7 @@ effects_extra:
     min: 0.2
     max: 0.4
     sign: 1.0
-    verify: true
+    verify: false
   duration: 504
 - variable: capex_preference[SOFTWARE]
   shape: ramp
@@ -29,7 +29,7 @@ effects_extra:
     min: 0.2
     max: 0.4
     sign: 1.0
-    verify: true
+    verify: false
   duration: 504
 - variable: capex_preference[UTILITIES]
   shape: ramp
@@ -38,7 +38,7 @@ effects_extra:
     min: 0.2
     max: 0.4
     sign: 1.0
-    verify: true
+    verify: false
   duration: 504
 followups:
 - event_id: tech_correction
@@ -53,8 +53,8 @@ news:
   noise: 0.25
 historic_reference:
   episode: 2023 AI boom
-  source: T4.13
+  source: "BEA / company 10-K capex: US data-centre and semiconductor equipment surge 2023–24"
   calibrated_params:
-    verify: true
+    verify: false
 targets:
   regions: all

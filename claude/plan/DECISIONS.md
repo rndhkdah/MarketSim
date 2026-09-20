@@ -118,3 +118,36 @@ Reproduced target (numpy 2.4 / scipy 1.17 sandbox):
 - consequences: T8.12 is not in the v1 path. Phase 4 events target wants and sectors, not SKUs. GATE P3 does **not**
   include a goods layer. Reversal needs a new accepted ADR before any goods state is added.
 
+## ADR-007 — T4.13 event-magnitude sources; engine mapping deferred
+
+- date: 2026-09-20
+- status: proposed (T4.13 HUMAN GATE; higher-reasoning recommendation)
+- context: Every shipped event carried `verify: true` seeds from §4.4. T4.13 asks for a primary source (FRED, BLS,
+  EIA, BEA, IMF, UNCTAD, METI) and to clear the flag. Putting the raw historic *price* move on `z_cost` (oil
+  `ln(4) ≈ 1.25`) is not SFC-finite at 24 months because the Phase-2 IRF of `z = 0.30` already yields ~+72 % CPI.
+- decision: **Accept the published figures as the calibration targets and clear `verify`.** Keep the §4.4 seed
+  *distributions* (sign and order of magnitude of the composition). Do **not** retune `edges.yaml` / `sectors.yaml`
+  or shrink seeds to chase 24-month SFC — that mapping is T8.04. Report: `claude/plan/reports/event-calibration.md`.
+- consequences: T4.11 direction tests stay on the SFC-finite prefix for oil/energy. T4.10 10× storm omits those
+  three ids until T8.04. GATE P4 can be reviewed on schema / cascade-boundedness / directions, not level match.
+
+## ADR-008 — GATE P4 review against master plan §9 / phase §4.1
+
+- date: 2026-09-20
+- status: proposed (GATE P4; higher-reasoning recommendation)
+- context: Master plan §9 Phase 4 is done when “cascades bounded (sub-critical branching); templates reproduce
+  historic response directions.” Phase file §4.1 adds schema-only primitives, seed→history isolation, and D13
+  policy-follow-up control.
+- decision: **Propose GATE P4 as met for the mechanism, with the T4.11/T4.13 caveats.** Do not mark the PROGRESS
+  checkbox accepted until a human confirms. Evidence:
+  1. Schema: seven primitives only; extras whitelist; catalog load + DAG Σp ≤ 0.9 (T4.01, T4.08).
+  2. Cascades: `expected_cascade_size` ±20 % on chip_shortage; 20y 10× storm SFC-finite, |gap|<25 %, depth ≤ 3,
+     concurrency ≤ 4, after omitting oil/energy/covid seeds (T4.10 + QUESTIONS T4.11).
+  3. Directions: T4.11 §4.5 on/off-follow-up; oil/energy on the 12-month SFC-finite prefix; covid DISCRET < −15 %
+     and HEALTH > DISCRET in the want-shift window under `tiers_wants`.
+  4. RNG isolation: same seed → same history; adding RandomWalkModule does not change fires (T4.05, T4.09, T4.14).
+  5. D13: policy follow-ups become “policy pressure” news when the authority is not autopilot (T4.14).
+- not claimed: level match to FRED/BLS paths (T8.04); 10× storm that includes uncalibrated oil/energy/covid seeds.
+- consequences: Phase 5 (T5.01) is unblocked on mechanism. Human may reject the storm omission or the 12-month
+  oil/energy prefix.
+

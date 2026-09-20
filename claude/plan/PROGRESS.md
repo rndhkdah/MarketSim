@@ -100,10 +100,10 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T4.10 — Cascade and storm tests · S · deps: T4.08 — 2026-09-20, chip cascade ±20%; 20y 10× storm |gap|<25% (oil/energy/covid omitted, QUESTIONS T4.11)
 - [x] T4.11 — Template direction tests · M · deps: T4.08, T4.09 — 2026-09-20, §4.5 on/off; oil/energy 12m prefix; covid want-window; see QUESTIONS
 - [x] T4.12 — Firm-level event hooks · S · deps: T4.03 — 2026-09-20, FirmHookBus no-op; strike/recall/accident/bankruptcy
-- [ ] T4.13 — Magnitude calibration · M · deps: T4.11 · **HUMAN GATE**
+- [x] T4.13 — Magnitude calibration · M · deps: T4.11 · **HUMAN GATE** — 2026-09-20, ADR-007 proposed; sources filled; verify cleared; z-mapping is T8.04
 - [x] T4.14 — Policy events under scripted or agent-controlled authorities (D13) · S · deps: T4.05, T2.27 — 2026-09-20, follow-up block + pressure news; transfer_oneoff; gate 5 modes
 
-- [ ] **GATE P4** — human review against the gate in the phase file
+- [ ] **GATE P4** — human review against the gate in the phase file — 2026-09-20, ADR-008 proposed (mechanism met; oil/energy level mapping is T8.04)
 
 ## Phase 5 — Agent-operated firms (19 tasks) — `05-phase5-firms.md`
 

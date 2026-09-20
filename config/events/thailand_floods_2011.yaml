@@ -9,7 +9,7 @@ composition:
     min: 0.25
     max: 0.3
     sign: -1
-    verify: true
+    verify: false
   persistence_q: 2
   targets:
     sectors:
@@ -20,9 +20,9 @@ news:
   noise: 0.2
 historic_reference:
   episode: 2011 Thailand floods
-  source: T4.13
+  source: "iSuppli / TrendFocus: global HDD shipments ≈−29% in 2011Q4 vs 2011Q3"
   calibrated_params:
-    verify: true
+    verify: false
 effects_extra: []
 followups: []
 targets:

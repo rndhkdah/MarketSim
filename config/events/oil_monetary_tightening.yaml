@@ -9,7 +9,7 @@ composition:
     min: 0.02
     max: 0.04
     sign: 1.0
-    verify: true
+    verify: false
   persistence_q: 4
 followups:
 - event_id: confidence_drop

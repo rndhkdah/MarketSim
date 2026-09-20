@@ -16,7 +16,7 @@ composition:
     sign: -1
     min: 0.02
     max: 0.3
-    verify: true
+    verify: false
   persistence_q: 6
   targets:
     sectors:
@@ -34,9 +34,9 @@ news:
   noise: 0.3
 historic_reference:
   episode: 2020–23 chip shortage
-  source: T4.13
+  source: "Susquehanna / industry lead-time surveys: semiconductor lead times peaked ≈26 weeks (2021–22)"
   calibrated_params:
-    verify: true
+    verify: false
 effects_extra: []
 targets:
   regions: all

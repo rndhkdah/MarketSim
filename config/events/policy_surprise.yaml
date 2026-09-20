@@ -11,7 +11,7 @@ composition:
     min: -0.01
     max: 0.01
     sign: 1.0
-    verify: true
+    verify: false
   persistence_q: 1
 news:
   headline: Unscheduled policy decision

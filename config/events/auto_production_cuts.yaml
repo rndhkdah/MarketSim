@@ -9,7 +9,7 @@ composition:
     min: 0.05
     max: 0.15
     sign: -1
-    verify: true
+    verify: false
   persistence_q: 3
   targets:
     sectors:

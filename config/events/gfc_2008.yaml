@@ -10,7 +10,7 @@ composition:
     min: 0.03
     max: 0.05
     sign: 1.0
-    verify: true
+    verify: false
   persistence_q: 8
 effects_extra:
 - variable: collateral_value
@@ -20,7 +20,7 @@ effects_extra:
     min: -0.3
     max: -0.25
     sign: 1.0
-    verify: true
+    verify: false
   duration: 252
 - variable: bank_equity
   shape: pulse
@@ -29,7 +29,7 @@ effects_extra:
     min: 0.3
     max: 0.5
     sign: 1.0
-    verify: true
+    verify: false
   duration: 1
 followups:
 - event_id: gfc_fiscal_stimulus
@@ -44,8 +44,8 @@ news:
   noise: 0.15
 historic_reference:
   episode: 2008 GFC
-  source: T4.13
+  source: "FRED CSUSHPINSA peak-trough ≈−27% (2006–2012); FRED SP500 Oct-2007–Mar-2009 ≈−57%"
   calibrated_params:
-    verify: true
+    verify: false
 targets:
   regions: all

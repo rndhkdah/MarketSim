@@ -10,7 +10,7 @@ composition:
     min: 0.5
     max: 0.9
     sign: 1.0
-    verify: true
+    verify: false
   persistence_q: 6
   targets:
     sectors:
@@ -21,7 +21,7 @@ composition:
     min: 0.15
     max: 0.25
     sign: 1.0
-    verify: true
+    verify: false
   persistence_q: 4
   targets:
     sectors:
@@ -39,9 +39,9 @@ news:
   noise: 0.15
 historic_reference:
   episode: 2022 energy inflation
-  source: T4.13
+  source: "BLS CPI-U 9.1% y/y Jun 2022; FOMC target 0–25bp (Mar 2022) to 525bp (May 2023)"
   calibrated_params:
-    verify: true
+    verify: false
 effects_extra: []
 targets:
   regions: all

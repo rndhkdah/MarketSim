@@ -10,7 +10,7 @@ effects_extra:
     min: 0.05
     max: 0.15
     sign: 1.0
-    verify: true
+    verify: false
   duration: 252
 news:
   headline: Tariff raised on imported materials

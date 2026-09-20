@@ -34,8 +34,11 @@ def test_catalog_loads_and_is_subcritical() -> None:
         for shock in spec.composition:
             mag = shock.magnitude
             if mag.dist != "fixed" and mag.low_days is None:
-                assert mag.verify is True
+                assert mag.verify is False
         for extra in spec.effects_extra:
             mag = extra.magnitude
             if not isinstance(mag, float) and mag.dist != "fixed" and mag.low_days is None:
-                assert mag.verify is True
+                assert mag.verify is False
+        href = spec.historic_reference
+        if href is not None:
+            assert href.calibrated_params.get("verify") is not True
