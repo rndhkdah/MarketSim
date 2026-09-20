@@ -260,4 +260,52 @@ Reproduced target (numpy 2.4 / scipy 1.17 sandbox):
 - consequences: Phase 8 cards that depend on T7.14 are unblocked. Human may still reject
   the empty-module World used for the 50k smoke (no RealEconomy).
 
+## ADR-015 — T8.04 calibration pass (propose only; do not apply)
+
+- date: 2026-09-20
+- status: proposed (T8.04 HUMAN GATE; higher-reasoning recommendation)
+- context: Seed `io_table.json` still carries hand-set `final_demand` and
+  `fd_weights` 0.62 / 0.19 / 0.13 / 0.06. T0.09 aggregated the Use table onto
+  18 sectors but left PCE / I / G / X seeded (`reports/bea-howto.md`). Historic
+  event *levels* overflow SFC when raw price moves land on `z_cost` (QUESTIONS
+  T4.11; `reports/event-calibration.md`). T2.24 cost-push IRF `z = 0.30` already
+  yields ~+72 % CPI @12m. Open decision: map published FRED/BLS/EIA/BEA figures
+  onto primitives through A and the typed edges, without retuning Layer-1
+  elasticities by fiat.
+- decision: **Accept the concordance and z-mapping *method*; do not write the
+  proposed numbers into `edges.yaml`, `sectors.yaml`, or the seed IO table until
+  the human ticks T8.04.** Specifically:
+  1. **Final-demand concordance.** Map BEA NIPA PCE, private fixed investment,
+     government consumption+investment, and exports of goods and services onto
+     the 18 `CODES` so `final_demand` stops being a seed. `fd_weights` become
+     the observed C/I/G/X shares of that year. Keep `world.io_source: seed`
+     until the human switches it. Coverage floor stays 0.85.
+  2. **Event magnitudes.** Historic *real* moves are calibration *targets*, not
+     ShockBus values. Map 1973 crude ×4 onto `z_cost` in the IRF-safe band
+     (~0.30–0.40, not `ln 4`). Keep YAML seed *distributions* (sign / order of
+     magnitude) until the accepted map is written. T4.10 10× storm may then
+     re-include oil/energy/covid.
+  3. **Business-cycle moments.** Targets stay the card’s: `sd(I)/sd(GDP)` 3–4,
+     `sd(C)/sd(GDP) < 1`, GDP persistence. Propose `dynamics` / household /
+     capex gains only in `reports/calibration.md` before/after tables. Do not
+     edit those yaml files in this card.
+  4. **Cost-push / I.** T2.24 reopen stands: if the proposed set still ranks
+     cost-push I response wrong, record it; do not invent a new elasticity.
+- not claimed: a live BEA download in CI (script stays local-xlsx); moment match
+  on the *current* seed (the proposed set is not loaded); human acceptance.
+- consequences: T8.04 stays **unticked**. T8.05 / T8.11 / T9.01 may use the
+  *method* (directions, optional KR overlay, FX scaffolding) against the seed
+  economy. Applying the table is a human commit.
+
+## ADR-016 — skip T9.05 Rust core
+
+- date: 2026-09-20
+- status: proposed
+- context: T9.05 is “only if profiling demands.” T7.13 gate 3 measured 5,488
+  ticks/s small world and 4,786 ticks/s with 8 agents, both well above the
+  1,000 / 300 floors (`reports/phase7-throughput.md`).
+- decision: **Do not start a Rust CLOB/monthly-step port.** Revisit only if a
+  later profile shows a hot path below those floors on the intended hardware.
+- consequences: T9.05 is ticked skipped. Python interfaces stay the ABI.
+
 

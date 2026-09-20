@@ -201,7 +201,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T8.09 — Regional real-estate asset · M · deps: T7.14 — 2026-09-20, P_r=V_RE·exp(ξ_r); national=Σ w P_r; collateral matches traded price
 - [x] T8.10 — Tier-3 counterfactual validation (research) · M · deps: T7.14 — 2026-09-20, kernel invariance + dose-response; empty World is a negative result; report limits claims
 - [ ] T8.11 — Korea-flavoured calibration set (optional) · M · deps: T8.04
-- [ ] T8.12 — Goods layer (only if ADR T3.16 approved it) · L · deps: T3.16, T7.14
+- [x] T8.12 — Goods layer (only if ADR T3.16 approved it) · L · deps: T3.16, T7.14 — 2026-09-20, skipped (ADR-006: no goods layer in v1)
 
 - [ ] **GATE P8** — human review against the gate in the phase file
 
@@ -211,7 +211,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T9.02 — Storage backend · L · deps: T7.10 — 2026-09-20, FileStore+WorldRegistry; JSON snaps + npz columnar export
 - [x] T9.03 — Parallel worlds at scale · M · deps: T7.12 — 2026-09-20, spawn Pool batch_eval; SeedSequence jobs; hash parity
 - [x] T9.04 — M&A depth · L · deps: T6.16 — 2026-09-20, cash tender SFC; dual-class voting-only control; poison pill; stock merger
-- [ ] T9.05 — Rust core for hot paths (only if profiling demands) · L · deps: T7.13
+- [x] T9.05 — Rust core for hot paths (only if profiling demands) · L · deps: T7.13 — 2026-09-20, skipped (T7.13 gate 3 floors met; no Rust)
 - [ ] T9.06 — gRPC transport (optional) · M · deps: T7.04
 
 - [ ] **GATE P9** — human review against the gate in the phase file
