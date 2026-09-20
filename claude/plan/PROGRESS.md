@@ -210,7 +210,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [ ] T9.01 — Multi-country and FX · L · deps: T8.04
 - [x] T9.02 — Storage backend · L · deps: T7.10 — 2026-09-20, FileStore+WorldRegistry; JSON snaps + npz columnar export
 - [x] T9.03 — Parallel worlds at scale · M · deps: T7.12 — 2026-09-20, spawn Pool batch_eval; SeedSequence jobs; hash parity
-- [ ] T9.04 — M&A depth · L · deps: T6.16
+- [x] T9.04 — M&A depth · L · deps: T6.16 — 2026-09-20, cash tender SFC; dual-class voting-only control; poison pill; stock merger
 - [ ] T9.05 — Rust core for hot paths (only if profiling demands) · L · deps: T7.13
 - [ ] T9.06 — gRPC transport (optional) · M · deps: T7.04
 
