@@ -73,10 +73,13 @@ class World:
                     mod.on_phase(ctx, phase)
 
     def observe(self, agent_id: str) -> dict[str, Any]:
+        public = dict(self._observations.get("*", {}))
+        private = dict(self._observations.get(agent_id, {}))
         return {
             "tick": self.clock.tick,
             "agent_id": agent_id,
-            **self._observations.get(agent_id, {}),
+            **public,
+            **private,
         }
 
     def to_state(self) -> dict[str, Any]:
