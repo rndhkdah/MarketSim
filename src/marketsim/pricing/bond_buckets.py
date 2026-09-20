@@ -12,7 +12,6 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from marketsim.core.errors import ConfigError
 from marketsim.ledger.journal import Entry, Ledger, Tx
 
 MONTHS_PER_YEAR = 12.0  # §6.11 monthly arithmetic

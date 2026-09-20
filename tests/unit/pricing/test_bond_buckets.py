@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import numpy as np
 import pytest
 
 from marketsim.core.config import Config, load_config
@@ -11,8 +10,8 @@ from marketsim.ledger.opening import GOVT_MIX, open_passthrough_books, opening_b
 from marketsim.pricing.bond_buckets import (
     BUCKET_ORDER,
     DURATION_REF_YIELD,
-    BondsFile,
     BondBooks,
+    BondsFile,
     bucket_duration_years,
     bucket_price,
     issuance_mix_tuple,
@@ -40,7 +39,7 @@ def test_shipped_bonds_yaml_is_par(cfg: Config) -> None:
 def test_formulas_at_three_yields(cfg: Config, y: float) -> None:
     assert cfg.bonds is not None
     kappa = DURATION_REF_YIELD
-    for name, spec in cfg.bonds.buckets.items():
+    for _name, spec in cfg.bonds.buckets.items():
         p = bucket_price(y, kappa, spec.decay)
         assert p > 0.0
         if y == kappa:

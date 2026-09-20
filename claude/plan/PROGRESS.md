@@ -132,8 +132,8 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 ## Phase 6 — Asset pricing, markets and the bond market (32 tasks) — `06-phase6-pricing-markets.md`
 
 - [x] T6.01 — `markets.yaml` and the instrument registry · S · deps: T2.03 — 2026-09-20, ADV=0.4%/day; EQ:NPC×18 + dynamic EQ:FIRM
-- [ ] T6.02 — Earnings expectations from public information · S · deps: T4.07, T2.21
-- [ ] T6.03 — Yield curve, term premium, bond pricing · M · deps: T2.14
+- [x] T6.02 — Earnings expectations from public information · S · deps: T4.07, T2.21 — 2026-09-20, published-only EMA; exact at π*∈{0,2%}
+- [x] T6.03 — Yield curve, term premium, bond pricing · M · deps: T2.14 — 2026-09-20, λ=0.978 → y10 +35bp; −D·Δy + carry
 - [ ] T6.04 — Discount rates and fundamental value · M · deps: T6.02, T6.03
 - [ ] T6.05 — Betas-emerge validation · M · deps: T6.04
 - [ ] T6.06 — Mispricing: sentiment, noise, limits to arbitrage · M · deps: T6.04
@@ -154,7 +154,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [ ] T6.21 — Tier-1 / Tier-2 statistics and the regime flip · M · deps: T6.09, T6.06, T6.07
 - [ ] T6.22 — Domain randomisation and hidden state · S · deps: T6.06
 - [ ] T6.23 — Market performance · S · deps: T6.21
-- [ ] T6.24 — Bond buckets: instruments, arithmetic, par ↔ market switch (D12) · M · deps: T6.01, T2.16
+- [x] T6.24 — Bond buckets: instruments, arithmetic, par ↔ market switch (D12) · M · deps: T6.01, T2.16 — 2026-09-20, P=(κ+δ)/(y+δ); GB_BOND 7.07y; par bitwise; reval ≠ income
 - [ ] T6.25 — Bucket fair yields and term premium · M · deps: T6.03, T6.24
 - [ ] T6.26 — Debt-management office and auctions · M · deps: T6.25, T2.28
 - [ ] T6.27 — Secondary bond market and NPC holders · M · deps: T6.24, T6.08, T6.09
