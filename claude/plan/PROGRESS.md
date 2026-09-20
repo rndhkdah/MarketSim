@@ -134,13 +134,13 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T6.01 — `markets.yaml` and the instrument registry · S · deps: T2.03 — 2026-09-20, ADV=0.4%/day; EQ:NPC×18 + dynamic EQ:FIRM
 - [x] T6.02 — Earnings expectations from public information · S · deps: T4.07, T2.21 — 2026-09-20, published-only EMA; exact at π*∈{0,2%}
 - [x] T6.03 — Yield curve, term premium, bond pricing · M · deps: T2.14 — 2026-09-20, λ=0.978 → y10 +35bp; −D·Δy + carry
-- [ ] T6.04 — Discount rates and fundamental value · M · deps: T6.02, T6.03
+- [x] T6.04 — Discount rates and fundamental value · M · deps: T6.02, T6.03 — 2026-09-20, structural ρ+V behind stub interface; factor_lite; live Δρ=0.35
 - [ ] T6.05 — Betas-emerge validation · M · deps: T6.04
 - [ ] T6.06 — Mispricing: sentiment, noise, limits to arbitrage · M · deps: T6.04
-- [ ] T6.07 — Impact kernel · M · deps: T6.01
+- [x] T6.07 — Impact kernel · M · deps: T6.01 — 2026-09-20, NNLS 5-exp within 10% of G(τ); post-impact fills
 - [ ] T6.08 — Engine market maker · M · deps: T6.07
 - [ ] T6.09 — Background order flow · M · deps: T6.08
-- [ ] T6.10 — CLOB · L · deps: T6.01
+- [x] T6.10 — CLOB · L · deps: T6.01 — 2026-09-20, price-time; stop/IOC/GTC/DAY; STP newest; call auction; halt band
 - [ ] T6.11 — CLOB liquidity: thin engine quote + queue-reactive-lite · M · deps: T6.10, T6.09
 - [ ] T6.12 — Settlement, fees, taxes · S · deps: T6.08, T6.10
 - [ ] T6.13 — Margin, shorting, forced liquidation · M · deps: T6.12
