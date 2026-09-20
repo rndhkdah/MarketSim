@@ -169,7 +169,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 ## Phase 7 — API and SDK (17 tasks) — `07-phase7-api-sdk.md`
 
 - [x] T7.01 — Versioned API schemas · M · deps: T6.12, T5.06 — 2026-09-20, v1 closed models; golden; Observation no hidden state
-- [ ] T7.02 — Sessions, worlds, accounts · M · deps: T7.01
+- [x] T7.02 — Sessions, worlds, accounts · M · deps: T7.01 — 2026-09-20, WorldManager; SHA-256 tokens; AGENT capital_transfer; isolation/auth/limits
 - [ ] T7.03 — In-process client · S · deps: T7.02
 - [ ] T7.04 — REST endpoints · L · deps: T7.02
 - [ ] T7.05 — WebSocket streams · M · deps: T7.04
