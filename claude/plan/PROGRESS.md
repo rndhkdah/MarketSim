@@ -171,7 +171,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T7.01 — Versioned API schemas · M · deps: T6.12, T5.06 — 2026-09-20, v1 closed models; golden; Observation no hidden state
 - [x] T7.02 — Sessions, worlds, accounts · M · deps: T7.01 — 2026-09-20, WorldManager; SHA-256 tokens; AGENT capital_transfer; isolation/auth/limits
 - [x] T7.03 — In-process client · S · deps: T7.02 — 2026-09-20, LocalClient; LOCAL_METHODS contract; hash-identical to World
-- [ ] T7.04 — REST endpoints · L · deps: T7.02
+- [x] T7.04 — REST endpoints · L · deps: T7.02 — 2026-09-20, FastAPI /v1; 401/403/422; idempotent orders; observe no hidden state
 - [ ] T7.05 — WebSocket streams · M · deps: T7.04
 - [ ] T7.06 — Lockstep barrier and real-time pacing · M · deps: T7.02
 - [ ] T7.07 — Python SDK (HTTP / WS) · M · deps: T7.04, T7.05
