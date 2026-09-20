@@ -9,7 +9,6 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from marketsim.core.errors import ConfigError, StateError
-from marketsim.layer1.build_io import CODES
 
 KIND = Literal["eq_npc", "govt_bond", "corp_pool", "cash", "commodity", "eq_firm", "index"]
 VENUE = Literal["engine_mm", "auction_mm", "clob", "none"]
@@ -394,7 +393,11 @@ class InstrumentRegistry:
         codes: Sequence[str] | None = None,
     ) -> InstrumentRegistry:
         """Build the §6.2 book: EQ:NPC × |codes|, static names, published indices."""
-        codes = tuple(codes) if codes is not None else CODES
+        if codes is None:
+            from marketsim.layer1.build_io import CODES as _CODES
+
+            codes = _CODES
+        codes = tuple(codes)
         code_set = set(codes)
         insts: list[Instrument] = []
         seen: set[str] = set()
