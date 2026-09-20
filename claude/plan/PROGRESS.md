@@ -194,13 +194,13 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T8.02 — Supply contracts · M · deps: T7.14 — 2026-09-20, forwards served first in shortage; contract_settle SFC tag
 - [x] T8.03 — Quality and brand · M · deps: T7.14 — 2026-09-20, share ∝ Q^φ; equal Q ⇒ hybrid≈aggregate; leak+clip quality law
 - [ ] T8.04 — Calibration pass · L · deps: T7.14, T0.09 · **HUMAN GATE** — 2026-09-20, report+scripts proposed (ADR-015); not applied; not human-accepted
-- [ ] T8.05 — Historic replay comparison · M · deps: T8.04
+- [x] T8.05 — Historic replay comparison · M · deps: T8.04 — 2026-09-20, 1973/2008/2020–22 directions on seed; 12m oil/energy prefix; levels are T8.04
 - [x] T8.06 — Explainability traces · L · deps: T7.04 — 2026-09-20, qty product + Δln P log-sum 1e-9; GET/POST /explain
 - [x] T8.07 — Game layer contract · L · deps: T7.15 — 2026-09-20, pacing/slots/score/narrative; scripted player via public API
 - [x] T8.08 — Regulator · M · deps: T7.14 — 2026-09-20, merger_control allow|block; fines→GOVT; regulator_antitrust/merger events
 - [x] T8.09 — Regional real-estate asset · M · deps: T7.14 — 2026-09-20, P_r=V_RE·exp(ξ_r); national=Σ w P_r; collateral matches traded price
 - [x] T8.10 — Tier-3 counterfactual validation (research) · M · deps: T7.14 — 2026-09-20, kernel invariance + dose-response; empty World is a negative result; report limits claims
-- [ ] T8.11 — Korea-flavoured calibration set (optional) · M · deps: T8.04
+- [x] T8.11 — Korea-flavoured calibration set (optional) · M · deps: T8.04 — 2026-09-20, BOK/KOSIS concordance overlay; default US seed unchanged
 - [x] T8.12 — Goods layer (only if ADR T3.16 approved it) · L · deps: T3.16, T7.14 — 2026-09-20, skipped (ADR-006: no goods layer in v1)
 
 - [ ] **GATE P8** — human review against the gate in the phase file
@@ -212,6 +212,6 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [ ] T9.03 — Parallel worlds at scale · M · deps: T7.12 — 2026-09-20, deferred (removed from v1)
 - [x] T9.04 — M&A depth · L · deps: T6.16 — 2026-09-20, cash tender SFC; dual-class voting-only control; poison pill; stock merger
 - [x] T9.05 — Rust core for hot paths (only if profiling demands) · L · deps: T7.13 — 2026-09-20, skipped (T7.13 gate 3 floors met; no Rust)
-- [ ] T9.06 — gRPC transport (optional) · M · deps: T7.04
+- [x] T9.06 — gRPC transport (optional) · M · deps: T7.04 — 2026-09-20, LOCAL_METHODS servicer; optional grpc extra; no socket in tests
 
 - [ ] **GATE P9** — human review against the gate in the phase file

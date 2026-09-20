@@ -1,0 +1,751 @@
+# T8.11 — BOK / KOSIS industry labels → 18 marketsim.layer1.build_io.CODES.
+# Optional flavour overlay (ADR-015). Not loaded by the engine; scripts/fetch_bok_io.py
+# reads this file. Destinations are the existing 18 codes only — no second sector list.
+#
+# Sources:
+# - Bank of Korea Input-Output Tables (산업연관표), 2015 / 2020 benchmark
+#   통합대분류 33, 통합중분류 83 (ECOS 2.2; https://ecos.bok.or.kr/)
+# - KOSIS republish of the same tables (https://kosis.kr/, 작성기관 한국은행)
+# - KSIC Rev. 10 sections A–U and manufacturing divisions 10–34
+#   (Statistics Korea; used when the workbook is a KOSIS industry extract)
+#
+# Each `sources` row: `weights` are shares and MUST sum to 1.0.
+# Short codes (01, C) are namespaced by `classification` so BOK-33 "10"
+# (fabricated metal) does not collide with KSIC "10" (food). Names always match.
+#
+# Splits on electronics / transport / finance are working assumptions from
+# Korean output composition (semiconductor-heavy ICT, shipbuilding in other
+# transport). They are not a retune of US seed elasticities.
+
+schema: bok-kosis-to-18
+codes_ref: marketsim.layer1.build_io.CODES
+
+sources:
+  # --- BOK 통합대분류 (33), 2015 / 2020 English names from BOK publications ---
+  - id: bok33-01
+    classification: bok33
+    keys:
+      - "01"
+      - "A"
+      - "농림수산품"
+      - "농림수산품 및 서비스"
+      - "농림수산"
+      - "Agricultural, forestry and fishery products"
+      - "Agricultural, forestry, and fishery products"
+      - "Agricultural, forest, and fishery goods"
+      - "Agriculture, forestry and fishing"
+    weights: {AGRIFOOD: 1.0}
+
+  - id: bok33-02
+    classification: bok33
+    keys:
+      - "02"
+      - "B"
+      - "광산품"
+      - "광업"
+      - "Mined and quarried goods"
+      - "Mineral products"
+      - "Mineral product"
+      - "Mining and quarrying"
+    weights: {ENERGY: 0.40, MATERIALS: 0.60}
+
+  - id: bok33-03
+    classification: bok33
+    keys:
+      - "03"
+      - "C"
+      - "음식료품"
+      - "식료품"
+      - "음식료품 및 담배"
+      - "Food, beverages and tobacco products"
+      - "Food and beverage"
+      - "Food and beverages"
+    weights: {AGRIFOOD: 0.75, STAPLES: 0.25}
+
+  - id: bok33-04
+    classification: bok33
+    keys:
+      - "04"
+      - "D"
+      - "섬유 및 가죽제품"
+      - "섬유 및 의복"
+      - "Textile and leather products"
+      - "Textiles and leather goods"
+    weights: {DISCRET: 0.80, STAPLES: 0.20}
+
+  - id: bok33-05
+    classification: bok33
+    keys:
+      - "05"
+      - "E"
+      - "목재, 종이, 인쇄 및 복제"
+      - "목재 및 종이"
+      - "Wood and paper products, printing and reproduction of recorded media"
+      - "Wood and paper, printing"
+    weights: {MATERIALS: 1.0}
+
+  - id: bok33-06
+    classification: bok33
+    keys:
+      - "06"
+      - "F"
+      - "석탄 및 석유제품"
+      - "석탄 및 석유정제품"
+      - "Petroleum and coal products"
+      - "Coal and petroleum products"
+    weights: {ENERGY: 1.0}
+
+  - id: bok33-07
+    classification: bok33
+    keys:
+      - "07"
+      - "G"
+      - "화학제품"
+      - "Chemical products"
+    weights: {MATERIALS: 0.85, HEALTH: 0.15}
+
+  - id: bok33-08
+    classification: bok33
+    keys:
+      - "08"
+      - "H"
+      - "비금속광물제품"
+      - "Non-metallic mineral products"
+      - "Nonmetallic mineral products"
+    weights: {MATERIALS: 1.0}
+
+  - id: bok33-09
+    classification: bok33
+    keys:
+      - "09"
+      - "I"
+      - "1차 금속제품"
+      - "1차금속제품"
+      - "Basic metal products"
+      - "Primary metal product"
+      - "Primary metal products"
+    weights: {MATERIALS: 1.0}
+
+  - id: bok33-10
+    classification: bok33
+    keys:
+      - "10"
+      - "J"
+      - "금속가공제품"
+      - "Fabricated metal products, except machinery and furniture"
+      - "Metal processed products"
+      - "Fabricated metal products"
+    weights: {MATERIALS: 1.0}
+
+  - id: bok33-11
+    classification: bok33
+    keys:
+      - "11"
+      - "K"
+      - "컴퓨터, 전자 및 광학기기"
+      - "전자 및 전기장비"  # older 2010 wording; prefer 83-sector split when available
+      - "Computing machinery, electronic equipment and optical instruments"
+      - "Computer, electronic and optical instruments"
+      - "Computer, electronic, and optical instruments"
+    weights: {SEMIS: 0.55, TELECOM: 0.20, CAPGOODS: 0.20, HEALTH: 0.05}
+
+  - id: bok33-12
+    classification: bok33
+    keys:
+      - "12"
+      - "L"
+      - "전기장비"
+      - "Electrical equipment"
+    weights: {CAPGOODS: 1.0}
+
+  - id: bok33-13
+    classification: bok33
+    keys:
+      - "13"
+      - "M"
+      - "기계 및 장비"
+      - "Machinery and equipment"
+      - "Machinery and Equipment"
+    weights: {CAPGOODS: 1.0}
+
+  - id: bok33-14
+    classification: bok33
+    keys:
+      - "14"
+      - "N"
+      - "운송장비"
+      - "Transport equipment"
+      - "Transportation equipment"
+    weights: {AUTOS: 0.65, CAPGOODS: 0.35}
+
+  - id: bok33-15
+    classification: bok33
+    keys:
+      - "15"
+      - "O"
+      - "기타 제조업제품"
+      - "Other manufactured products"
+      - "Other manufacturing products"
+    weights: {DISCRET: 1.0}
+
+  - id: bok33-16
+    classification: bok33
+    keys:
+      - "16"
+      - "P"
+      - "제조임가공 및 산업용 장비 수리"
+      - "Manufacturing services and repair services of industrial equipment"
+      - "Manufacturing toll processing and repairing industrial equipment"
+    weights: {CAPGOODS: 0.70, BIZSVC: 0.30}
+
+  - id: bok33-17
+    classification: bok33
+    keys:
+      - "17"
+      - "Q"
+      - "전력, 가스 및 증기"
+      - "전력, 가스 및 증기 공급"
+      - "Electricity, gas, and steam supply"
+      - "Power, gas, and steam"
+    weights: {UTILITIES: 1.0}
+
+  - id: bok33-18
+    classification: bok33
+    keys:
+      - "18"
+      - "R"
+      - "수도, 폐기물 및 재활용서비스"
+      - "Water supply, sewage and waste treatment and disposal services"
+      - "Water, waste disposal and recycling services"
+      - "Water, waste disposal, and recycling services"
+    weights: {UTILITIES: 1.0}
+
+  - id: bok33-19
+    classification: bok33
+    keys:
+      - "19"
+      - "S"
+      - "건설"
+      - "건설업"
+      - "Construction"
+    weights: {CONSTRUCT: 1.0}
+
+  - id: bok33-20
+    classification: bok33
+    keys:
+      - "20"
+      - "T"
+      - "도소매 및 상품중개서비스"
+      - "Wholesale and retail trade and commodity brokerage services"
+      - "Wholesale and retail and commodity brokerage services"
+    weights: {DISCRET: 0.55, STAPLES: 0.45}
+
+  - id: bok33-21
+    classification: bok33
+    keys:
+      - "21"
+      - "U"
+      - "운송서비스"
+      - "Transportation"
+      - "Transportation service"
+    weights: {TRANSPORT: 1.0}
+
+  - id: bok33-22
+    classification: bok33
+    keys:
+      - "22"
+      - "V"
+      - "음식점 및 숙박서비스"
+      - "Food services and accommodation"
+      - "Restaurants and accommodation services"
+    weights: {DISCRET: 1.0}
+
+  - id: bok33-23
+    classification: bok33
+    keys:
+      - "23"
+      - "W"
+      - "정보통신 및 방송서비스"
+      - "통신 및 방송"
+      - "Communications and broadcasting"
+      - "Information and communication and broadcasting services"
+    weights: {TELECOM: 0.55, SOFTWARE: 0.45}
+
+  - id: bok33-24
+    classification: bok33
+    keys:
+      - "24"
+      - "X"
+      - "금융 및 보험서비스"
+      - "Finance and insurance"
+      - "Financial and insurance services"
+    weights: {BANKS: 0.70, INSURANCE: 0.30}
+
+  - id: bok33-25
+    classification: bok33
+    keys:
+      - "25"
+      - "Y"
+      - "부동산서비스"
+      - "부동산업"
+      - "Real estate services"
+    weights: {REALESTATE: 1.0}
+
+  - id: bok33-26
+    classification: bok33
+    keys:
+      - "26"
+      - "Z"
+      - "전문, 과학 및 기술서비스"
+      - "Professional, scientific, and technical services"
+      - "Professional, scientific and technical services"
+    weights: {BIZSVC: 1.0}
+
+  - id: bok33-27
+    classification: bok33
+    keys:
+      - "27"
+      - "AA"
+      - "사업지원서비스"
+      - "Business support services"
+      - "Business Support Service"
+    weights: {BIZSVC: 1.0}
+
+  - id: bok33-28
+    classification: bok33
+    keys:
+      - "28"
+      - "AB"
+      - "공공행정, 국방 및 사회보장"
+      - "Public administration, defense, and social security services"
+      - "Public Administration, Defense, and Social Security"
+    weights: {BIZSVC: 1.0}
+
+  - id: bok33-29
+    classification: bok33
+    keys:
+      - "29"
+      - "AC"
+      - "교육서비스"
+      - "Education services"
+      - "Educational services"
+    weights: {BIZSVC: 1.0}
+
+  - id: bok33-30
+    classification: bok33
+    keys:
+      - "30"
+      - "AD"
+      - "보건 및 사회복지서비스"
+      - "Health and social care services"
+      - "Health and social services"
+    weights: {HEALTH: 1.0}
+
+  - id: bok33-31
+    classification: bok33
+    keys:
+      - "31"
+      - "AE"
+      - "예술, 스포츠 및 여가서비스"
+      - "Art, sports, and leisure services"
+      - "Arts, sports, and leisure services"
+    weights: {DISCRET: 1.0}
+
+  - id: bok33-32
+    classification: bok33
+    keys:
+      - "32"
+      - "AF"
+      - "기타 서비스"
+      - "Other services"
+    weights: {DISCRET: 1.0}
+
+  - id: bok33-33
+    classification: bok33
+    keys:
+      - "33"
+      - "AG"
+      - "기타"
+      - "Others"
+      - "Other, etc."
+    weights: {BIZSVC: 1.0}
+
+  # --- BOK 통합중분류 (83) rows that need a finer split than the 33-sector parent ---
+  - id: bok83-crops
+    classification: bok83
+    keys: ["01", "작물", "Crops"]
+    weights: {AGRIFOOD: 1.0}
+  - id: bok83-livestock
+    classification: bok83
+    keys: ["02", "축산물", "Livestock products"]
+    weights: {AGRIFOOD: 1.0}
+  - id: bok83-forest
+    classification: bok83
+    keys: ["03", "임산물", "Forest products"]
+    weights: {AGRIFOOD: 1.0}
+  - id: bok83-fish
+    classification: bok83
+    keys: ["04", "수산물", "Marine products", "Fishery products"]
+    weights: {AGRIFOOD: 1.0}
+  - id: bok83-ag-services
+    classification: bok83
+    keys: ["05", "농림어업서비스", "농림어업 서비스", "Agriculture, forestry, and fisheries services"]
+    weights: {AGRIFOOD: 1.0}
+  - id: bok83-coal-oil-gas
+    classification: bok83
+    keys: ["06", "석탄, 원유 및 천연가스", "Coal, crude petroleum and natural gas"]
+    weights: {ENERGY: 1.0}
+  - id: bok83-metal-ores
+    classification: bok83
+    keys: ["07", "금속광석", "Metal ores"]
+    weights: {MATERIALS: 1.0}
+  - id: bok83-nonmetal-ores
+    classification: bok83
+    keys: ["08", "비금속광물", "Non-metallic minerals"]
+    weights: {MATERIALS: 1.0}
+  - id: bok83-food
+    classification: bok83
+    keys: ["식료품", "육류 및 낙농품", "Food products"]
+    weights: {AGRIFOOD: 1.0}
+  - id: bok83-bev
+    classification: bok83
+    keys: ["음료품", "Beverages"]
+    weights: {STAPLES: 1.0}
+  - id: bok83-tobacco
+    classification: bok83
+    keys: ["담배", "Tobacco products"]
+    weights: {STAPLES: 1.0}
+  - id: bok83-pharma
+    classification: bok83
+    keys: ["의약품", "Pharmaceuticals"]
+    weights: {HEALTH: 1.0}
+  - id: bok83-semis
+    classification: bok83
+    keys: ["반도체", "Semiconductors", "Semiconductor"]
+    weights: {SEMIS: 1.0}
+  - id: bok83-displays
+    classification: bok83
+    keys: ["전자표시장치", "Electronic display devices"]
+    weights: {SEMIS: 1.0}
+  - id: bok83-elec-parts
+    classification: bok83
+    keys: ["기타 전자부품", "Other electronic components"]
+    weights: {SEMIS: 1.0}
+  - id: bok83-computers
+    classification: bok83
+    keys: ["컴퓨터 및 주변기기", "Computers and peripheral equipment"]
+    weights: {CAPGOODS: 1.0}
+  - id: bok83-comms-equip
+    classification: bok83
+    keys: ["통신, 방송 및 영상음향기기", "통신 및 방송장비", "Communications and broadcasting equipment"]
+    weights: {TELECOM: 1.0}
+  - id: bok83-autos
+    classification: bok83
+    keys: ["자동차", "Motor vehicles"]
+    weights: {AUTOS: 1.0}
+  - id: bok83-ships
+    classification: bok83
+    keys: ["선박", "Ships"]
+    weights: {CAPGOODS: 1.0}
+  - id: bok83-other-transport
+    classification: bok83
+    keys: ["기타 운송장비", "Other transport equipment"]
+    weights: {CAPGOODS: 1.0}
+  - id: bok83-power
+    classification: bok83
+    keys: ["전력", "전력 및 신재생에너지", "Electricity"]
+    weights: {UTILITIES: 1.0}
+  - id: bok83-gas-steam
+    classification: bok83
+    keys: ["가스, 증기 및 온수", "Gas, steam and hot water"]
+    weights: {UTILITIES: 1.0}
+  - id: bok83-building
+    classification: bok83
+    keys: ["건물건설 및 건축보수", "Building construction"]
+    weights: {CONSTRUCT: 1.0}
+  - id: bok83-civil
+    classification: bok83
+    keys: ["토목건설", "Civil engineering"]
+    weights: {CONSTRUCT: 1.0}
+  - id: bok83-finance
+    classification: bok83
+    keys: ["금융", "금융서비스", "Finance"]
+    weights: {BANKS: 1.0}
+  - id: bok83-insurance
+    classification: bok83
+    keys: ["보험", "보험 및 연금", "Insurance"]
+    weights: {INSURANCE: 1.0}
+  - id: bok83-telecom
+    classification: bok83
+    keys: ["통신서비스", "통신", "Telecommunications"]
+    weights: {TELECOM: 1.0}
+  - id: bok83-software
+    classification: bok83
+    keys:
+      - "소프트웨어 개발 및 컴퓨터관리서비스"
+      - "정보서비스"
+      - "Software development"
+      - "Information services"
+    weights: {SOFTWARE: 1.0}
+
+  # --- KSIC Rev. 10 sections (KOSIS industry extracts) ---
+  - id: ksic-A
+    classification: ksic
+    keys: ["A", "농업, 임업 및 어업", "Agriculture, forestry and fishing"]
+    weights: {AGRIFOOD: 1.0}
+  - id: ksic-B
+    classification: ksic
+    keys: ["B", "광업", "Mining and quarrying"]
+    weights: {ENERGY: 0.40, MATERIALS: 0.60}
+  - id: ksic-C
+    classification: ksic
+    keys: ["C", "제조업", "Manufacturing"]
+    # Last-resort split when the workbook is 21 sections only. Prefer 33-sector BOK.
+    weights:
+      SEMIS: 0.22
+      MATERIALS: 0.22
+      CAPGOODS: 0.16
+      AUTOS: 0.12
+      ENERGY: 0.08
+      AGRIFOOD: 0.06
+      DISCRET: 0.06
+      STAPLES: 0.03
+      HEALTH: 0.03
+      TELECOM: 0.02
+  - id: ksic-D
+    classification: ksic
+    keys:
+      - "D"
+      - "전기, 가스, 증기 및 공기조절 공급업"
+      - "Electricity, gas, steam and air conditioning supply"
+    weights: {UTILITIES: 1.0}
+  - id: ksic-E
+    classification: ksic
+    keys:
+      - "E"
+      - "수도, 하수 및 폐기물 처리, 원료 재생업"
+      - "Water supply; sewage, waste management, materials recovery"
+    weights: {UTILITIES: 1.0}
+  - id: ksic-F
+    classification: ksic
+    keys: ["F", "건설업", "Construction"]
+    weights: {CONSTRUCT: 1.0}
+  - id: ksic-G
+    classification: ksic
+    keys: ["G", "도매 및 소매업", "Wholesale and retail trade"]
+    weights: {DISCRET: 0.55, STAPLES: 0.45}
+  - id: ksic-H
+    classification: ksic
+    keys: ["H", "운수 및 창고업", "Transportation and storage"]
+    weights: {TRANSPORT: 1.0}
+  - id: ksic-I
+    classification: ksic
+    keys: ["I", "숙박 및 음식점업", "Accommodation and food service activities"]
+    weights: {DISCRET: 1.0}
+  - id: ksic-J
+    classification: ksic
+    keys: ["J", "정보통신업", "Information and communication"]
+    weights: {TELECOM: 0.45, SOFTWARE: 0.55}
+  - id: ksic-K
+    classification: ksic
+    keys: ["K", "금융 및 보험업", "Financial and insurance activities"]
+    weights: {BANKS: 0.70, INSURANCE: 0.30}
+  - id: ksic-L
+    classification: ksic
+    keys: ["L", "부동산업", "Real estate activities"]
+    weights: {REALESTATE: 1.0}
+  - id: ksic-M
+    classification: ksic
+    keys: ["M", "전문, 과학 및 기술 서비스업", "Professional, scientific and technical activities"]
+    weights: {BIZSVC: 1.0}
+  - id: ksic-N
+    classification: ksic
+    keys:
+      - "N"
+      - "사업시설 관리, 사업 지원 및 임대 서비스업"
+      - "Business facilities management and business support services"
+    weights: {BIZSVC: 1.0}
+  - id: ksic-O
+    classification: ksic
+    keys: ["O", "공공 행정, 국방 및 사회보장 행정", "Public administration and defence"]
+    weights: {BIZSVC: 1.0}
+  - id: ksic-P
+    classification: ksic
+    keys: ["P", "교육 서비스업", "Education"]
+    weights: {BIZSVC: 1.0}
+  - id: ksic-Q
+    classification: ksic
+    keys: ["Q", "보건업 및 사회복지 서비스업", "Human health and social work activities"]
+    weights: {HEALTH: 1.0}
+  - id: ksic-R
+    classification: ksic
+    keys: ["R", "예술, 스포츠 및 여가관련 서비스업", "Arts, sports and recreation related services"]
+    weights: {DISCRET: 1.0}
+  - id: ksic-S
+    classification: ksic
+    keys:
+      - "S"
+      - "협회 및 단체, 수리 및 기타 개인 서비스업"
+      - "Membership organizations, repair and other personal services"
+    weights: {DISCRET: 1.0}
+  - id: ksic-T
+    classification: ksic
+    keys: ["T", "가구 내 고용활동", "Activities of households as employers"]
+    weights: {BIZSVC: 1.0}
+  - id: ksic-U
+    classification: ksic
+    keys: ["U", "국제 및 외국기관", "Activities of extraterritorial organizations"]
+    weights: {BIZSVC: 1.0}
+
+  # --- KSIC Rev. 10 manufacturing divisions (and a few service divisions) ---
+  - id: ksic-10
+    classification: ksic
+    keys: ["10", "식료품 제조업", "Manufacture of food products"]
+    weights: {AGRIFOOD: 1.0}
+  - id: ksic-11
+    classification: ksic
+    keys: ["11", "음료 제조업", "Manufacture of beverages"]
+    weights: {STAPLES: 1.0}
+  - id: ksic-12
+    classification: ksic
+    keys: ["12", "담배 제조업", "Manufacture of tobacco products"]
+    weights: {STAPLES: 1.0}
+  - id: ksic-13
+    classification: ksic
+    keys: ["13", "섬유제품 제조업", "Manufacture of textiles"]
+    weights: {DISCRET: 0.70, STAPLES: 0.30}
+  - id: ksic-14
+    classification: ksic
+    keys: ["14", "의복, 의복 액세서리 및 모피제품 제조업", "Manufacture of wearing apparel"]
+    weights: {DISCRET: 1.0}
+  - id: ksic-15
+    classification: ksic
+    keys: ["15", "가죽, 가방 및 신발 제조업", "Manufacture of leather, luggage and footwear"]
+    weights: {DISCRET: 1.0}
+  - id: ksic-16
+    classification: ksic
+    keys: ["16", "목재 및 나무제품 제조업", "Manufacture of wood and of products of wood"]
+    weights: {MATERIALS: 1.0}
+  - id: ksic-17
+    classification: ksic
+    keys: ["17", "펄프, 종이 및 종이제품 제조업", "Manufacture of pulp, paper and paper products"]
+    weights: {MATERIALS: 1.0}
+  - id: ksic-18
+    classification: ksic
+    keys: ["18", "인쇄 및 기록매체 복제업", "Printing and reproduction of recorded media"]
+    weights: {MATERIALS: 1.0}
+  - id: ksic-19
+    classification: ksic
+    keys: ["19", "코크스, 연탄 및 석유정제품 제조업", "Manufacture of coke, briquettes and refined petroleum products"]
+    weights: {ENERGY: 1.0}
+  - id: ksic-20
+    classification: ksic
+    keys: ["20", "화학물질 및 화학제품 제조업", "Manufacture of chemicals and chemical products"]
+    weights: {MATERIALS: 1.0}
+  - id: ksic-21
+    classification: ksic
+    keys: ["21", "의료용 물질 및 의약품 제조업", "Manufacture of pharmaceuticals"]
+    weights: {HEALTH: 1.0}
+  - id: ksic-22
+    classification: ksic
+    keys: ["22", "고무 및 플라스틱제품 제조업", "Manufacture of rubber and plastics products"]
+    weights: {MATERIALS: 1.0}
+  - id: ksic-23
+    classification: ksic
+    keys: ["23", "비금속 광물제품 제조업", "Manufacture of other non-metallic mineral products"]
+    weights: {MATERIALS: 1.0}
+  - id: ksic-24
+    classification: ksic
+    keys: ["24", "1차 금속 제조업", "Manufacture of basic metals"]
+    weights: {MATERIALS: 1.0}
+  - id: ksic-25
+    classification: ksic
+    keys: ["25", "금속가공제품 제조업", "Manufacture of fabricated metal products"]
+    weights: {MATERIALS: 1.0}
+  - id: ksic-26
+    classification: ksic
+    keys:
+      - "26"
+      - "전자부품, 컴퓨터, 영상, 음향 및 통신장비 제조업"
+      - "Manufacture of electronic components, computer, radio, television and communication equipment"
+    weights: {SEMIS: 0.60, TELECOM: 0.20, CAPGOODS: 0.20}
+  - id: ksic-261
+    classification: ksic
+    keys: ["261", "반도체 제조업", "Manufacture of semiconductors"]
+    weights: {SEMIS: 1.0}
+  - id: ksic-27
+    classification: ksic
+    keys: ["27", "의료, 정밀, 광학기기 및 시계 제조업", "Manufacture of medical, precision and optical instruments"]
+    weights: {HEALTH: 0.50, CAPGOODS: 0.50}
+  - id: ksic-28
+    classification: ksic
+    keys: ["28", "전기장비 제조업", "Manufacture of electrical equipment"]
+    weights: {CAPGOODS: 1.0}
+  - id: ksic-29
+    classification: ksic
+    keys: ["29", "기타 기계 및 장비 제조업", "Manufacture of other machinery and equipment"]
+    weights: {CAPGOODS: 1.0}
+  - id: ksic-30
+    classification: ksic
+    keys: ["30", "자동차 및 트레일러 제조업", "Manufacture of motor vehicles, trailers and semitrailers"]
+    weights: {AUTOS: 1.0}
+  - id: ksic-31
+    classification: ksic
+    keys: ["31", "기타 운송장비 제조업", "Manufacture of other transport equipment"]
+    weights: {CAPGOODS: 1.0}
+  - id: ksic-32
+    classification: ksic
+    keys: ["32", "가구 제조업", "Manufacture of furniture"]
+    weights: {DISCRET: 1.0}
+  - id: ksic-33
+    classification: ksic
+    keys: ["33", "기타 제품 제조업", "Other manufacturing"]
+    weights: {DISCRET: 1.0}
+  - id: ksic-34
+    classification: ksic
+    keys: ["34", "산업용 기계 및 장비 수리업", "Maintenance and repair services of industrial machinery"]
+    weights: {CAPGOODS: 0.70, BIZSVC: 0.30}
+  - id: ksic-35
+    classification: ksic
+    keys: ["35", "전기, 가스, 증기 및 공기조절 공급업"]
+    weights: {UTILITIES: 1.0}
+  - id: ksic-41
+    classification: ksic
+    keys: ["41", "종합 건설업", "Building construction"]
+    weights: {CONSTRUCT: 1.0}
+  - id: ksic-42
+    classification: ksic
+    keys: ["42", "전문직별 공사업", "Civil engineering"]
+    weights: {CONSTRUCT: 1.0}
+  - id: ksic-58
+    classification: ksic
+    keys: ["58", "출판업", "Publishing activities"]
+    weights: {SOFTWARE: 0.60, DISCRET: 0.40}
+  - id: ksic-61
+    classification: ksic
+    keys: ["61", "우편 및 통신업", "Telecommunications"]
+    weights: {TELECOM: 1.0}
+  - id: ksic-62
+    classification: ksic
+    keys: ["62", "컴퓨터 프로그래밍, 시스템 통합 및 관리업", "Computer programming, consultancy"]
+    weights: {SOFTWARE: 1.0}
+  - id: ksic-63
+    classification: ksic
+    keys: ["63", "정보서비스업", "Information service activities"]
+    weights: {SOFTWARE: 1.0}
+  - id: ksic-64
+    classification: ksic
+    keys: ["64", "금융업", "Financial service activities"]
+    weights: {BANKS: 1.0}
+  - id: ksic-65
+    classification: ksic
+    keys: ["65", "보험 및 연금업", "Insurance"]
+    weights: {INSURANCE: 1.0}
+  - id: ksic-68
+    classification: ksic
+    keys: ["68", "부동산업", "Real estate activities"]
+    weights: {REALESTATE: 1.0}
+  - id: ksic-86
+    classification: ksic
+    keys: ["86", "보건업", "Human health activities"]
+    weights: {HEALTH: 1.0}

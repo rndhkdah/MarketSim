@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package marketsim.api.v1;
+
+// Optional gRPC transport (T9.06). Same closed schemas as REST / LocalClient
+// (marketsim.api.schemas, API_SCHEMA_VERSION = "v1.1"). Bodies are JSON of those
+// pydantic models — do not fork field names. Observation is extra=forbid.
+// Auth: metadata "authorization" = "Bearer <token>" (same as REST).
+// Default tests must not run protoc / grpc_tools.
+
+service MarketSim {
+  rpc Observe(JsonRequest) returns (JsonReply);
+  rpc Submit(JsonRequest) returns (JsonReply);
+  rpc SubmitOrders(JsonRequest) returns (JsonReply);
+  rpc SubmitDecisions(JsonRequest) returns (JsonReply);
+  rpc Step(JsonRequest) returns (JsonReply);
+  rpc Reset(JsonRequest) returns (JsonReply);
+  rpc StateHash(JsonRequest) returns (JsonReply);
+  rpc Status(JsonRequest) returns (JsonReply);
+}
+
+message JsonRequest {
+  string schema_version = 1;  // "v1.1"
+  string json = 2;            // request object / model_dump_json
+}
+
+message JsonReply {
+  string schema_version = 1;
+  string json = 2;
+}

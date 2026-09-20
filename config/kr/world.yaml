@@ -1,0 +1,5 @@
+# Thin WorldSettings snippet (T8.11). WorldSettings.io_source is
+# Literal["seed", "bea"] — there is no "bok" value (do not edit config.py).
+# Keep the US seed until a human reviews a BOK aggregation; see README.md.
+
+io_source: seed
