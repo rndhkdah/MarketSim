@@ -25,6 +25,7 @@ class WantsConfig(FrozenModel):
     min_share: float = 0.01
     max_share: float = 0.95
     availability_kappa: float = 1.0
+    shift_persistence_q: float = 4.0
     wants: dict[str, WantSpec]
 
 
@@ -40,6 +41,7 @@ class WantLayer:
     max_share: float
     kappa: float
     shift: np.ndarray  # (Q,) multiplicative; 1 at rest
+    persistence_q: float = 4.0
 
     @property
     def n_wants(self) -> int:
@@ -72,6 +74,7 @@ def load_wants(raw: dict, codes: tuple[str, ...] = CODES) -> WantLayer:
         max_share=cfg.max_share,
         kappa=cfg.availability_kappa,
         shift=np.ones(len(names)),
+        persistence_q=float(cfg.shift_persistence_q),
     )
 
 
@@ -105,3 +108,57 @@ def allocate_within_want(
 def want_price(layer: WantLayer, shares: np.ndarray, prices: np.ndarray) -> np.ndarray:
     """Spending-weighted want price ``P_q`` (index)."""
     return np.maximum((shares * np.asarray(prices, dtype=float)[None, :]).sum(axis=1), 1e-12)
+
+
+@dataclass
+class WantShifts:
+    """Regional multiplicative want shifters ``(R, Q)``. Rest = 1.
+
+    Inject is ``shift *= 1 + magnitude`` (so −0.5 → ×0.5). Decay is
+    ``s ← 1 + ρ(s − 1)`` with ``ρ = exp(−1/(3·persistence_q))``.
+    """
+
+    names: tuple[str, ...]
+    values: np.ndarray
+    rho: float
+
+    @classmethod
+    def at_rest(cls, n_regions: int, names: tuple[str, ...], rho: float) -> WantShifts:
+        """Rest state: every entry 1 (dimensionless)."""
+        q = len(names)
+        return cls(names=names, values=np.ones((int(n_regions), q)), rho=float(rho))
+
+    def inject(
+        self,
+        want: str,
+        magnitude: float,
+        regions: np.ndarray | None = None,
+    ) -> None:
+        """Multiply listed regions (all if ``None``) by ``1 + magnitude``."""
+        q = self.names.index(want)
+        factor = 1.0 + float(magnitude)
+        if regions is None:
+            self.values[:, q] *= factor
+        else:
+            self.values[np.asarray(regions, dtype=int), q] *= factor
+
+    def decay(self) -> None:
+        """AR(1) toward rest. Units: dimensionless."""
+        self.values[:] = 1.0 + (self.values - 1.0) * self.rho
+
+    def national(self, weights: np.ndarray | None = None) -> np.ndarray:
+        """Population-weighted ``(Q,)`` shifter (equal weights if omitted)."""
+        r = self.values.shape[0]
+        if r == 1:
+            return self.values[0]
+        w = np.full(r, 1.0 / r) if weights is None else np.asarray(weights, dtype=float)
+        w = w / w.sum()
+        return w @ self.values
+
+    def to_state(self) -> dict[str, object]:
+        return {"values": self.values.tolist(), "rho": float(self.rho), "names": list(self.names)}
+
+    def from_state(self, state: dict[str, object]) -> None:
+        self.values = np.asarray(state["values"], dtype=float)
+        self.rho = float(state["rho"])
+        self.names = tuple(state["names"])  # type: ignore[arg-type]

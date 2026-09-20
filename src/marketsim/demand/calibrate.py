@@ -304,6 +304,7 @@ def render_wants_yaml(raw: dict[str, Any], layer: WantLayer, codes: tuple[str, .
     lines.append(f"min_share: {raw.get('min_share', 0.01)}")
     lines.append(f"max_share: {raw.get('max_share', 0.95)}")
     lines.append(f"availability_kappa: {raw.get('availability_kappa', 1.0)}")
+    lines.append(f"shift_persistence_q: {raw.get('shift_persistence_q', 4.0)}")
     lines.append("wants:")
     for q, name in enumerate(layer.names):
         spec = raw["wants"][name]

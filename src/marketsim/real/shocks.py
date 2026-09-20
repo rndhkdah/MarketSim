@@ -8,6 +8,7 @@ from typing import Any
 import numpy as np
 
 from marketsim.core.config import Config
+from marketsim.demand.wants import WantShifts
 from marketsim.ledger.journal import Entry, Ledger, Tx
 
 KIND_KEY = {
@@ -70,6 +71,7 @@ class ShockBus:
         }
         self.rho: dict[str, float] = {k: 0.0 for k in self.states}
         self.recon_demand = np.zeros(n)
+        self.want_shifts: WantShifts | None = None
         self._default_rho: dict[str, float] = {}
         for kind, key in KIND_KEY.items():
             pq = float(_spec_dump(cfg, kind).get("persistence_q", 0.0))
@@ -112,6 +114,8 @@ class ShockBus:
                 economy=economy,
                 tick=tick,
             )
+        if kind == "want":
+            return self._inject_want(w, targets, persistence_q)
         if kind not in KIND_KEY:
             raise KeyError(f"unknown shock kind {kind!r}")
         key = KIND_KEY[kind]
@@ -140,6 +144,28 @@ class ShockBus:
             else:
                 self.states[key] = float(val) * rho
         self.sync()
+        if self.want_shifts is not None:
+            self.want_shifts.decay()
+
+    def attach_want_shifts(self, shifts: WantShifts) -> None:
+        """Bind the T3.13 ``(R, Q)`` shifter table."""
+        self.want_shifts = shifts
+
+    def _inject_want(
+        self,
+        magnitude: float,
+        targets: list[str] | None,
+        persistence_q: float | None,
+    ) -> float:
+        if self.want_shifts is None:
+            raise ValueError("want inject requires attach_want_shifts")
+        if not targets:
+            raise ValueError("want inject requires targets= want names")
+        if persistence_q is not None:
+            self.want_shifts.rho = ar1_rho(float(persistence_q))
+        for name in targets:
+            self.want_shifts.inject(name, float(magnitude))
+        return float(magnitude)
 
     def _target_weights(self, kind: str, targets: list[str] | None) -> np.ndarray:
         n = len(self.codes)
@@ -198,17 +224,22 @@ class ShockBus:
         return out
 
     def to_state(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "states": {k: (v.tolist() if isinstance(v, np.ndarray) else float(v)) for k, v in self.states.items()},
             "rho": dict(self.rho),
             "recon_demand": self.recon_demand.tolist(),
         }
+        if self.want_shifts is not None:
+            out["want_shifts"] = self.want_shifts.to_state()
+        return out
 
     def from_state(self, state: dict[str, Any]) -> None:
         for k, v in state["states"].items():
             self.states[k] = np.asarray(v, dtype=float) if isinstance(v, list) else float(v)
         self.rho = {k: float(v) for k, v in state["rho"].items()}
         self.recon_demand = np.asarray(state["recon_demand"], dtype=float)
+        if self.want_shifts is not None and "want_shifts" in state:
+            self.want_shifts.from_state(state["want_shifts"])
         self.sync()
 
 

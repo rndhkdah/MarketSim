@@ -9,6 +9,8 @@ import numpy as np
 from marketsim.core.config import Config
 from marketsim.core.erlang import ErlangSmoother
 from marketsim.core.module import Phase
+from marketsim.demand.system import TiersWantsDemand
+from marketsim.demand.wants import WantShifts
 from marketsim.layer1.io import IOTable
 from marketsim.ledger.opening import GOVT_MIX, open_passthrough_books
 from marketsim.pricing.provider import StubAssetPriceProvider
@@ -65,7 +67,7 @@ from marketsim.real.production import (
 from marketsim.real.residential import ResidentialBlock
 from marketsim.real.row import exports, import_bill
 from marketsim.real.settlement import MonthFlows, settle_and_check, settle_month
-from marketsim.real.shocks import ShockBus
+from marketsim.real.shocks import ShockBus, ar1_rho
 from marketsim.real.steady_state import (
     FinancialBaseline,
     RealBaseline,
@@ -179,6 +181,12 @@ class RealEconomy:
         self.theta = real.flat(real.C0) / real.flat(real.C0).sum()
         self.bus = ShockBus.from_config(cfg, real.codes)
         self.sh = self.bus.states
+        if isinstance(self.demand, TiersWantsDemand):
+            shifts = WantShifts.at_rest(
+                r_dim, self.demand.layer.names, ar1_rho(self.demand.layer.persistence_q)
+            )
+            self.bus.attach_want_shifts(shifts)
+            self.demand.shifts = shifts
         self.prices_provider = StubAssetPriceProvider.from_baseline(real, fin, cfg)
         self.credit = CreditBlock(cfg, real, fin, self.prices_provider)
         self.typed = TypedEdgeBlock(cfg, real.codes)

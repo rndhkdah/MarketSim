@@ -10,7 +10,7 @@ import yaml
 from marketsim.core.config import Config
 from marketsim.demand.packages import PackageSet, load_packages, want_shares
 from marketsim.demand.tiers import Tiers, build_tiers
-from marketsim.demand.wants import WantLayer, allocate_within_want, load_wants, want_price
+from marketsim.demand.wants import WantLayer, WantShifts, allocate_within_want, load_wants, want_price
 from marketsim.layer1.build_io import CODES
 
 
@@ -101,6 +101,12 @@ class TiersWantsDemand:
         self.dem_rate_semi = np.asarray(dem_rate_semi, dtype=float)
         self.vat = float(vat)
         self.excise = np.zeros_like(self.theta) if excise is None else np.asarray(excise, dtype=float)
+        self.shifts: WantShifts | None = None
+
+    def _want_shift(self) -> np.ndarray:
+        if self.shifts is not None:
+            return self.shifts.national()
+        return self.layer.shift
 
     @classmethod
     def from_config(
@@ -147,7 +153,7 @@ class TiersWantsDemand:
         y = float(income_index)
         av = np.ones_like(p) if avail is None else np.maximum(np.asarray(avail, dtype=float), 1e-12)
         shift = np.ones_like(p) if shifters is None else np.asarray(shifters, dtype=float)
-        v = want_shares(y, self.packages, self.tiers) * self.layer.shift
+        v = want_shares(y, self.packages, self.tiers) * self._want_shift()
         v = v / max(float(v.sum()), 1e-12)
         within = allocate_within_want(self.layer, p, av, clip_bounds=False)
         p_q = want_price(self.layer, within, p)
