@@ -11,6 +11,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from marketsim.core.errors import ConfigError
+from marketsim.regions.geometry import RegionsConfig, build_geometry
 
 ERLANG_RE = re.compile(r"^erlang\((\d+)\)$")
 
@@ -595,6 +596,7 @@ class Config(FrozenModel):
     world: WorldSettings
     dynamics: DynamicsConfig | None = None
     policy: PolicyFile | None = None
+    regions: RegionsConfig | None = None
 
     @property
     def codes(self) -> tuple[str, ...]:
@@ -668,10 +670,12 @@ def _validate_codes(cfg: Config) -> None:
     for e in edges:
         if e.src not in allowed or e.dst not in allowed:
             raise ConfigError(f"edge endpoint not recognised: {e.src} -> {e.dst}")
+    if cfg.regions is not None:
+        build_geometry(cfg.regions, cfg.codes)
 
 
 def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None) -> Config:
-    """Load `sectors.yaml`, `edges.yaml`, `world.yaml`, optional `dynamics.yaml`."""
+    """Load `sectors.yaml`, `edges.yaml`, `world.yaml`; optional dynamics/policy/regions."""
     root = Path(config_dir).resolve()
     if not root.is_dir():
         raise ConfigError(f"config dir not found: {root}")
@@ -685,12 +689,16 @@ def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None)
     pol_path = root / "policy.yaml"
     policy_raw = _read_yaml(pol_path) if pol_path.exists() else None
 
+    reg_path = root / "regions.yaml"
+    regions_raw = _read_yaml(reg_path) if reg_path.exists() else None
+
     bundle = {
         "sectors": sectors_raw,
         "edges": edges_raw,
         "world": world_raw,
         "dynamics": dynamics_raw,
         "policy": policy_raw,
+        "regions": regions_raw,
     }
     # overrides use dotted paths from the bundle root, e.g. world.seed or dynamics.prices.kappa_util
     if overrides:
@@ -705,10 +713,21 @@ def load_config(config_dir: str | Path, overrides: dict[str, Any] | None = None)
             DynamicsConfig.model_validate(bundle["dynamics"]) if bundle["dynamics"] is not None else None
         )
         policy = PolicyFile.model_validate(bundle["policy"]) if bundle["policy"] is not None else None
+        regions = (
+            RegionsConfig.model_validate(bundle["regions"]) if bundle["regions"] is not None else None
+        )
     except Exception as exc:  # pydantic ValidationError
         raise ConfigError(str(exc)) from exc
 
-    cfg = Config(config_dir=root, sectors=sectors, edges=edges, world=world, dynamics=dynamics, policy=policy)
+    cfg = Config(
+        config_dir=root,
+        sectors=sectors,
+        edges=edges,
+        world=world,
+        dynamics=dynamics,
+        policy=policy,
+        regions=regions,
+    )
     _validate_codes(cfg)
     return cfg
 

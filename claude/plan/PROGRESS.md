@@ -67,7 +67,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 
 ## Phase 3 — Regions and demand layer (16 tasks) — `03-phase3-regions-demand.md`
 
-- [ ] T3.01 — `regions.yaml` and geometry · S · deps: T2.23
+- [x] T3.01 — `regions.yaml` and geometry · S · deps: T2.23 — 2026-09-20, §3.2 schema; R=1 accepted
 - [ ] T3.02 — Regionalise the state (R = 1 parity) · M · deps: T3.01
 - [ ] T3.03 — Baseline trade shares and regional steady state · M · deps: T3.02
 - [ ] T3.04 — Regional orders, rationing and link capacity · M · deps: T3.03
