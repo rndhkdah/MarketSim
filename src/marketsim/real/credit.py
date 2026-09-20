@@ -87,6 +87,7 @@ class CreditBlock:
         self.spread = self.s0
         self.capital_requirement = cfg.dynamics.banks.capital_target
         self.ltv_cap = 1.0
+        self.event_coll_mult = 1.0
 
     def update(
         self,
@@ -119,7 +120,7 @@ class CreditBlock:
         self.v_trend += (self.v_re - self.v_trend) / self.trend_tau
         rel = max(self.v_re, 1e-12) / max(self.v_trend, 1e-12)
         gap = 0.0 if abs(rel - 1.0) < LAM_SNAP else float(np.log(rel))
-        raw = collateral_index(gap) * float(self.ltv_cap)
+        raw = collateral_index(gap) * float(self.ltv_cap) * float(self.event_coll_mult)
         self.lam_coll = _snap_one(float(self.lam_s.push(raw)))
         self.lam = _snap_one(self.gate * self.lam_coll)
         push = 1.0 if self.lam == 1.0 else self.lam

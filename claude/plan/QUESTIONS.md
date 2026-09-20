@@ -89,4 +89,11 @@ Format: `## <task ID> — <one-line question>` · what blocks · option A · opt
 - option B: Human accepts a config / ADR change.
 - recommendation: A.
 
+## T4.11 — historic cost-push seeds are not 24-month SFC-finite
+
+- what blocks: §4.4 oil seed is lognormal median 1.25 (crude ×4 as `z_cost`); energy_inflation ENERGY uniform 0.5–0.9. The Phase-2 cost-push IRF is **+0.30** and already delivers ~+72 % CPI @12m (T2.24). At the historic seeds, `step_max` 0.15 compounds, the dual-mandate rule ratchets `r` above 90 %, ENERGY output hits 0 around month 12, and SFC / IEEE overflow appear by month 17–18. Covid labour_supply −10…−15 % plus want shifts is SFC-finite but HEALTH never rises vs baseline (labour cap dominates); DISCRET < −15 % holds in the want-shift window.
+- option A: Keep the YAML seeds for T4.13; assert §4.5 directions on the finite prefix (12m oil/energy; covid relative HEALTH vs DISCRET in months 1–6). 10× storm (T4.10) omits those three ids until T4.13 maps crude ×4 onto a `z_cost` the engine can digest (likely ~0.3–0.4, not ln 4).
+- option B: Rewrite `config/events/*.yaml` now so medians match the IRF-safe band (changes the shipped historic table before the calibration card).
+- recommendation: A. T4.13 is the magnitude card; do not retune `edges.yaml` / `sectors.yaml`.
+
 

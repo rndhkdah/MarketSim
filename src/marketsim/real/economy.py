@@ -289,6 +289,9 @@ class RealEconomy:
             ln_q=q,
             cap_mult=dyn.capex.start_rate_cap_mult,
         )
+        pref = getattr(self, "event_capex_pref", None)
+        if pref is not None:
+            rate = rate * np.maximum(np.asarray(pref, dtype=float), 0.0)
         starts = self.credit.scale_starts(self.k * rate / 12.0)
         ee = step_entry_exit(self.eb_s, self.k, self._pr0, self._excess_sm, dyn.entry_exit, p=self.p)
         self._excess_sm = ee.smoothed
@@ -394,7 +397,7 @@ class RealEconomy:
             ustar=self.ustar,
             plan=plan,
             z_sup=sh["sup"],
-            lf=real.LF,
+            lf=self.lf,
             cfg=cfg,
             pi_e=self.cb.pi_e,
         )

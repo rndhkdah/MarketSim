@@ -97,11 +97,11 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T4.07 — Data release calendar · M · deps: T2.17, T0.10 — 2026-09-20, CPI d10 / U d5 / GDP q+rev; observe vintages only
 - [x] T4.08 — Historic templates and generic events · M · deps: T4.03 — 2026-09-20, 11 templates + generics; DAG Σp≤0.9
 - [x] T4.09 — Scenario runner · S · deps: T4.05 — 2026-09-20, scripted ticks; hazards off; RNG isolation
-- [ ] T4.10 — Cascade and storm tests · S · deps: T4.08
-- [ ] T4.11 — Template direction tests · M · deps: T4.08, T4.09
-- [ ] T4.12 — Firm-level event hooks · S · deps: T4.03
+- [x] T4.10 — Cascade and storm tests · S · deps: T4.08 — 2026-09-20, chip cascade ±20%; 20y 10× storm |gap|<25% (oil/energy/covid omitted, QUESTIONS T4.11)
+- [x] T4.11 — Template direction tests · M · deps: T4.08, T4.09 — 2026-09-20, §4.5 on/off; oil/energy 12m prefix; covid want-window; see QUESTIONS
+- [x] T4.12 — Firm-level event hooks · S · deps: T4.03 — 2026-09-20, FirmHookBus no-op; strike/recall/accident/bankruptcy
 - [ ] T4.13 — Magnitude calibration · M · deps: T4.11 · **HUMAN GATE**
-- [ ] T4.14 — Policy events under scripted or agent-controlled authorities (D13) · S · deps: T4.05, T2.27
+- [x] T4.14 — Policy events under scripted or agent-controlled authorities (D13) · S · deps: T4.05, T2.27 — 2026-09-20, follow-up block + pressure news; transfer_oneoff; gate 5 modes
 
 - [ ] **GATE P4** — human review against the gate in the phase file
 
