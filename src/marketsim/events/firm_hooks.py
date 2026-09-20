@@ -1,11 +1,19 @@
-"""T4.12 — firm-level event hooks (no-op until Phase 5)."""
+"""T4.12 / T5.15 — firm-level event hooks."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
 
-FIRM_EVENT_IDS = ("plant_accident", "strike", "recall", "large_bankruptcy")
+FIRM_EVENT_IDS = (
+    "plant_accident",
+    "strike",
+    "recall",
+    "large_bankruptcy",
+    "firm_plant_accident",
+    "firm_strike",
+    "firm_recall",
+)
 
 
 @dataclass
@@ -53,3 +61,48 @@ def payload_from_event(spec: Any, tick: int, *, magnitude: float | None = None) 
         regions=tuple(str(x) for x in regions),
         magnitude=magnitude,
     )
+
+
+def apply_firm_hook(
+    payload: FirmHookPayload,
+    registry: Any,
+    ledger: Any,
+    *,
+    duration_m: int = 1,
+) -> None:
+    """Apply a firm event through plants / labour / inventory and the ledger."""
+    from marketsim.firms.accounts import firm_entity
+    from marketsim.ledger.journal import Entry, Tx
+
+    mag = float(payload.magnitude or 0.10)
+    for fid in payload.firms:
+        firm = registry[fid]
+        ent = firm_entity(fid)
+        if payload.event_id in {"plant_accident", "firm_plant_accident"}:
+            for plant in firm.plants:
+                if payload.sectors and plant.sector not in payload.sectors:
+                    continue
+                if payload.regions and plant.region not in payload.regions:
+                    continue
+                lost = plant.capacity * mag
+                plant.capacity -= lost
+                break
+        elif payload.event_id in {"strike", "firm_strike"}:
+            firm.vacancies = 0.0
+            parked = firm.employees
+            firm.employees = 0.0
+            firm.backlog[("strike", "labour")] = parked
+            del duration_m
+        elif payload.event_id in {"recall", "firm_recall"}:
+            inv = sum(firm.finished_inventories.values())
+            firm.finished_inventories.clear()
+            hit = inv * mag if inv else mag
+            if "DEP" in ledger.instruments and ent in ledger.entities:
+                sink = "HH:0" if "HH:0" in ledger.entities else "GOVT"
+                if sink not in ledger.entities:
+                    ledger.register_entity(sink)
+                ledger.post(
+                    Tx(payload.tick, "insurance_claims", (Entry(ent, "DEP", -hit), Entry(sink, "DEP", hit)))
+                )
+        registry._firms[fid] = firm  # keep identity; plants mutated in place
+

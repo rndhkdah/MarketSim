@@ -1,0 +1,14 @@
+id: firm_strike
+category: firm
+hazard:
+  base_rate_per_year: 0.05
+composition:
+- shock: supply
+  magnitude: {dist: uniform, min: 0.04, max: 0.12, sign: -1, verify: false}
+  persistence_q: 1
+  targets: {sectors: [TRANSPORT]}
+targets: {regions: all, firms: []}
+effects_extra: []
+followups: []
+news: {headline: Strike stops a firm's labour, publication_lag_days: 0, noise: 0.2}
+cooldown_days: 252
