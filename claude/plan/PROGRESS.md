@@ -199,7 +199,7 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T8.07 — Game layer contract · L · deps: T7.15 — 2026-09-20, pacing/slots/score/narrative; scripted player via public API
 - [ ] T8.08 — Regulator · M · deps: T7.14
 - [ ] T8.09 — Regional real-estate asset · M · deps: T7.14
-- [ ] T8.10 — Tier-3 counterfactual validation (research) · M · deps: T7.14
+- [x] T8.10 — Tier-3 counterfactual validation (research) · M · deps: T7.14 — 2026-09-20, kernel invariance + dose-response; empty World is a negative result; report limits claims
 - [ ] T8.11 — Korea-flavoured calibration set (optional) · M · deps: T8.04
 - [ ] T8.12 — Goods layer (only if ADR T3.16 approved it) · L · deps: T3.16, T7.14
 

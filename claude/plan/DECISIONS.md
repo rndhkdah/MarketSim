@@ -226,4 +226,38 @@ Reproduced target (numpy 2.4 / scipy 1.17 sandbox):
   orchestrator card).
 - consequences: Phase 6 (T6.01) is unblocked on mechanism.
 
+## ADR-013 — GATE P6 review against master plan §9 / phase §6.1
+
+- date: 2026-09-20
+- status: proposed (GATE P6; higher-reasoning recommendation)
+- context: Master plan §9 Phase 6 requires Tier-2 impact, stock–bond regime flip, takeover +
+  liquidation cascade, and §6.11 bond gates. T6.19 World feedback hook is still in QUESTIONS.
+- decision: **Propose GATE P6 as met for the shipped market mechanism, with T6.19 deferred.**
+  Do not tick the PROGRESS checkbox as human-accepted. Evidence:
+  1. Betas-emerge Spearman 0.988/1/1/1; BANKS only +rate (T6.05 / gate 1).
+  2. Regime flip and Tier-1/2 impact on the 25-name book (T6.21 / T6.07 / T6.31).
+  3. Takeover at next strictly-later month-end; liquidation waterfall; SFC (T6.16 / T6.13).
+  4. Bond gates 9–16 collected (T6.31); live `values()` stub Δρ = 0.35 so credit IRFs stay put.
+- not claimed: T6.19 maps exist but are not on the monthly `World` stepper; credit-crunch 12y
+  |gap| remains a pre-T6 xfail (do not loosen).
+- consequences: Phase 7 API work already landed on this branch.
+
+## ADR-014 — GATE P7 review against master plan §9 / phase §7.1
+
+- date: 2026-09-20
+- status: proposed (GATE P7; higher-reasoning recommendation)
+- context: Master plan §9 Phase 7 is done when “multi-agent training run end-to-end;
+  ≥ 1,000 ticks/s small world in-process; deterministic replay.”
+- decision: **Propose GATE P7 as met for the shipped API/SDK.** Do not tick the PROGRESS
+  checkbox as human-accepted. Evidence:
+  1. Gate 1: 4 random + 2 scripted PettingZoo agents, 50,000 ticks, invariant counters zero (T7.14).
+  2. Gate 2: lockstep `(agent, seq)` apply; replay reproduces per-tick hashes (T7.06 / T7.10).
+  3. Gate 3: 5,488 ticks/s small world; 4,786 ticks/s with 8 scripted agents
+     (`claude/plan/reports/phase7-throughput.md`). REST/WS overhead documented. No Rust (T9.05).
+  4. Schemas `v1.1`; OpenAPI; SDK + Gymnasium/PettingZoo; examples in CI (T7.01 / T7.07–T7.15).
+  5. Professional-mode information rules; policymaker D13 + bond desk (T7.16 / T7.17).
+- not claimed: T6.19 still off the World hook; R=3 monthly stepper still QUESTIONS T3.15.
+- consequences: Phase 8 cards that depend on T7.14 are unblocked. Human may still reject
+  the empty-module World used for the 50k smoke (no RealEconomy).
+
 
