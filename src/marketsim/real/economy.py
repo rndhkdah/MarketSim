@@ -208,6 +208,19 @@ class RealEconomy:
             u=dyn.labour.u_star,
             infl=fin.pi_star,
         )
+        self.firm_registry = None
+        self.cell_book = None
+
+    def attach_firms(self, registry: Any, book: Any | None = None) -> None:
+        """Plug agent firms into cell aggregates. No-op on ``step_month`` until T5.07."""
+        self.firm_registry = registry
+        self.cell_book = book
+
+    def cell_aggregates(self) -> list[Any]:
+        """NPC + firm supply, employment and ``p_ref`` per cell (T5.04)."""
+        from marketsim.firms.cells import economy_cell_aggregates
+
+        return economy_cell_aggregates(self)
 
     def step_month(self) -> dict[str, Any]:
         cfg, real, fin, dyn = self.cfg, self.real, self.fin, self.cfg.dynamics
