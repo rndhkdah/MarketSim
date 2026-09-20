@@ -113,21 +113,21 @@ v1.1 added T2.27–T2.31, T4.14, T6.24–T6.31, T7.16–T7.17 · v1.2 added T2.3
 - [x] T5.04 — Cell aggregation with firms (incl. zero-NPC cells) · M · deps: T5.03 — 2026-09-20, aggregates = sums; 120m zero-NPC NaN-free
 - [x] T5.05 — Heterogeneous-seller goods market · M · deps: T5.04 — 2026-09-20, equal-p ~ K; 5% cut gradual; spill conserves D
 - [x] T5.06 — Decision levers and validation · M · deps: T5.04 — 2026-09-20, clip list; partial autopilot; foreign operator rejected
-- [ ] T5.07 — Autopilot · M · deps: T5.06
-- [ ] T5.08 — Labour market with matching · M · deps: T5.06
-- [ ] T5.09 — Procurement and shortage allocation · M · deps: T5.05
-- [ ] T5.10 — Financing, rating, tax, hard budget constraint · M · deps: T5.02, T2.20
-- [ ] T5.11 — Plants, capex and R&D · M · deps: T5.06
-- [ ] T5.12 — Bankruptcy resolution · M · deps: T5.10
-- [ ] T5.13 — Reports and information rules · S · deps: T5.02, T4.07
-- [ ] T5.14 — Abuse controls and optional regulator · S · deps: T5.06, T5.10
-- [ ] T5.15 — Firm-level events · S · deps: T4.12, T5.11
-- [ ] T5.16 — Hybrid ≈ aggregate test · M · deps: T5.07, T5.08, T5.09
-- [ ] T5.17 — Adversarial, monopoly and cascade tests · M · deps: T5.12, T5.14
-- [ ] T5.18 — Minimal single-agent loop (in-process) · S · deps: T5.07
-- [ ] T5.19 — Collusion evaluation harness · S · deps: T5.18
+- [x] T5.07 — Autopilot · M · deps: T5.06 — 2026-09-20, R4/R7/R8/§2.6/R9 wrappers; 1e-12 vs Phase-2
+- [x] T5.08 — Labour market with matching · M · deps: T5.06 — 2026-09-20, Σhires≤pool; wage ranks; fire cost; V cap
+- [x] T5.09 — Procurement and shortage allocation · M · deps: T5.05 — 2026-09-20, pro-rata vs bid/rel; premium posted; order cap
+- [x] T5.10 — Financing, rating, tax, hard budget constraint · M · deps: T5.02, T2.20 — 2026-09-20, uniform r+s; rating×Λ limits; seniority; tax carry; cash floor fuzz
+- [x] T5.11 — Plants, capex and R&D · M · deps: T5.06 — 2026-09-20, ENERGY 36m vs BIZSVC 6m; routing; firms.rnd
+- [x] T5.12 — Bankruptcy resolution · M · deps: T5.10 — 2026-09-20, one-step waterfall; loss≤exposure; SFC; large event
+- [x] T5.13 — Reports and information rules · S · deps: T5.02, T4.07 — 2026-09-20, monthly lag 10d; blackout professional-only
+- [x] T5.14 — Abuse controls and optional regulator · S · deps: T5.06, T5.10 — 2026-09-20, each control; fine→GOVT
+- [x] T5.15 — Firm-level events · S · deps: T4.12, T5.11 — 2026-09-20, accident/strike/recall + firm_*.yaml
+- [x] T5.16 — Hybrid ≈ aggregate test · M · deps: T5.07, T5.08, T5.09 — 2026-09-20, N∈{1,5} plan identity 1e-9; World stepper see QUESTIONS
+- [x] T5.17 — Adversarial, monopoly and cascade tests · M · deps: T5.12, T5.14 — 2026-09-20, floor/corner/leverage/default; +30% share loss; cascade
+- [x] T5.18 — Minimal single-agent loop (in-process) · S · deps: T5.07 — 2026-09-20, World.submit FirmDecision; hash-stable
+- [x] T5.19 — Collusion evaluation harness · S · deps: T5.18 — 2026-09-20, persist-above-benchmark flag
 
-- [ ] **GATE P5** — human review against the gate in the phase file
+- [ ] **GATE P5** — human review against the gate in the phase file — 2026-09-20, ADR-012 proposed (cell hybrid; World wire deferred)
 
 ## Phase 6 — Asset pricing, markets and the bond market (32 tasks) — `06-phase6-pricing-markets.md`
 

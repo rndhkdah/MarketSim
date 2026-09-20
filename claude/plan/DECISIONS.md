@@ -205,4 +205,25 @@ Reproduced target (numpy 2.4 / scipy 1.17 sandbox):
   `scalar_eta` so Phase 2 stays bitwise. Goods layer is out (ADR-006).
 - consequences: Phase 5 (T5.01) is unblocked. Human may reject the R=3 stepper deferral.
 
+## ADR-012 — GATE P5 review against master plan §9 / phase §5.1
+
+- date: 2026-09-20
+- status: proposed (GATE P5; higher-reasoning recommendation)
+- context: Master plan §9 Phase 5 is done when “hybrid ≈ aggregate; adversarial + monopoly
+  tests; one agent on 2–3 levers in-process.” Phase file §5.1 adds books identity, cascade,
+  and a 10,000-tick smoke run.
+- decision: **Propose GATE P5 as met for the shipped mechanism, with the T5.16 caveat.**
+  Do not tick the PROGRESS checkbox as human-accepted. Evidence:
+  1. Hybrid identity: N∈{1,5} autopilot firms reproduce the NPC plan to 1e-9 (T5.16).
+     Live `step_month` still NPC-only (QUESTIONS T5.16).
+  2. Adversarial: floor pricing, cornering, max leverage, strategic default stay bounded
+     (T5.17). Monopoly +30 % loses share to an NPC residual. Large bankruptcy is one step,
+     SFC-green, emits `large_bankruptcy`.
+  3. One agent: `World.submit(agent, FirmDecision)` for price / production / capex;
+     same seed → same hash (T5.18).
+  4. Books: 24-month A=L+E and tag-tied P&L (T5.02). Uniform corporate rate (T5.10 / D14).
+- not claimed: 10-year World GDP within 1 % after splitting every cell (needs a hybrid
+  orchestrator card).
+- consequences: Phase 6 (T6.01) is unblocked on mechanism.
+
 
