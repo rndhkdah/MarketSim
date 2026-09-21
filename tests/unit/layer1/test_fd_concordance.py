@@ -166,7 +166,7 @@ def test_fd_xlsx_does_not_touch_seed_io(tmp_path: Path, monkeypatch) -> None:
         "Autos": "AUTOS",
     }
     monkeypatch.setattr("fetch_bea_io._load_xlsx", lambda _p: df)
-    before = SEED_IO_TABLE.read_text() if SEED_IO_TABLE.exists() else None
+    before = SEED_IO_TABLE.read_text(encoding="utf-8") if SEED_IO_TABLE.exists() else None
     fd_xlsx = tmp_path / "fd.xlsx"
     fd_xlsx.write_bytes(b"placeholder")
     out = tmp_path / "fd_proposed.npz"
@@ -176,9 +176,9 @@ def test_fd_xlsx_does_not_touch_seed_io(tmp_path: Path, monkeypatch) -> None:
     loaded = np.load(out)
     assert loaded["fd_matrix"].shape == (4, 18)
     if before is not None:
-        assert SEED_IO_TABLE.read_text() == before
+        assert SEED_IO_TABLE.read_text(encoding="utf-8") == before
     assert main(["--fd-xlsx", str(fd_xlsx), "--fd-out", str(SEED_IO_TABLE)]) == 2
-    assert SEED_IO_TABLE.read_text() == before
+    assert SEED_IO_TABLE.read_text(encoding="utf-8") == before
 
 
 def test_load_io_still_sees_seed_weights() -> None:

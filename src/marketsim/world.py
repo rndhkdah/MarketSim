@@ -104,7 +104,7 @@ class World:
         return _hash(self.to_state())
 
     def save(self, path: str | Path) -> None:
-        Path(path).write_text(json.dumps(self.to_state(), default=_json_default))
+        Path(path).write_text(json.dumps(self.to_state(), default=_json_default), encoding="utf-8")
 
     @classmethod
     def load(
@@ -114,7 +114,7 @@ class World:
         modules: list[Module] | None = None,
         overrides: dict[str, Any] | None = None,
     ) -> World:
-        state = json.loads(Path(path).read_text())
+        state = json.loads(Path(path).read_text(encoding="utf-8"))
         world = cls.create(config_dir, seed=int(state["seed"]), overrides=overrides, modules=modules)
         world.load_state(state)
         return world

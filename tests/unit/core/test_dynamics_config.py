@@ -35,15 +35,17 @@ def _copy_cfg(tmp_path: Path, config_dir: Path) -> Path:
     dest = tmp_path / "cfg"
     dest.mkdir()
     for name in ("sectors.yaml", "edges.yaml", "world.yaml", "dynamics.yaml"):
-        (dest / name).write_text((config_dir / name).read_text())
+        (dest / name).write_text(
+            (config_dir / name).read_text(encoding="utf-8"), encoding="utf-8"
+        )
     return dest
 
 
 def _load_mutated(tmp_path: Path, config_dir: Path, mutator) -> None:
     dest = _copy_cfg(tmp_path, config_dir)
-    data = yaml.safe_load((dest / "dynamics.yaml").read_text())
+    data = yaml.safe_load((dest / "dynamics.yaml").read_text(encoding="utf-8"))
     mutator(data)
-    (dest / "dynamics.yaml").write_text(yaml.safe_dump(data))
+    (dest / "dynamics.yaml").write_text(yaml.safe_dump(data), encoding="utf-8")
     load_config(dest)
 
 

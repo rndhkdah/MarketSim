@@ -108,7 +108,7 @@ def _check(table: IOTable) -> None:
 
 def load_io(path: str | Path) -> IOTable:
     p = Path(path)
-    raw = json.loads(p.read_text())
+    raw = json.loads(p.read_text(encoding="utf-8"))
     fd = {k: np.asarray(v, dtype=float) for k, v in raw["final_demand"].items()}
     table = IOTable(
         codes=tuple(raw["codes"]),
@@ -128,7 +128,7 @@ def load_io(path: str | Path) -> IOTable:
 
 
 def save_io(table: IOTable, path: str | Path) -> None:
-    Path(path).write_text(json.dumps(table.to_dict(), indent=2) + "\n")
+    Path(path).write_text(json.dumps(table.to_dict(), indent=2) + "\n", encoding="utf-8")
 
 
 def resolve_io_path(cfg: Config) -> Path:

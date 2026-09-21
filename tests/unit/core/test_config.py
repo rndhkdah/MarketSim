@@ -33,13 +33,13 @@ def _write_bad(tmp_path: Path, config_dir: Path, mutator) -> Path:
     dest = tmp_path / "cfg"
     dest.mkdir()
     for name in ("sectors.yaml", "edges.yaml", "world.yaml", "dynamics.yaml"):
-        text = (config_dir / name).read_text()
+        text = (config_dir / name).read_text(encoding="utf-8")
         data = yaml.safe_load(text)
         if name == "sectors.yaml":
             data = mutator(data) if mutator.__name__.startswith("sec") else data
         if name == "edges.yaml":
             data = mutator(data) if mutator.__name__.startswith("edg") else data
-        (dest / name).write_text(yaml.safe_dump(data))
+        (dest / name).write_text(yaml.safe_dump(data), encoding="utf-8")
     return dest
 
 

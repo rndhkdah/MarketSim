@@ -1,17 +1,9 @@
-# Nested workflow — GitHub only auto-runs workflows under the repo-root .github/.
-# See claude/plan/QUESTIONS.md (T0.02). Run locally with `make check`.
+# This repository root IS the marketsim package root (see AGENTS.md), so the
+# workflow runs from the checkout directory and watches every path.
 name: marketsim
 on:
   push:
-    paths:
-      - "marketsim/**"
   pull_request:
-    paths:
-      - "marketsim/**"
-
-defaults:
-  run:
-    working-directory: marketsim
 
 jobs:
   check:

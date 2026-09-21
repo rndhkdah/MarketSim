@@ -547,7 +547,7 @@ def extract_nipa_final_demand(
 
 def load_concordance_sidecar(path: Path) -> tuple[dict[str, str | dict[str, float]], dict[str, dict[str, float]]]:
     """Read a local YAML sidecar ``{concordance, splits}``. No network."""
-    raw = yaml.safe_load(path.read_text()) or {}
+    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     if not isinstance(raw, dict):
         raise ValueError(f"concordance sidecar is not a mapping: {path}")
     conc = raw.get("concordance") or raw.get("fd_concordance") or {}

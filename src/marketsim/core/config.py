@@ -662,7 +662,7 @@ class Config(FrozenModel):
 
 
 def _read_yaml(path: Path) -> dict[str, Any]:
-    with path.open() as fh:
+    with path.open(encoding="utf-8") as fh:
         data = yaml.safe_load(fh)
     if not isinstance(data, dict):
         raise ConfigError(f"{path} must contain a mapping")

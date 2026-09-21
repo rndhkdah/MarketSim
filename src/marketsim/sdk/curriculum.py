@@ -143,7 +143,7 @@ def scenario_yaml_paths(directory: str | Path) -> list[Path]:
 
 
 def _raw_mapping(path: Path) -> dict[str, Any]:
-    raw = yaml.safe_load(path.read_text())
+    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raise ConfigError(f"{path} must contain a mapping")
     return raw

@@ -6,7 +6,9 @@ from pathlib import Path
 
 from marketsim.events.schema import DistSpec, load_catalog
 
-CATALOG = Path("config/events")
+_ROOT = Path(__file__).resolve().parents[3]
+
+CATALOG = _ROOT / "config" / "events"
 
 
 def _verify_flags(spec) -> list[bool]:
@@ -30,4 +32,4 @@ def test_catalog_has_no_verify_true() -> None:
     for path in CATALOG.glob("*.yaml"):
         if path.name.startswith("_"):
             continue
-        assert "verify: true" not in path.read_text()
+        assert "verify: true" not in path.read_text(encoding="utf-8")

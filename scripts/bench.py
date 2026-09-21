@@ -653,7 +653,7 @@ def main() -> None:
         )
         if args.write_report is not None:
             args.write_report.parent.mkdir(parents=True, exist_ok=True)
-            args.write_report.write_text(md)
+            args.write_report.write_text(md, encoding="utf-8")
             print(f"wrote {args.write_report}")
         elif args.gate3:
             print(md)

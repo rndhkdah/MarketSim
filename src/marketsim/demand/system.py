@@ -121,8 +121,8 @@ class TiersWantsDemand:
     ) -> TiersWantsDemand:
         """Load RAS-fitted ``wants.yaml`` / ``buy_packages.yaml`` from ``cfg.config_dir``."""
         root = cfg.config_dir
-        wants_raw = yaml.safe_load((root / "wants.yaml").read_text())
-        pkgs_raw = yaml.safe_load((root / "buy_packages.yaml").read_text())
+        wants_raw = yaml.safe_load((root / "wants.yaml").read_text(encoding="utf-8"))
+        pkgs_raw = yaml.safe_load((root / "buy_packages.yaml").read_text(encoding="utf-8"))
         layer = load_wants(wants_raw, codes)
         packages = load_packages(pkgs_raw, layer.names)
         tiers = build_tiers(float(pkgs_raw.get("sigma", 0.75)))

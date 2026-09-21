@@ -270,7 +270,7 @@ def load_event(path: str | Path, *, codes: tuple[str, ...] = CODES) -> EventSpec
     """Load one YAML event. Does not check dangling follow-ups (see ``load_catalog``)."""
     p = Path(path)
     try:
-        raw = yaml.safe_load(p.read_text())
+        raw = yaml.safe_load(p.read_text(encoding="utf-8"))
         if not isinstance(raw, dict):
             raise ConfigError(f"{p} must contain a mapping")
         spec = EventSpec.model_validate(raw)

@@ -212,7 +212,7 @@ def load_realestate_spec(
         if markets_path is None
         else Path(markets_path)
     )
-    loaded = yaml.safe_load(path.read_text()) if path.is_file() else {}
+    loaded = yaml.safe_load(path.read_text(encoding="utf-8")) if path.is_file() else {}
     raw = loaded if isinstance(loaded, dict) else {}
     block = raw.get("realestate") if isinstance(raw.get("realestate"), dict) else {}
     prefix = str(block.get("prefix", RE_PREFIX))

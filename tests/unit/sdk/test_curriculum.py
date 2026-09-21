@@ -25,7 +25,9 @@ from marketsim.sdk.curriculum import (
     sharpe,
 )
 
-SCENARIOS = Path("config/scenarios")
+_ROOT = Path(__file__).resolve().parents[3]
+
+SCENARIOS = _ROOT / "config" / "scenarios"
 
 
 def test_every_scenario_yaml_loads() -> None:

@@ -26,7 +26,7 @@ def _config_dir(explicit: str | Path | None = None) -> Path:
 def load_seed(config_dir: str | None = None) -> dict[str, Any]:
     """Read `io_seed.yaml`. Cached per path; contains no Leontief work."""
     path = _config_dir(config_dir) / "io_seed.yaml"
-    with path.open() as fh:
+    with path.open(encoding="utf-8") as fh:
         data = yaml.safe_load(fh)
     if not isinstance(data, dict):
         raise ConfigError(f"invalid seed file: {path}")
@@ -128,7 +128,7 @@ def write_io_table(config_dir: str | Path | None = None, dest: str | Path | None
     root = _config_dir(config_dir)
     dest_path = Path(dest) if dest is not None else root / "io_table.json"
     payload = table_dict(load_seed(str(root)))
-    dest_path.write_text(json.dumps(payload, indent=2) + "\n")
+    dest_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     return dest_path
 
 

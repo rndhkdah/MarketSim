@@ -23,10 +23,12 @@ from marketsim.demand.tiers import build_tiers
 from marketsim.demand.wants import load_wants
 from marketsim.layer1.build_io import CODES
 
+_ROOT = Path(__file__).resolve().parents[3]
+
 
 def test_gate4_committed_artefacts(cfg, io, config_dir: Path) -> None:
-    wants = yaml.safe_load((config_dir / "wants.yaml").read_text())
-    pkgs = yaml.safe_load((config_dir / "buy_packages.yaml").read_text())
+    wants = yaml.safe_load((config_dir / "wants.yaml").read_text(encoding="utf-8"))
+    pkgs = yaml.safe_load((config_dir / "buy_packages.yaml").read_text(encoding="utf-8"))
     layer = load_wants(wants, CODES)
     packages = load_packages(pkgs, layer.names)
     basket, eta_cfg, eta_impl, rho = evaluate_fitted(layer, packages, io, cfg)
@@ -44,7 +46,9 @@ def test_gate4_committed_artefacts(cfg, io, config_dir: Path) -> None:
 
 
 def test_report_lists_every_sector() -> None:
-    report = Path("claude/plan/reports/demand-calibration.md").read_text()
+    report = (_ROOT / "claude" / "plan" / "reports" / "demand-calibration.md").read_text(
+        encoding="utf-8"
+    )
     for code in CODES:
         assert code in report
     assert "config η" in report
@@ -52,7 +56,7 @@ def test_report_lists_every_sector() -> None:
 
 
 def test_calibrate_deterministic(cfg, io, config_dir: Path, tmp_path: Path) -> None:
-    raw = yaml.safe_load((config_dir / "wants.yaml").read_text())
+    raw = yaml.safe_load((config_dir / "wants.yaml").read_text(encoding="utf-8"))
     a = calibrate(cfg, io, raw)
     b = calibrate(cfg, io, raw)
     assert a.wants_yaml == b.wants_yaml
@@ -60,11 +64,11 @@ def test_calibrate_deterministic(cfg, io, config_dir: Path, tmp_path: Path) -> N
     assert a.report_md == b.report_md
     write_outputs(a, tmp_path, tmp_path / "report.md")
     write_outputs(b, tmp_path / "b", tmp_path / "b.md")
-    assert (tmp_path / "buy_packages.yaml").read_text() == (tmp_path / "b" / "buy_packages.yaml").read_text()
+    assert (tmp_path / "buy_packages.yaml").read_text(encoding="utf-8") == (tmp_path / "b" / "buy_packages.yaml").read_text(encoding="utf-8")
 
 
 def test_ras_hits_basket_from_priors(cfg, io, config_dir: Path) -> None:
-    raw = yaml.safe_load((config_dir / "wants.yaml").read_text())
+    raw = yaml.safe_load((config_dir / "wants.yaml").read_text(encoding="utf-8"))
     layer = load_wants(raw, CODES)
     tiers = build_tiers()
     packages = PackageSet(

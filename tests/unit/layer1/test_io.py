@@ -30,6 +30,6 @@ def test_rho_ge_one_rejected(io, tmp_path) -> None:
     dest = tmp_path / "bad.json"
     import json
 
-    dest.write_text(json.dumps(bad))
+    dest.write_text(json.dumps(bad), encoding="utf-8")
     with pytest.raises(IOTableError, match="Hawkins"):
         load_io(dest)

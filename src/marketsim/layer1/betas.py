@@ -281,7 +281,7 @@ def write_artifacts(betas: Betas, config_dir: Path) -> None:
         idio_vol=betas.idio_vol,
         mcap=betas.mcap,
     )
-    (config_dir / "betas.md").write_text(render_betas_md(betas))
+    (config_dir / "betas.md").write_text(render_betas_md(betas), encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:

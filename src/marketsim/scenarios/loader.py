@@ -39,7 +39,7 @@ class ScenarioSpec(FrozenModel):
 
 def load_scenario(path: str | Path) -> ScenarioSpec:
     p = Path(path)
-    raw = yaml.safe_load(p.read_text())
+    raw = yaml.safe_load(p.read_text(encoding="utf-8"))
     if not isinstance(raw, dict):
         raise ConfigError(f"{p} must contain a mapping")
     try:

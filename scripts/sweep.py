@@ -137,7 +137,7 @@ def main() -> None:
         rows.append(rec)
         print(json.dumps({**rec["cell"], "max_abs_gap": rec["max_abs_gap"], "finite": rec["finite"]}))
     if args.out:
-        args.out.write_text(json.dumps(rows, indent=2))
+        args.out.write_text(json.dumps(rows, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":

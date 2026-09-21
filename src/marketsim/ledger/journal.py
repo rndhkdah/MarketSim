@@ -113,7 +113,7 @@ class Ledger:
 
     @classmethod
     def from_yaml(cls, path: str | Path, *, codes: tuple[str, ...] | None = None, n_regions: int = 1) -> Ledger:
-        raw = yaml.safe_load(Path(path).read_text()) or {}
+        raw = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
         led = cls.empty(debug_journal=bool(raw.get("debug_journal", False)))
         for name in raw.get("entities", {}).get("institutions", []):
             led.register_entity(name)

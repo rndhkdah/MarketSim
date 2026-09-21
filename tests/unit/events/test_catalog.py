@@ -7,7 +7,9 @@ from pathlib import Path
 from marketsim.events.chains import check_subcritical
 from marketsim.events.schema import load_catalog
 
-CATALOG = Path("config/events")
+_ROOT = Path(__file__).resolve().parents[3]
+
+CATALOG = _ROOT / "config" / "events"
 TEMPLATES = {
     "oil_embargo_1973",
     "asian_crisis_1997",

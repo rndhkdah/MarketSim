@@ -11,7 +11,9 @@ from marketsim.events.compose import apply_composition, sample_dist
 from marketsim.events.schema import DistSpec, EventSpec, load_event
 from marketsim.real.shocks import ShockBus, mid_month_weight
 
-EXAMPLE = Path("config/events/_example.yaml")
+_ROOT = Path(__file__).resolve().parents[3]
+
+EXAMPLE = _ROOT / "config" / "events" / "_example.yaml"
 
 
 def test_semis_supply_touches_no_other_cell(cfg) -> None:

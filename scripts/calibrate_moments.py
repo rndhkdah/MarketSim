@@ -256,7 +256,7 @@ def main(argv: list[str] | None = None) -> int:
         if out.suffix.lower() in {".yaml", ".yml"}:
             print("refusing to write yaml (ADR-015); use .json or omit --out", file=sys.stderr)
             return 2
-        out.write_text(json.dumps(rows_as_json(rows), indent=2) + "\n")
+        out.write_text(json.dumps(rows_as_json(rows), indent=2) + "\n", encoding="utf-8")
         print(f"wrote proposal JSON {out} (not applied)")
     return 0
 

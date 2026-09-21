@@ -97,7 +97,7 @@ def test_gate4_event_rng_isolated(config_dir, tmp_path: Path) -> None:
         "composition": [],
         "followups": [],
     }
-    (tmp_path / "ping.yaml").write_text(yaml.safe_dump(raw))
+    (tmp_path / "ping.yaml").write_text(yaml.safe_dump(raw), encoding="utf-8")
     spec = EventSpec.model_validate(raw)
     cat = {"ping": spec}
 

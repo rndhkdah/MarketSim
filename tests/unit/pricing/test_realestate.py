@@ -84,7 +84,7 @@ def test_load_spec_from_yaml_and_explicit_weights(tmp_path) -> None:
                 "  weights: [0.45, 0.35, 0.20]",
                 "",
             ]
-        )
+        ), encoding="utf-8"
     )
     spec = load_realestate_spec(path)
     assert spec.prefix == "RE:"

@@ -326,7 +326,7 @@ def main(argv: list[str] | None = None) -> int:
             "t2_24_cpi_12m_at_z030": T224_CPI_12M,
             "rows": [asdict(r) for r in rows],
         }
-        out.write_text(json.dumps(payload, indent=2) + "\n")
+        out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
         print(f"wrote proposal JSON {out} (not applied)")
     return 0
 

@@ -172,8 +172,8 @@ def test_schema_snapshot_includes_bond_objects() -> None:
     for name in ("BondsView", "BondAuctionsView", "BondBidRequest", "BondBidAck"):
         assert name in generated["models"]
     assert GOLDEN.is_file(), f"missing golden {GOLDEN}"
-    assert json.loads(GOLDEN.read_text()) == generated
+    assert json.loads(GOLDEN.read_text(encoding="utf-8")) == generated
     assert V1_GOLDEN.is_file()
-    frozen_v1 = json.loads(V1_GOLDEN.read_text())
+    frozen_v1 = json.loads(V1_GOLDEN.read_text(encoding="utf-8"))
     assert frozen_v1["version"] == "v1"
     assert frozen_v1 != generated

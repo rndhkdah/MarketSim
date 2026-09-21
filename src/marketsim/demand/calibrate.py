@@ -370,11 +370,11 @@ def write_outputs(result: CalibrationResult, config_dir: Path, report_path: Path
     """Write `wants.yaml`, `buy_packages.yaml` and the calibration report."""
     config_dir = Path(config_dir)
     config_dir.mkdir(parents=True, exist_ok=True)
-    (config_dir / "wants.yaml").write_text(result.wants_yaml)
-    (config_dir / "buy_packages.yaml").write_text(result.packages_yaml)
+    (config_dir / "wants.yaml").write_text(result.wants_yaml, encoding="utf-8")
+    (config_dir / "buy_packages.yaml").write_text(result.packages_yaml, encoding="utf-8")
     report_path = Path(report_path)
     report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_path.write_text(result.report_md)
+    report_path.write_text(result.report_md, encoding="utf-8")
 
 
 def run_from_dir(config_dir: Path, report_path: Path | None = None) -> CalibrationResult:
@@ -385,7 +385,7 @@ def run_from_dir(config_dir: Path, report_path: Path | None = None) -> Calibrati
     root = Path(config_dir)
     cfg = load_config(root)
     io = load_io(resolve_io_path(cfg))
-    wants_raw = yaml.safe_load((root / "wants.yaml").read_text())
+    wants_raw = yaml.safe_load((root / "wants.yaml").read_text(encoding="utf-8"))
     result = calibrate(cfg, io, wants_raw)
     dest = report_path or root.parent / "claude" / "plan" / "reports" / "demand-calibration.md"
     write_outputs(result, root, dest)

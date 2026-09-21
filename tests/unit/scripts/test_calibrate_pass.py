@@ -108,4 +108,4 @@ def test_refuse_yaml_out(tmp_path: Path) -> None:
     json_path = tmp_path / "proposed.json"
     assert calibrate_moments.main(["--out", str(json_path)]) == 0
     assert json_path.exists()
-    assert "phi_accelerator" in json_path.read_text()
+    assert "phi_accelerator" in json_path.read_text(encoding="utf-8")

@@ -221,7 +221,7 @@ def test_error_model_shape() -> None:
 def test_golden_schema_stable() -> None:
     generated = json.loads(dump_api_schema())
     assert GOLDEN.is_file(), f"missing golden {GOLDEN}"
-    frozen = json.loads(GOLDEN.read_text())
+    frozen = json.loads(GOLDEN.read_text(encoding="utf-8"))
     assert generated == frozen, (
         "API JSON schema changed; bump API_SCHEMA_VERSION and replace "
         f"{GOLDEN.name} (do not edit the frozen v1 snapshot in place)"

@@ -14,7 +14,7 @@ from marketsim.real.steady_state import compute_real_baseline
 
 
 def _layer(config_dir: Path):
-    raw = yaml.safe_load((config_dir / "wants.yaml").read_text())
+    raw = yaml.safe_load((config_dir / "wants.yaml").read_text(encoding="utf-8"))
     return load_wants(raw, CODES)
 
 

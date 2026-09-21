@@ -8,7 +8,9 @@ from marketsim.scenarios.loader import load_scenario
 from marketsim.scenarios.runner import run_scenario
 from marketsim.world import RandomWalkModule
 
-SCENARIO = Path("config/scenarios/chip_script.yaml")
+_ROOT = Path(__file__).resolve().parents[3]
+
+SCENARIO = _ROOT / "config" / "scenarios" / "chip_script.yaml"
 
 
 def _hist(world) -> list[tuple[int, str]]:
