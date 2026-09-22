@@ -1,10 +1,7 @@
-# marketsim
+# MarketSim
 
 Headless, deterministic **economy + financial-market** engine. Phase 0 is the installable package,
 Layer-1 IO backbone, core utilities (clock, RNG, hashing, Erlang), and a `World` walking skeleton.
-
-This tree is a **separate project** from the Victoria 3 harness at the repo root. Run Vic3 tests with
-`uv run pytest` from the repo root; run this package from `marketsim/`.
 
 ## Setup
 
