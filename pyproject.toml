@@ -24,6 +24,12 @@ api = [
     # marketsim.sdk.client imports httpx at module scope.
     "httpx>=0.27",
 ]
+# T9.06 optional transport. Apache-2.0. Not a default dependency — serving
+# gRPC requires these, but importing marketsim.api must not.
+grpc = [
+    "grpcio>=1.67",
+    "protobuf>=5",
+]
 rl = [
     "gymnasium>=0.29",
     "pettingzoo>=1.24",

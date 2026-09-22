@@ -1,0 +1,11 @@
+# Thin PolicyFile snippet (T8.11). All keys already exist on PolicyFile
+# (extra=forbid). Values match the shipped D15 defaults — BOK MPB has used
+# 8 scheduled meetings / year since 2017 and a 25 bp grid.
+#
+# π* is not a key here (see NOTES.md). Copy into config/policy.yaml only if
+# you want the comments in-tree; do not replace the rest of the seed.
+
+monetary:
+  calendar:
+    meetings_per_year: 8
+    rate_step: 0.0025
